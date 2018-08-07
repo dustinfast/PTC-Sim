@@ -16,10 +16,10 @@ The BOS monitors the messaging subsystem and displays locomotive status graphica
 
 ## File Description
 
-**sim_conf.dat** - Configuration information. For example, the message broker hostname/IP address.
-**sim_bos.py** - The Back Office Server, or "BOS" (pronounced like "boss").
+**sim_conf.dat** - Configuration information. For example, the message broker hostname/IP address.  
+**sim_bos.py** - The Back Office Server, or "BOS" (pronounced like "boss").  
 **sim_broker.py** - The QPID message broker.  
-**sim_lib.py** - Shared classes and helper functions.
+**sim_lib.py** - Shared classes and helper functions.  
 **sim_loco.py** - The locomotive simulator.  
 **track_bases.json** - Specifies the base stations providing radio communication for sections of the track. Each base station consists of a unique ID and the on-track mileposts it provides coverage for. Gaps in coverage area allowed, as are areas of overlapping coverage.  
 **track_rail.json** - A representation of a railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees) of each.
