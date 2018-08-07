@@ -1,52 +1,51 @@
-""" An Edge Message Protocol (EMP) messaging system, supports acting as a msg
-    sender, receiver, or broker.
-
-    Supports the following operations:
-        broker - Acts to manage messaging queues necessary for transport.
-        client - A receiver of messages
-        server - A sender of messages
+""" An Edge Message Protocol (EMP) messaging system using the Apache Qpid
+    messaging API. Supports acting as a msg sender, receiver, or broker.
 
     Message Specification:
-        Adheres to EMP version 4 (as specified in msg_spec/S-9354.pdf) using a
-        variable header of size 
+        Adheres to EMP V4, as specified in msg_spec/S-9354.pdf
         
-
+    Author:
+        Dustin Fast, 2018
 """
+
 import struct
 import binascii
-from time import time
 from qpid.messaging import Connection
 
 
 class Message(object):
-    """ A representation of a message, including it's raw form.
-        Supports bi-directional conversion between raw and human-readable forms.
+    """ A representation of a message, including it's raw EMP form.
+        Supports construction from both raw and human-readable forms.
     """
     def __init__(self):
-        """ Constructs an empty message object.
+        """ Constructs an empty message object. Use from_human() or from_raw()
+            to populate message contents.
         """
-        self.msg_type = None        # Ex: 6000
-        self.destination = None   # Ex: 'arr.l.arr.IDNM'
-        self.sender = None       # Ex: 'arr.b:locop'
-        self.payload = None          # Ex:  A string or pickled object
-        self.raw_msg = None
+        self.msg_type = None
+        self.destination = None
+        self.sender = None
+        self.payload = None
 
     def from_human(self, msg_type, dest_addr, sender_addr, payload):
         """ Populates the message object from human parameters, converting 
             from human to raw format in the process.
+                msg_type =      (int) Message Type. Ex: 6000
+                dest_addr =     (str) Destination addr. Ex: 'arr.l.arr.IDNM'
+                sender =        (str) Sender addr. Ex: 'arr.b:locop'
+                payload =       (str) A '|' delimited list of fields, Ex:
+                                      'TIME|arr:LOCOID|LAT|LONG|SPEED'
         """
         self.msg_type = msg_type
         self.destination = dest_addr
         self.sender = sender_addr
         self.payload = payload
 
-        # Determine secondary msg properties for use in building raw
-        body_len = 3 + len(payload)  # Body size + room for 32 bit CRC
-        pack_time = int(time())      # Unix time of msg creation
+        # Determine msg body size (i.e. payload length + room for 32 bit CRC)
+        body_len = 3 + len(payload)
 
         ####################################################
-        # Build the raw msg (big-endian) using struct.pack
-        #  Note:
+        # Build the raw msg as big-endian using struct.pack,
+        # noting that:
         #   B = unsigned char, 8 bits
         #   H = unisigned short, 16 bits
         #   I = unsigned int, 32 bits
@@ -59,10 +58,6 @@ class Message(object):
         send_req += struct.pack(">B", 1)  # 8 bit flag denoting absolute time
         send_req += struct.pack(">I", body_len)[1:]  # 24 bit msg body size
 
-        # Build EMP "Optional header"
-        send_req += struct.pack(">i", 0)  # 32 bit Message number, 0 = no chunks
-        send_req += struct.pack(">I", pack_time)  # 32 bit msg creation time
-
         # Build EMP "Variable Header"
         send_req += struct.pack(">B", 24)  # 8 bit "variable header" size
         send_req += struct.pack(">H", 120)  # 16 bit network TTL (seconds)
@@ -74,20 +69,27 @@ class Message(object):
         
         # Build msg body
         send_req += payload  # Must be of size body_len - 32 bits
-
-        # Build CRC footer
         send_req += struct.pack(">I", binascii.crc32(send_req))  # 32 bit CRC
 
     def from_raw(self, raw_msg):
         """ Populates the message object from it's raw/receved msg form, 
-            converting from raw to human reable in the process.
+            converting from raw to human readable form in the process.
         """
-        assert(False)
+        # Extract msg contents, noting that each raw_msg[i] is 1 byte 
+        payload = ''
+        for i in list(range(len(raw_msg[4:]))):
+            payload += raw_msg[i]
+        
+        # Explode payload on '|'
+        msg_content = payload.split('|')
+
+        #TODO: populate self from msg_content based on msg type
+        print(msg_content)
         
 
-class EMPReceiver(object):
-    """ The EMP message receiver. Monitors the given queue at the specified 
-        broker for EMP messages.
+class MsgReceiver(object):
+    """ The message receiver. Monitors the given queue at the specified 
+        broker for messages.
     """
     def __init__(self, broker_address, queue_name, refresh_rate=1):
         """
@@ -119,7 +121,7 @@ class EMPReceiver(object):
         assert(False)
 
 
-class EMPSender(object):
+class MsgSender(object):
     """ The message sender. Sends msgs to the broker.
     """
     def __init__(self, broker_address):
@@ -141,16 +143,11 @@ class EMPSender(object):
         self.connection.close()
 
     def send_msg(self, message):
-        """ Sends the given message (of type Message) through the broker to 
-            the queue specified by the message. 
+        """ Sends the raw form of the given message (of type Message) through 
+            the broker to the queue specified in the message. 
         """
-        # Start new QPID session for the given destination, send the msg,
-        # then close the session
+        # Start a QPID session for the given destination, send the msg, then
+        # close the session.
         sender = self.session.sender(message.destination)
         sender.send(message.packed_msg)
         sender.close()  
-
-class EMPBroker(object):
-    """
-    """
-    assert(False)
