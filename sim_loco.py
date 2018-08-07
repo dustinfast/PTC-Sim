@@ -16,7 +16,7 @@ from threading import Thread
 from optparse import OptionParser
 from math import degrees, radians, sin, cos, atan2
 from sim_lib import print_err
-from sim_lib import _Base, _Milepost
+from sim_lib import Base, Milepost
 
 # Init constants from config file
 try:
@@ -85,7 +85,7 @@ class _Track(object):
                 raise Exception(
                     'Improperly formatted JSON encountered in get_mileposts()')
 
-            self.bases[baseID] = _Base(baseID, coverage_start, coverage_end)
+            self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
 
         # Populate self.mp_objects from TRACK_RAILS json
         print('Populating Mileposts...')
@@ -108,7 +108,7 @@ class _Track(object):
                 raise Exception(
                     'Improperly formatted JSON encountered in get_mileposts()')
 
-            self.mp_objects[mp] = _Milepost(mp, lat, lng)
+            self.mp_objects[mp] = Milepost(mp, lat, lng)
 
         # Populate self.mp_linear and self.mp_linear_rev from self.mp_objects
         for mp in sorted(self.mp_objects.keys()):

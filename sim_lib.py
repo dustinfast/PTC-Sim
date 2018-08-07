@@ -1,10 +1,14 @@
+""" sim_lib.py - A collection of classes and helpers for loco_sim
 
+    Author:
+        Dustin Fast, 2018
+"""
 
 ###########
 # Classes #
 ###########
 
-class _Milepost:
+class Milepost:
     """ An abstraction of a milepost.
         self.mp = (Float) The numeric milepost
         self.lat = (Float) Latitude of milepost
@@ -20,7 +24,7 @@ class _Milepost:
         return str(self.mp)
 
 
-class _Base:
+class Base:
     """ An abstraction of a base station, including it's coverage area
         self.ID = (String) The base station's unique identifier
         self.coverage_start = (Float) Coverage start milepost
@@ -45,13 +49,6 @@ class _Base:
 #############
 # Functions #
 #############
-
-def crc_gen(payload):
-    """ Returns a 32 bit CRC for the given payload.
-    """
-    crc32 = binascii.crc32(payload) & 0xffffffff
-    crc32 = '%08x' % crc32
-    return crc32
 
 def print_err(errstr, trystr=None):
     """ Prints a formatted error string. 
