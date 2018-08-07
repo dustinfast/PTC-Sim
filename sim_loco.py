@@ -9,6 +9,7 @@ See README.md for more info.
 Author:
     Dustin Fast, 2018
 """
+
 import json
 import ConfigParser
 from time import sleep
@@ -44,7 +45,7 @@ except ConfigParser.NoOptionError:
 #  Classes   #
 ##############
 
-class _Track(object):
+class _Track(object):  # TODO: Move to lib?
     """ A representation of the track our virtual train travels, including 
         radio communication base stations and their associated coverage areas.
     
