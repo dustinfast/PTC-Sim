@@ -1,0 +1,18 @@
+[global]
+broker = localhost                  ; Message broker IP address/hostname
+track_rails = 'track_rail.json'     ; Track model file
+track_bases = 'track_bases.json'    ; Base stations file
+
+[broker]
+
+[bos]
+
+[loco]
+start_direction = 'increasing'      ; Intial loco dir of travel
+start_heading = 90.0                ; Initial loco heading
+start_milepost = 3.0                ; Initial loco milepost
+start_speed = 10.0                  ; Initial speed of loco
+sim_refresh = 10                    ; Seconds between sim thread refresh,
+                                    ; determines location resolution and the
+                                    ; time between each message send/receive.
+
