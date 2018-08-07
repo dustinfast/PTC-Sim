@@ -3,8 +3,8 @@
 This application is a work in progress based on my experience in Postive Train Control. It demonstrates communication between active locomotives and a Back Office Server (BOS) and consists of three top-level parts:
   
 **Locomotive Simulator**  
-A simulated locomotive traveling on a track (as modeled by `track_rail.json`). As the loco travels, it connects to the radio base stations specified in `track_bases.json` for the purpose of communicating it's status (location, speed, etc.) to the BOS. If a base station is not available, the locomotive's status is enqued locally and sent at the next available opportunity.
-The locomotive also monitors it's own queue in the messaging subsystem in order to receive commands (reduce speed, change direction, etc.) from the BOS.
+A simulated locomotive traveling on a track (as modeled by `track_rail.json`). As the loco travels, it connects to the radio base stations specified in `track_bases.json` for the purpose of communicating it's status (location, speed, etc.) to the BOS. If a base station is not available, the locomotive's status at that time is discarded.
+The locomotive also monitors it's own queue in the messaging subsystem in order to receive commands (reduce speed, change direction, etc.) from the BOS. If the locomotive cannot be reached within the message Time-to-live (TTL), the message expires, thus avoiding receipt of stale commands.
 
 Note: Multiple instances of the locomitive simulator may instantiated - each will give a simulated locomotive with a unique ID.
 
@@ -23,6 +23,13 @@ The BOS monitors the messaging subsystem and displays locomotive status graphica
 **sim_loco.py** - The locomotive simulator.  
 **track_bases.json** - Specifies the base stations providing radio communication for sections of the track. Each base station consists of a unique ID and the on-track mileposts it provides coverage for. Gaps in coverage area allowed, as are areas of overlapping coverage.  
 **track_rail.json** - A representation of a railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees) of each.
+
+
+## Message Specification
+
+**6000** - Locomotive status messages
+**6001** - BOS command message
+
 
 ## Usage
 

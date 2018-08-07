@@ -46,6 +46,13 @@ class _Base:
 # Functions #
 #############
 
+def crc_gen(payload):
+    """ Returns a 32 bit CRC for the given payload.
+    """
+    crc32 = binascii.crc32(payload) & 0xffffffff
+    crc32 = '%08x' % crc32
+    return crc32
+
 def print_err(errstr, trystr=None):
     """ Prints a formatted error string. 
         Ex: errstr = 'No action given', trystr = '( add | rm )'
