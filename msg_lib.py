@@ -12,6 +12,7 @@
 import struct
 import socket
 import binascii
+from Queue import Empty, Full  # Queue.Empty exception type
 
 # TODO: Conf variables
 MAX_RECV_TRIES = 3
@@ -23,13 +24,13 @@ MAX_MSG_SIZE = 1024
 
 
 class MsgQueue:
-    """ A message queue with push pop, shove, peek, # TODO: remove, is_empty, and
-        item_count methods.
+    """ A message queue with push pop, peek, remove, is_empty, and item_count.
     """
 
     def __init__(self, maxsize=None):
-        self.items = []             # Container
-        self.maxsize = maxsize      # Max size of self.items
+        self._items = []            # Container
+        self.maxsize = maxsize      # Max size of self._items
+        # TODO: self.lock = False   # Threadsafe lock
 
         # Validate maxsize and populate with defaultdata
         if maxsize and maxsize < 0:
@@ -37,39 +38,46 @@ class MsgQueue:
 
     def push(self, item):
         """ Adds an item to the back of queue.
+        Raises Queue.Full if queue at max capacity,
         """
         if self.is_full():
-            raise Exception('Attempted to push item to a full queue.')
-        self.items.append(item)
-
-    def shove(self, item):
-        """ Adds an item to the back of queue. If queue already full, makes
-            room for it by removing the item at front. If an item is removed
-            in this way, is returned.
-        """
-        removed = None
-        if self.is_full():
-            removed = self.pop()
-        self.items.append(item)
-        return removed
+            raise Full()
+        self._items.append(item)
 
     def pop(self):
-        """ Removes front item from queue and returns it.
+        """ Pops front item from queue and returns it.
+            Raises Queue.Empty if queue empty on pop().
         """
         if self.is_empty():
-            raise Exception('Attempted to pop from an empty queue.')
-        d = self.items[0]
-        self.items = self.items[1:]
+            raise Empty
+        d = self._items[0]
+        self._items = self._items[1:]
         return d
-
+    
     def peek(self, n=0):  # TODO: Test safety of peek
         """ Returns the nth item from queue front. Leaves queue unchanged.
+            Raises IndexError if no nth item.
+            Raises Queue.Empty if queue empty.
         """
-        if self.item_count() < n + 1:
-            raise Exception('Attempted to peek at an out of bounds position.')
         if self.is_empty():
-            raise Exception('Attempted to peek at an empty queue.')
-        return self.items[n]
+            raise Empty
+
+        try:
+            return self._items[n]
+        except IndexError:
+            raise IndexError('No element at position ' + str(n))
+            
+
+    def remove(self, n=0):
+        """ Removes the nth item from the queue and shuffles other msgs forward.
+            Raises IndexError if no nth item.
+        """ 
+        try:
+            self._items[n]
+        except IndexError:
+            raise IndexError('No element at position ' + str(n))
+        
+        self._items = self._items[0:n] + self._items[n + 1:]
 
     def is_empty(self):
         """ Returns true iff queue empty.
@@ -82,7 +90,7 @@ class MsgQueue:
         return self.maxsize and self.item_count() >= self.maxsize
 
     def item_count(self):
-        return len(self.items)
+        return len(self._items)
 
 
 class Message(object):
@@ -222,17 +230,7 @@ class MsgWatcher(object):
         """
         assert(False)
 
-    def open(self):
-        """ Opens a connection to the broker.
-        """
-        assert(False)
-
-    def close(self):
-        """ Closes the connection to the broker.
-        """
-        assert(False)
-
-    def get_next_msg(self, timeout=5):
+    def get_next(self, timeout=5):
         """ Blocks for the given timeout (seconds) while waiting for a new msg
             at self.queue.
             Raises Queue.Empty on timeout.
