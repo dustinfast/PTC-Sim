@@ -31,29 +31,52 @@ from msg_lib import Message, MsgQueue
 from threading import Thread
 
 # TODO: Conf variables
-MAX_TRIES = 3
-MAX_RECV_HZ = 2  # TODO: Recv hz
+MAX_TRIES = 3  # TODO: No max tries
+REFRESH_HZ = 2  # TODO: Recv hz
 BROKER_RECV_PORT = 18182
 BROKER_FETCH_PORT = 18183
 BROKER = 'localhost'
 MAX_MSG_SIZE = 1024
+        
 
-# Globals
-g_new_msgs = MsgQueue()  # Msgs awaiting placment in g_outgoing_queues
-g_outgoing_queues = {}  # Dict of msg queues: { dest_addr: Message }
-
-class _FetchWatcher(Thread):  # TODO: move to def of Broker class, then no globals
-    """ Watches for incoming TCP/IP msg requests (i.e.: A loco or the BOS
-        checking its msg queue) and serves msgs as appropriate.
-        Usage: Instantiate, then run as a thread with _FetchWatcher.start()
+class Broker(object):  # TODO: test mp?
+    """ The message broker.
     """
     def __init__(self):
-        """ Instantiates a RequestWatcher object.
+        """ Instantiates a message broker object.
         """
-        Thread.__init__(self)  # init parent
+        # The msg receiver thread
+        self.msg_recvr = Thread(target=self._msgreceiver())
         
+        # The fetch watcher thread
+        self.req_watcher = Thread(target=self._fetchwatcher())
+
+        # The outgoing msg queues, keyed by address: { dest_addr: MsgQueue }
+        self.outgoing_queues = {}
+
     def run(self):
+        """ Start the msg broker, including the msg receiver and fetch watcher 
+            threads. Also parses self.outgoing_queues and discards expired msg
+            every s.
         """
+        # Start msg receiver and request watcher threads
+        self.msg_recvr.start()
+        self.req_watcher.start()
+
+        for i in range(10):
+            # TODO: Parse all msgs for TTL
+            # while not g_new_msgs.is_empty():
+            #     msg = g_new_msgs.pop()
+
+            sleep(2)
+
+        # Do cleanup
+        # TODO: Gracefully kill all threads
+        print('Broker closed.')  # debug
+
+    def _fetchwatcher(self):
+        """ Watches for incoming TCP/IP msg requests (i.e.: A loco or the BOS
+            checking its msg queue) and serve messages as appropriate.
         """
         # Init listener
         sock = socket.socket()
@@ -64,6 +87,7 @@ class _FetchWatcher(Thread):  # TODO: move to def of Broker class, then no globa
             # Block until a a fetch request is received
             print('Watching on ' + str(BROKER_FETCH_PORT) + '.')
             conn, client = sock.accept()
+            
             print ('Fetch request received from: ' + str(client))
 
             # Try MAX_TRIES to process request, responding with 'OK' or 'EMPTY'
@@ -75,7 +99,7 @@ class _FetchWatcher(Thread):  # TODO: move to def of Broker class, then no globa
 
                 # Ensure queue exists and is not empty
                 # try:
-                msg = g_outgoing_queues[queue_name].pop()
+                msg = self.outgoing_queues[queue_name].pop()
                 # except Exception:
                 #     conn.send('EMPTY'.encode())
                 #     break
@@ -96,22 +120,11 @@ class _FetchWatcher(Thread):  # TODO: move to def of Broker class, then no globa
         sock.close()
         print('Watcher Closed.')  # debug
 
-class _MsgReceiver(Thread):  # TODO: move to def of Broker class
-    """ Watches for incoming messages over TCP/IP on the interface and port 
-        specified.
-        Usage: Instantiate, then run as a thread with _MsgReceiver.start()
-    """
-    def __init__(self):
-        """ Instantiates a MsgReceiver object.
-        """  
-        Thread.__init__(self)  # init parent
-
-    def run(self):
-        """ Called on _MsgReceiver.start(), blocks until a message is received, 
-            processes it, 
+    def _msgreceiver(self):
+        """ Watches for incoming messages over TCP/IP on the interface and port 
+            specified.
+            Usage: Instantiate, then run as a thread with _MsgReceiver.start()
         """
-        global g_new_msgs
-
         # Init TCP/IP listener
         sock = socket.socket()
         sock.bind((BROKER, BROKER_RECV_PORT))
@@ -141,9 +154,13 @@ class _MsgReceiver(Thread):  # TODO: move to def of Broker class
                         print(errstr + '... Retries exhausted.')
                         conn.send('FAIL'.encode())
                         break
-                
+
                 # Add msg to global new_msgs queue, then ack with sender
-                g_new_msgs.push(msg)
+                if not self.outgoing_queues.get(msg.dest_addr):
+                    self.outgoing_queues[msg.dest_addr] = MsgQueue()
+                self.outgoing_queues[msg.dest_addr].push(msg)
+                print('Broker: Enqued outgoing msg for: ' + msg.dest_addr)
+
                 conn.send('OK'.encode())
                 break
 
@@ -152,48 +169,9 @@ class _MsgReceiver(Thread):  # TODO: move to def of Broker class
             print('Closing after 1st msg received for debug')
             break  # debug
 
-        # Do cleanup   
+        # Do cleanup
         sock.close()
         print('Receiver Closed.')  # debug
-        
-
-class Broker(object):  # TODO: test mp?
-    """ The message broker.
-    """
-    def __init__(self):
-        """
-        """
-        self.msg_recvr = _MsgReceiver()
-        self.req_watcher = _FetchWatcher()
-
-    def run(self):
-        """ Start the msg broker, including the msg receiver and msg watcher 
-            threads.
-        """
-        global g_new_msgs
-
-        # Start msg receiver and request watcher threads
-        self.msg_recvr.start()
-        self.req_watcher.start()
-
-        for i in range(10):
-            # Enqueue any msgs waiting to be enqued in a queue keyed by the 
-            # dest address. A msg enqued this way will stay there until fetched
-            # by a client.
-            while not g_new_msgs.is_empty():
-                msg = g_new_msgs.pop()
-                if not g_outgoing_queues.get(msg.dest_addr):
-                    g_outgoing_queues[msg.dest_addr] = MsgQueue()
-                g_outgoing_queues[msg.dest_addr].push(msg)
-
-                print('Broker: Enqued outgoing msg for: ' + msg.dest_addr)
-            
-            # TODO: Parse all msgs for TTL
-            
-            sleep(2)
-
-        # Do cleanup
-        print('Broker closed.')  # debug
 
 
 if __name__ == '__main__':
