@@ -24,8 +24,8 @@ try:
     config = ConfigParser.RawConfigParser()
     config.read('conf.dat')
 
-    TRACK_RAILS = config.get('loco', 'track_rails')
-    TRACK_BASES = config.get('loco', 'track_bases')
+    TRACK_RAILS = config.get('global', 'track_rails')
+    TRACK_BASES = config.get('global', 'track_bases')
     LOCO_START_DIR = config.get('loco', 'start_direction')
     LOCO_START_HEADING = config.get('loco', 'start_heading')
     LOCO_START_MP = config.get('loco', 'start_milepost')  

@@ -22,6 +22,70 @@ RECV_PORT = 18182
 BROKER = 'localhost'
 MAX_MSG_SIZE = 1024
 
+
+class MsgQueue:
+    """ A message queue with push pop, shove, peek, # TODO: remove, is_empty, and
+        item_count methods.
+    """
+
+    def __init__(self, maxsize=None):
+        self.items = []             # Container
+        self.maxsize = maxsize      # Max size of self.items
+
+        # Validate maxsize and populate with defaultdata
+        if maxsize and maxsize < 0:
+                raise ValueError('Invalid maxsize.')
+
+    def push(self, item):
+        """ Adds an item to the back of queue.
+        """
+        if self.is_full():
+            raise Exception('Attempted to push item to a full queue.')
+        self.items.append(item)
+
+    def shove(self, item):
+        """ Adds an item to the back of queue. If queue already full, makes
+            room for it by removing the item at front. If an item is removed
+            in this way, is returned.
+        """
+        removed = None
+        if self.is_full():
+            removed = self.pop()
+        self.items.append(item)
+        return removed
+
+    def pop(self):
+        """ Removes front item from queue and returns it.
+        """
+        if self.is_empty():
+            raise Exception('Attempted to pop from an empty queue.')
+        d = self.items[0]
+        self.items = self.items[1:]
+        return d
+
+    def peek(self, n=0):  # TODO: Test safety of peek
+        """ Returns the nth item from queue front. Leaves queue unchanged.
+        """
+        if self.item_count() < n + 1:
+            raise Exception('Attempted to peek at an out of bounds position.')
+        if self.is_empty():
+            raise Exception('Attempted to peek at an empty queue.')
+        return self.items[n]
+
+    def is_empty(self):
+        """ Returns true iff queue empty.
+        """
+        return self.item_count() == 0
+
+    def is_full(self):
+        """ Returns true iff queue at max capacity.
+        """
+        return self.maxsize and self.item_count() >= self.maxsize
+
+    def item_count(self):
+        return len(self.items)
+
+
 class Message(object):
     """ A representation of a message, including it's raw EMP form. Contains
         static functions for converting between tuple and raw EMP form.
@@ -45,8 +109,8 @@ class Message(object):
             self.raw_msg = self._to_raw(msg_content)
 
         self.msg_type = msg_content[0]
-        self.destination = msg_content[1]
-        self.sender = msg_content[2]
+        self.dest_addr = msg_content[1]
+        self.sender_addr = msg_content[2]
         self.payload = msg_content[3]
 
     @staticmethod
@@ -95,13 +159,13 @@ class Message(object):
             raise Exception("Msg format is invalid")
 
         # debug
-        print('Encoded msg: ')
-        print('type: ' + str(msg_type))
-        print('body size: ' + str(body_size))
-        print('sender: ' + sender_addr)
-        print('dest: ' + dest_addr)
-        print('payload: ' + str(payload))
-
+        # print('ENCODED MSG - ')
+        # print('type: ' + str(msg_type))
+        # print('body size: ' + str(body_size))
+        # print('sender: ' + sender_addr)
+        # print('dest: ' + dest_addr)
+        # print('payload: ' + payload_str)
+        
         return raw_msg
 
     @staticmethod
@@ -109,8 +173,8 @@ class Message(object):
         """ Returns a tuple representation of the msg contained in raw_msg.
         """
         # Validate raw_msg
-        if not raw_msg or len(raw_msg) >= 20:  # 20 byte min msg size
-            print('raw: "' + raw_msg + '"')  # debug
+        if not raw_msg or len(raw_msg) < 20:  # 20 byte min msg size
+            # print('raw: "' + raw_msg + '"')  # debug
             raise Exception("Invalid message format")
 
         # Ensure good CRC
@@ -139,22 +203,22 @@ class Message(object):
             raise Exception('Msg payload not of form { key: value, ... }')
 
         # debug
-        print('Decoded msg: ')
-        print('type: ' + str(msg_type))
-        print('vhead size: ' + str(vhead_size))
-        print('vhead: ' + str(vhead))
-        print('sender: ' + sender_addr)
-        print('dest: ' + dest_addr)
-        print('payload: ' + str(payload))
+        # print('DECODED MSG - ')
+        # print('type: ' + str(msg_type))
+        # print('vhead size: ' + str(vhead_size))
+        # print('vhead: ' + str(vhead))
+        # print('sender: ' + sender_addr)
+        # print('dest: ' + dest_addr)
+        # print('payload: ' + str(payload))
 
         return (msg_type, sender_addr, dest_addr, payload)
 
 
 class MsgWatcher(object):
-    """ The message watcher. Monitors the given broker for messages in the
+    """ The message watcher. Watches the given broker for messages in the
         queue specified.
     """
-    def __init__(self, broker_address, queue_name, refresh_rate=1):
+    def __init__(self, queue_name, refresh_rate=1):
         """
         """
         assert(False)
@@ -180,27 +244,34 @@ class MsgWatcher(object):
 class MsgSender(object):
     """ The message sender. Sends msgs to the broker.
     """
-    def __init__(self):
-        self.broker = BROKER
-        self.port = SEND_PORT
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def __init__(self, broker=BROKER, port=RECV_PORT):
+        self.broker = broker
+        self.port = port
 
     def send_msg(self, msg):
-        """ Sends the given message over TCP/IP to the broker specified. At
-            the broker, the msg is enqued in the queue specified in the msg. 
+        """ Sends the given message over TCP/IP to the MsgSender's broker. At
+            the broker, the msg will be enqueued for the destination specified 
+            in the message.
         """
         # Establish socket connection
-        self.sock.connect((self.broker, self.port))
-        print('Connected to broker.\n')  # debug
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self.broker, self.port))
+        print('Connected to broker: ' + self.broker)
 
         # Send the msg repeatedly until the recipient gives 'OK' or 'FAIL'
         while True:
-            self.sock.send(msg.raw_msg.encode())  # Send msg
-            response = self.sock.recv(MAX_MSG_SIZE).decode()  # get response
-            print(response)  # debug
+            sock.send(msg.raw_msg.encode('hex'))  # Send msg
+            response = sock.recv(MAX_MSG_SIZE).decode()  # get response
 
-            if response == 'OK':
-                print('Msg sent succesfully')  # debug
-            if response == 'FAIL':  
-                print('Msg failed to send')  # debug
+            if response == 'RETRY':
+                print('Msg failed to send... Retrying.')
+            else:
+                if response == 'OK':
+                    print('Msg sent succesfully')  # debug
+                elif response == 'FAIL':  
+                    print('Msg failed to send... No retry requested.')  # debug
+                else:
+                    print('Invalid response received... Aborting.')  # debug
                 break
+
+        sock.close()
