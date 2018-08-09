@@ -27,9 +27,7 @@ The BOS monitors the messaging subsystem and displays locomotive status graphica
 
 ## Message Specification
 
-Message Specification:
-Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages
-defined for this implementation as follows -
+Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages having a variable header section. This messaging implementation is defined as the following:
 
 **EMP Fields Values**
 |---------------------------------------------------|
@@ -59,25 +57,28 @@ defined for this implementation as follows -
 | ID / Desc     | Data Element, by index                |
 |-------------------------------------------------------|
 | 6000:         | 0: A key/value string of the form     |
-| Loco status   |    {Send Time    : Unix Time,         |
-| message       |     Loco ID      : 4 digit integer,   |
-|               |     Speed        : 2 digit integer,   |
-|               |     Latitude     : Integer,           |
-|               |     Longitude    : Integer,           |
-|               |     Base Station : Integer            |
+| Loco status   |    {sent          : Unix Time,         |
+| message       |     loco          : 4 digit integer,   |
+|               |     speed        : 2 digit integer,   |
+|               |     lat     : Integer,           |
+|               |     long    : Integer,           |
+|               |     base : Integer            |
 |               |    }                                  |
 |-------------------------------------------------------|
 | 6001:         | 0: A key/value string of the form     |
-| BOS to loco   |    {Send Time    : Unix Time,         |
-| command msg   |     Dest Loco ID : 4 digit integer,   |
-|               |     Command      : A well-formed cmd  |
+| BOS to loco   |    {sent    : Unix Time,         |
+| command msg   |     loco : 4 digit integer,   |
+|               |     cmd      : A well-formed cmd  |
 |               |                    Ex: 'speed(55)'    |
 |               |    }                                  |
 |-------------------------------------------------------|
 
 **Well-formed Command Strings**
-...
+speed(55), etc..
 
+**Addressing**
+sim.l.7357
+sim.b
 
 ## Usage
 
@@ -86,4 +87,5 @@ From a terminal, start the BOS with `./demo.py`, then navigate to http://localho
 ## TODO
 Logger output
 check all docstrings for PEP8
+Base station module
 
