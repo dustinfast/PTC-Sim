@@ -22,7 +22,7 @@ from sim_lib import Base, Milepost
 # Init constants from config file
 try:
     config = ConfigParser.RawConfigParser()
-    config.read('sim_conf.dat')
+    config.read('conf.dat')
 
     TRACK_RAILS = config.get('loco', 'track_rails')
     TRACK_BASES = config.get('loco', 'track_bases')
@@ -32,13 +32,13 @@ try:
     LOCO_START_SPEED = float(config.get('loco', 'start_speed'))
     LOCO_SIM_REFRESH = int(config.get('loco', 'sim_refresh'))
 except ConfigParser.NoSectionError:
-    errstr = 'Error loading configuration file - Ensure sim_conf.dat exists '
+    errstr = 'Error loading configuration file - Ensure conf.dat exists '
     errstr += 'and contains necessary section headers.'
-    raise Exception(errstr)
+    raise ConfigParser.NoSectionError(errstr)
 except ConfigParser.NoOptionError:
     errstr = 'Error reading configuration file - One or more required options '
-    errstr += 'are missing.'
-    raise Exception(errstr)
+    errstr += 'are missing in conf.dat.'
+    raise ConfigParser.NoSectionError(errstr)
 
 
 ##############

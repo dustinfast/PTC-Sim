@@ -17,7 +17,7 @@ The BOS monitors the messaging subsystem and displays locomotive status graphica
 
 ## File Description
 
-**sim_conf.dat** - Configuration information. For example, the message broker hostname/IP address.  
+**conf.dat** - Configuration information. For example, the message broker hostname/IP address.  
 **sim_bos.py** - The Back Office Server, or "BOS" (pronounced like "boss").  
 **sim_broker.py** - The QPID message broker.  
 **sim_lib.py** - Shared classes and helper functions.  
