@@ -24,11 +24,58 @@ The BOS monitors the messaging subsystem and displays locomotive status graphica
 **track_bases.json** - Specifies the base stations providing radio communication for sections of the track. Each base station consists of a unique ID and the on-track mileposts it provides coverage for. Gaps in coverage area allowed, as are areas of overlapping coverage.  
 **track_rail.json** - A representation of a railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees) of each.
 
-
 ## Message Specification
 
-**6000** - Locomotive status messages
-**6001** - BOS command message
+Message Specification:
+Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages
+defined for this implementation as follows -
+
+**EMP Fields Values**
+|---------------------------------------------------|
+| Section  | Field / Value                          |
+|---------------------------------------------------|
+| Common   | EMP Header Version    : 4              |
+| Header   | Message Type/ID       : DYNAMIC        |
+|          | Message Version       : 1              |
+|          | Flags                 : 0              |
+|          | Body Size             : DYNAMIC        |
+|---------------------------------------------------|
+| Optional | Unused                                 |
+| Header   |                                        |
+|---------------------------------------------------|
+| Variable | Variable Header Size  : DYNAMIC        |
+| Length   | Network Time to Live  : 120            |
+| Header   | Quality of Service    : 0              |
+|          | Sender Address        : DYNAMIC        |
+|          | Destination Address   : DYNAMIC        |
+|----------|----------------------------------------|
+| Body     | Body/Data             : DYNAMIC        |
+|          | CRC                   : DYNAMIC        |
+|---------------------------------------------------|
+
+**Fixed-Format Messages, by ID**
+|-------------------------------------------------------|
+| ID / Desc     | Data Element, by index                |
+|-------------------------------------------------------|
+| 6000:         | 0: A key/value string of the form     |
+| Loco status   |    {Send Time    : Unix Time,         |
+| message       |     Loco ID      : 4 digit integer,   |
+|               |     Speed        : 2 digit integer,   |
+|               |     Latitude     : Integer,           |
+|               |     Longitude    : Integer,           |
+|               |     Base Station : Integer            |
+|               |    }                                  |
+|-------------------------------------------------------|
+| 6001:         | 00: A key/value string of the form    |
+| BOS to loco   |    {Send Time    : Unix Time,         |
+| command msg   |     Dest Loco ID : 4 digit integer,   |
+|               |     Command      : A well-formed cmd  |
+|               |                    Ex: 'speed(55)'    |
+|               |    }                                  |
+|-------------------------------------------------------|
+
+**Well-formed Command Strings**
+...
 
 
 ## Usage

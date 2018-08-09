@@ -4,51 +4,7 @@
     Message Specification:
         EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
         containing a variable-length header section.
-
-        EMP Field Implementation:
-            |---------------------------------------------------|
-            | Section  | Field / Value                          |
-            |---------------------------------------------------|
-            | Common   | EMP Header Version    : 4              |
-            | Header   | Message Type/ID       : DYNAMIC        |
-            |          | Message Version       : 1              |
-            |          | Flags                 : 0              |
-            |          | Body Size             : DYNAMIC        |
-            |---------------------------------------------------|
-            | Optional | Unused                                 |
-            | Header   |                                        |
-            |---------------------------------------------------|
-            | Variable | Variable Header Size  : DYNAMIC        |
-            | Length   | Network Time to Live  : 120            |
-            | Header   | Quality of Service    : 0              |
-            |          | Sender Address        : DYNAMIC        |
-            |          | Destination Address   : DYNAMIC        |
-            |----------|----------------------------------------|
-            | Body     | Body/Data             : DYNAMIC        |
-            |          | CRC                   : DYNAMIC        |
-            |---------------------------------------------------|
-
-        Fixed-Format Message Descriptions:
-            |-------------------------------------------------------|
-            | ID / Desc     | Data Element, by index                |
-            |-------------------------------------------------------|
-            | 6000:         | 0: A key/value string of the form     |
-            | Loco status   |    {Send Time    : Unix Time,         |
-            | message       |     Loco ID      : 4 digit integer,   |
-            |               |     Speed        : 2 digit integer,   |
-            |               |     Latitude     : Integer,           |
-            |               |     Longitude    : Integer,           |
-            |               |     Base Station : Integer            |
-            |               |    }                                  |
-            |-------------------------------------------------------|
-            | 6001:         | 00: A key/value string of the form    |
-            | BOS command   |    {Send Time    : Unix Time,         |
-            | message for   |     Dest Loco ID : 4 digit integer,   |
-            | locomitive    |     Command      : A well-formed cmd  |
-            |               |                    Ex: 'speed(55)'    |
-            |               |    }                                  |
-            |-------------------------------------------------------|
-
+        See README.md for implementation specific message description.
 
     Author:
         Dustin Fast, 2018
