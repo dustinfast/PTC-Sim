@@ -3,7 +3,7 @@
     specification as defined in msg_spec/S-9354.pdf. See README.md for 
     implementation specific information.
 
-    Contains classes that support message sending, watching, and receving.
+    Contains classes for msg sending and msg queue watching over TCP/IP
 
 
     Author:
@@ -11,7 +11,16 @@
 """
 
 import struct
+import socket
 import binascii
+
+# TODO: Conf variables
+MAX_RECV_TRIES = 3
+MAX_RECV_HZ = 2
+SEND_PORT = 18181
+RECV_PORT = 18182
+BROKER = 'localhost'
+MAX_MSG_SIZE = 1024
 
 class Message(object):
     """ A representation of a message, including it's raw EMP form. Contains
@@ -53,7 +62,7 @@ class Message(object):
         # Calculate body size (i.e. payload length + room for the 32 bit CRC)
         body_size = 4 + len(payload_str)
 
-        # Calculate size of variable part of the "Variable Header",
+        # Calculate size of variable portion of the "Variable Header",
         # i.e. len(source and destination strings) + null terminators.
         var_headsize = len(sender_addr) + len(dest_addr) + 2
 
@@ -84,6 +93,14 @@ class Message(object):
             raw_msg += struct.pack(">i", binascii.crc32(raw_msg))  # 32 bit CRC
         except:
             raise Exception("Msg format is invalid")
+
+        # debug
+        print('Encoded msg: ')
+        print('type: ' + str(msg_type))
+        print('body size: ' + str(body_size))
+        print('sender: ' + sender_addr)
+        print('dest: ' + dest_addr)
+        print('payload: ' + str(payload))
 
         return raw_msg
 
@@ -122,14 +139,13 @@ class Message(object):
             raise Exception('Msg payload not of form { key: value, ... }')
 
         # debug
-        # print('type: ' + str(msg_type))
-        # print('body size: ' + str(body_size))
-        # print('vhead size: ' + str(vhead_size))
-        # print('vhead: ' + str(vhead))
-        # print('sender: ' + sender_addr)
-        # print('dest: ' + dest_addr)
-        # print('payload: ' + str(payload))
-        # print(type(payload))
+        print('Decoded msg: ')
+        print('type: ' + str(msg_type))
+        print('vhead size: ' + str(vhead_size))
+        print('vhead: ' + str(vhead))
+        print('sender: ' + sender_addr)
+        print('dest: ' + dest_addr)
+        print('payload: ' + str(payload))
 
         return (msg_type, sender_addr, dest_addr, payload)
 
@@ -141,10 +157,7 @@ class MsgWatcher(object):
     def __init__(self, broker_address, queue_name, refresh_rate=1):
         """
         """
-        self.broker = broker_address
-        self.queue = queue_name
-        self.refresh = refresh_rate
-        self.connection = None  # Populated on self.open()
+        assert(False)
 
     def open(self):
         """ Opens a connection to the broker.
@@ -167,23 +180,27 @@ class MsgWatcher(object):
 class MsgSender(object):
     """ The message sender. Sends msgs to the broker.
     """
-    def __init__(self, broker_address):
-        self.broker = broker_address
-        self.connection = None  # Populated on self.open()
+    def __init__(self):
+        self.broker = BROKER
+        self.port = SEND_PORT
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    def open(self):
-        """ Opens a connection to the broker.
-            # TODO: Raises...
-        """
-        assert(False)
-
-    def close(self):
-        """ Closes the connection with the broker.
-        """
-        assert(False)
-
-    def send_msg(self, message):
+    def send_msg(self, msg):
         """ Sends the given message over TCP/IP to the broker specified. At
-            the broker, the msg is enqueued in the queue specified in the msg. 
+            the broker, the msg is enqued in the queue specified in the msg. 
         """
-        assert(False)
+        # Establish socket connection
+        self.sock.connect((self.broker, self.port))
+        print('Connected to broker.\n')  # debug
+
+        # Send the msg repeatedly until the recipient gives 'OK' or 'FAIL'
+        while True:
+            self.sock.send(msg.raw_msg.encode())  # Send msg
+            response = self.sock.recv(MAX_MSG_SIZE).decode()  # get response
+            print(response)  # debug
+
+            if response == 'OK':
+                print('Msg sent succesfully')  # debug
+            if response == 'FAIL':  
+                print('Msg failed to send')  # debug
+                break
