@@ -242,22 +242,3 @@ class MsgSender(object):
         sender = self.session.sender(message.destination)
         sender.send(message.packed_msg)
         sender.close()
-
-
-if __name__ == '__main__':
-    t = (6000, 'aaa.l.11111111111', 'rr.l.1111', {'one': 8, 'two': 9})
-
-    m = Message(t)
-    m2 = Message(m.raw_msg)
-
-    print m.payload
-    print m2.payload
-    
-    # while True:
-    #     uinput = raw_input('>>')
-    #     if uinput == 'q':
-    #         break
-    #     elif not uinput:
-    #         continue
-    #     print(eval(uinput))
-
