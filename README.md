@@ -3,8 +3,9 @@
 This application is a work in progress based on my experience in Postive Train Control. It demonstrates communication between active locomotives and a Back Office Server (BOS) and consists of three top-level parts:
   
 **Locomotive Simulator**  
-A simulated locomotive traveling on a track (as modeled by `track_rail.json`). As the loco travels, it connects to the radio base stations specified in `track_bases.json` for the purpose of communicating it's status (location, speed, etc.) to the BOS. If a base station is not available, the locomotive's status at that time is discarded.
-The locomotive also monitors it's own queue in the messaging subsystem in order to receive commands (reduce speed, change direction, etc.) from the BOS. If the locomotive cannot be reached within the message Time-to-live (TTL), the message expires, thus avoiding receipt of stale commands.
+A simulated locomotive traveling on a track (as modeled by `track_rail.json`). As the loco travels, it connects to the radio base stations specified in `track_bases.json` for the purpose of communicating it's status (location, speed, etc.) to the BOS at regular intervals (defined in `conf.dat`). If a status would be transmitted while no base station is available, the locomotive does not send it's status at that time.  
+
+The locomotive also watches for messages address to it in the messaging subsystem in order to receive commands (reduce speed, change direction, etc.) from the BOS. If the locomotive cannot be reached within the message Time-to-live (TTL), the message expires, thus avoiding receipt of stale commands.
 
 Note: Multiple instances of the locomitive simulator may instantiated - each will give a simulated locomotive with a unique ID.
 
@@ -66,7 +67,7 @@ defined for this implementation as follows -
 |               |     Base Station : Integer            |
 |               |    }                                  |
 |-------------------------------------------------------|
-| 6001:         | 00: A key/value string of the form    |
+| 6001:         | 0: A key/value string of the form     |
 | BOS to loco   |    {Send Time    : Unix Time,         |
 | command msg   |     Dest Loco ID : 4 digit integer,   |
 |               |     Command      : A well-formed cmd  |
@@ -80,5 +81,9 @@ defined for this implementation as follows -
 
 ## Usage
 
-From a terminal, start the BOS with `./sim_bos.py`, then navigate to http://localhost/loco_sim.
+From a terminal, start the BOS with `./demo.py`, then navigate to http://localhost/loco_sim.
+
+## TODO
+Logger output
+check all docstrings for PEP8
 
