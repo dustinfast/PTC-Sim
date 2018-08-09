@@ -15,10 +15,11 @@ import binascii
 from Queue import Empty, Full  # Queue.Empty exception type
 
 # TODO: Conf variables
-MAX_RECV_TRIES = 3
+MAX_TRIES = 2
 MAX_RECV_HZ = 2
 SEND_PORT = 18181
 RECV_PORT = 18182
+FETCH_PORT = 18183
 BROKER = 'localhost'
 MAX_MSG_SIZE = 1024
 
@@ -54,8 +55,8 @@ class MsgQueue:
         self._items = self._items[1:]
         return d
     
-    def peek(self, n=0):  # TODO: Test safety of peek
-        """ Returns the nth item from queue front. Leaves queue unchanged.
+    def peek(self, n=0):
+        """ Returns the nth item from queue front, leaving queue unchanged.
             Raises IndexError if no nth item.
             Raises Queue.Empty if queue empty.
         """
@@ -66,7 +67,6 @@ class MsgQueue:
             return self._items[n]
         except IndexError:
             raise IndexError('No element at position ' + str(n))
-            
 
     def remove(self, n=0):
         """ Removes the nth item from the queue and shuffles other msgs forward.
@@ -225,19 +225,55 @@ class MsgWatcher(object):
     """ The message watcher. Watches the given broker for messages in the
         queue specified.
     """
-    def __init__(self, queue_name, refresh_rate=1):
+    def __init__(self, broker=BROKER, port=FETCH_PORT):
         """
         """
-        assert(False)
+        self.broker = BROKER
+        self.port = port
 
-    def get_next(self, timeout=5):
-        """ Blocks for the given timeout (seconds) while waiting for a new msg
-            at self.queue.
-            Raises Queue.Empty on timeout.
+    def get_next(self, queue_name):
+        """ Requests a fetch from the given queue from MsgWatcher's broker. The
+            message is removed from the broker on ack.
+            Raises Queue.Empty if specified queue is empty at broker.
         """
-        assert(False)
+        # Establish socket connection
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self.broker, self.port))
+        print('Connected to broker: ' + self.broker)
 
+        # Send fetch request until receipt of 'EMPTY', 'FAIL', or a valid msg.
+        recv_tries = 0
+        while True:
+            recv_tries += 1
+            sock.send(queue_name.encode())  # Send queue_name
+            response = sock.recv(MAX_MSG_SIZE).decode()  # get response
 
+            if response == 'OK':
+                sock.send('READY'.encode())  # Send "READY to receive"
+                raw_msg = conn.recv(MAX_MSG_SIZE).decode()
+                try:
+                    msg = Message(raw_msg.decode('hex'))
+                except Exception as e:
+                    errstr = 'Transfer failed due to ' + str(e)
+                    if recv_tries < MAX_TRIES:
+                        print(errstr + '... Will retry.')
+                        conn.send('RETRY'.encode())
+                        continue
+                    else:
+                        print(errstr + '... Retries exhausted.')
+                        conn.send('FAIL'.encode())
+                        break
+                print('Msg fetch succesful')  # debug
+                return msg
+            elif response == 'EMPTY':
+                raise Empty()
+            else:
+                print('Invalid response received... Aborting.')  # debug
+            break
+
+        sock.close()
+
+# TODO: Combine MsgSender and MsgFWathcer into a single class. i.e. Connection.fetch and Connection.send
 class MsgSender(object):
     """ The message sender. Sends msgs to the broker.
     """

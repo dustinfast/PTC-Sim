@@ -39,13 +39,13 @@ BROKER = 'localhost'
 MAX_MSG_SIZE = 1024
 
 # Globals
-g_new_msgs = MsgQueue()  # All msgs awaiting placment in g_outgoing_queues
+g_new_msgs = MsgQueue()  # Msgs awaiting placment in g_outgoing_queues
 g_outgoing_queues = {}  # Dict of msg queues: { dest_addr: Message }
 
-class _RequestWatcher(Thread):  # TODO: is def cleaner?
+class _FetchWatcher(Thread):  # TODO: move to def of Broker class, then no globals
     """ Watches for incoming TCP/IP msg requests (i.e.: A loco or the BOS
         checking its msg queue) and serves msgs as appropriate.
-        Usage: Instantiate, then run as a thread with _RequestWatcher.start()
+        Usage: Instantiate, then run as a thread with _FetchWatcher.start()
     """
     def __init__(self):
         """ Instantiates a RequestWatcher object.
@@ -55,8 +55,6 @@ class _RequestWatcher(Thread):  # TODO: is def cleaner?
     def run(self):
         """
         """
-        print('Request Watcher: Started watching...')
-
         # Init listener
         sock = socket.socket()
         sock.bind((BROKER, BROKER_FETCH_PORT))
@@ -64,60 +62,41 @@ class _RequestWatcher(Thread):  # TODO: is def cleaner?
 
         while True:
             # Block until a a fetch request is received
-            print('Msg Recvr: Listening on ' + str(BROKER_FETCH_PORT) + '.')
+            print('Watching on ' + str(BROKER_FETCH_PORT) + '.')
             conn, client = sock.accept()
-            print ('Msg Recvr: Fetch request received from: ' + str(client))
+            print ('Fetch request received from: ' + str(client))
 
-            # Try MAX_TRIES to process request, responding with either 'OK',
-            # 'RETRY', 'EMPTY' or 'FAIL'.
+            # Try MAX_TRIES to process request, responding with 'OK' or 'EMPTY'
             recv_tries = 0
             while True:
                 recv_tries += 1
                 queue_name = conn.recv(MAX_MSG_SIZE).decode()
-                print('Msg Recvr: ' + queue_name + ' fetch requested.')
+                print('' + queue_name + ' fetch requested.')
 
-                # Ensure queue exists. If not, no msgs exists for requester
-                try:
-                    queue = g_outgoing_queues[queue_name] 
-                except KeyError:
-                    conn.send(str('EMPTY').encode())
-                    break
+                # Ensure queue exists and is not empty
+                # try:
+                msg = g_outgoing_queues[queue_name].pop()
+                # except Exception:
+                #     conn.send('EMPTY'.encode())
+                #     break
 
-                # Get the next unexpired msg from specified queue and serve it
-                while not queue.is_empty():
-                    msg = queue.pop()
-                    print(msg.sender_addr)
-                    ...
-                    # If msg expired, try the next
-                    #   (Need ttl and send time in Message first)
+                conn.send('OK'.encode())
+                conn.send(msg.raw_msg.encode('hex'))  # Send msg
 
-                    # errstr = 'Msg Recvr: Transfer failed due to ' + str(e)
-                    # if recv_tries < MAX_TRIES:
-                    #     print(errstr + '... Will retry.')
-                    #     conn.send(str('RETRY').encode())
-                    #     continue
-                    # else:
-                    #     print(errstr + '... Retries exhausted.')
-                    #     conn.send(str('FAIL').encode())
-                    #     break
-
-                # # Acck with sender
-                # conn.send(str('OK').encode())
-                # break
+                # Acck with sender
+                conn.send('OK'.encode())
+                break
 
             # We're done with client connection, so close it.
             conn.close()
-            print('Msg Recvr: Closing after 1st msg receipt for debug')
+            print('Closing after 1st msg fetched for debug')
             break  # debug
 
         # Do cleanup
         sock.close()
-        print('Msg Recvr: Closed.')  # debug
-        # TODO On msg request for a given queue, check the ttl in msg -
-        # if expired, discard and try next msg. maybe add send time to Message class
+        print('Watcher Closed.')  # debug
 
-
-class _MsgReceiver(Thread):
+class _MsgReceiver(Thread):  # TODO: move to def of Broker class
     """ Watches for incoming messages over TCP/IP on the interface and port 
         specified.
         Usage: Instantiate, then run as a thread with _MsgReceiver.start()
@@ -140,9 +119,9 @@ class _MsgReceiver(Thread):
 
         while True:
             # Block until a send request is received
-            print('Msg Recvr: Listening on ' + str(BROKER_RECV_PORT) + '.')
+            print('Listening on ' + str(BROKER_RECV_PORT) + '.')
             conn, client = sock.accept()
-            print ('Msg Recvr: Snd request received from: ' + str(client))
+            print ('Snd request received from: ' + str(client))
 
             # Try MAX_TRIES to recv msg, responding with either 'OK',
             # 'RETRY', or 'FAIL'.
@@ -153,29 +132,29 @@ class _MsgReceiver(Thread):
                 try:
                     msg = Message(raw_msg.decode('hex'))
                 except Exception as e:
-                    errstr = 'Msg Recvr: Transfer failed due to ' + str(e)
+                    errstr = 'Transfer failed due to ' + str(e)
                     if recv_tries < MAX_TRIES:
                         print(errstr + '... Will retry.')
-                        conn.send(str('RETRY').encode())
+                        conn.send('RETRY'.encode())
                         continue
                     else:
                         print(errstr + '... Retries exhausted.')
-                        conn.send(str('FAIL').encode())
+                        conn.send('FAIL'.encode())
                         break
                 
                 # Add msg to global new_msgs queue, then ack with sender
                 g_new_msgs.push(msg)
-                conn.send(str('OK').encode())
+                conn.send('OK'.encode())
                 break
 
             # We're done with client connection, so close it.
             conn.close()
-            print('Msg Recvr: Closing after 1st msg receipt for debug')
+            print('Closing after 1st msg received for debug')
             break  # debug
 
         # Do cleanup   
         sock.close()
-        print('Msg Recvr: Closed.')  # debug
+        print('Receiver Closed.')  # debug
         
 
 class Broker(object):  # TODO: test mp?
@@ -185,7 +164,7 @@ class Broker(object):  # TODO: test mp?
         """
         """
         self.msg_recvr = _MsgReceiver()
-        self.req_watcher = _RequestWatcher()
+        self.req_watcher = _FetchWatcher()
 
     def run(self):
         """ Start the msg broker, including the msg receiver and msg watcher 
@@ -209,10 +188,12 @@ class Broker(object):  # TODO: test mp?
 
                 print('Broker: Enqued outgoing msg for: ' + msg.dest_addr)
             
+            # TODO: Parse all msgs for TTL
+            
             sleep(2)
 
         # Do cleanup
-        print('Broker: closed.')  # debug
+        print('Broker closed.')  # debug
 
 
 if __name__ == '__main__':
@@ -220,5 +201,5 @@ if __name__ == '__main__':
     on_flag = True
     broker = Broker()
     broker.run()
-    print('Broker: Closed.')
+    print('end main')
 

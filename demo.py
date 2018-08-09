@@ -4,8 +4,9 @@
     Author: Dustin Fast, 2018
 """
 
+import time
 import msg_lib
-import msg_broker
+# import msg_broker
 # import sim_bos
 # import sim_loco
 
@@ -27,10 +28,13 @@ if __name__ == '__main__':
     # Send test msg
     sender = msg_lib.MsgSender()
     sender.send_msg(message)
-
+    time.sleep(2)
     # Try to fetch msg from the queue we just sent for
-    watcher = msg_lib.MsgWatcher(msg_dest)
-    watcher.get_next_msg()
+    watcher = msg_lib.MsgWatcher()
+    try:
+        watcher.get_next(msg_dest)
+    except:
+        print('Msg queue empty... Too bad.')
 
 
 # class proc(multiprocessing.Process):
