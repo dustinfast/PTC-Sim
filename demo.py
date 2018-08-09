@@ -1,5 +1,7 @@
 """ demo.py - Starts the necessary services and processes
     The locomotive, bos, and msg broker all exist in seperate processes.
+
+    Author: Dustin Fast, 2018
 """
 
 import msg_lib
@@ -25,6 +27,10 @@ if __name__ == '__main__':
     # Send test msg
     sender = msg_lib.MsgSender()
     sender.send_msg(message)
+
+    # Try to fetch msg from the queue we just sent for
+    watcher = msg_lib.MsgWatcher(msg_dest)
+    watcher.get_next_msg()
 
 
 # class proc(multiprocessing.Process):

@@ -5,7 +5,6 @@
 
     Contains classes for msg sending and msg queue watching over TCP/IP
 
-
     Author:
         Dustin Fast, 2018
 """
