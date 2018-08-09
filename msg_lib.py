@@ -1,10 +1,10 @@
-""" An Apache Qpid API wrapper library for sending and receiving Edge Message
-     Protocol (EMP) messages according to the following specification -
+""" A messaging library for sending and receiving fixed-format, variable-
+    length-header messages according to the Edge Message Protocol (EMP) 
+    specification as defined in msg_spec/S-9354.pdf. See README.md for 
+    implementation specific information.
 
-    Message Specification:
-        EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
-        containing a variable-length header section.
-        See README.md for implementation specific message description.
+    Contains classes that support message sending, watching, and receving.
+
 
     Author:
         Dustin Fast, 2018
@@ -12,8 +12,6 @@
 
 import struct
 import binascii
-from qpid.messaging import Connection
-
 
 class Message(object):
     """ A representation of a message, including it's raw EMP form. Contains
@@ -34,8 +32,7 @@ class Message(object):
             msg_content = self._to_tuple(msg_content)
         else:
             if type(msg_content) != tuple or len(msg_content) != 4:
-                # TODO: Exception type
-                raise Exception('Invalid msg_content parameter recieved.')
+                raise Exception('Msg content is an unexpected type or length.')
             self.raw_msg = self._to_raw(msg_content)
 
         self.msg_type = msg_content[0]
@@ -65,26 +62,28 @@ class Message(object):
         #   H = unsigned short, 16 bits
         #   I = unsigned int, 32 bits
         #   i = signed int, 32 bits
+        try:
+            # Pack EMP "Common Header"
+            raw_msg = struct.pack(">B", 4)  # 8 bit EMP header version
+            raw_msg += struct.pack(">H", msg_type)  # 16 bit message type/ID
+            raw_msg += struct.pack(">B", 1)  # 8 bit message version
+            raw_msg += struct.pack(">B", 0)  # 8 bit flag, all zeroes here.
+            raw_msg += struct.pack(">I", body_size)[1:]  # 24 bit msg body size
 
-        # Pack EMP "Common Header"
-        raw_msg = struct.pack(">B", 4)  # 8 bit EMP header version
-        raw_msg += struct.pack(">H", msg_type)  # 16 bit message type/ID
-        raw_msg += struct.pack(">B", 1)  # 8 bit message version
-        raw_msg += struct.pack(">B", 0)  # 8 bit flag, all zeroes here.
-        raw_msg += struct.pack(">I", body_size)[1:]  # 24 bit msg body size
-
-        # Pack EMP "Variable Header"
-        raw_msg += struct.pack(">B", var_headsize)  # 8 bit variable header size
-        raw_msg += struct.pack(">H", 120)  # 16 bit network TTL (seconds)
-        raw_msg += struct.pack(">H", 0)  # 16 bit QoS, 0 = no preference
-        raw_msg += sender_addr  # 64 byte (max) msg source addr string
-        raw_msg += '\x00'  # null terminate msg source address
-        raw_msg += dest_addr  # 64 byte (max) msg dest addr string
-        raw_msg += '\x00'  # null terminate destination address
-        
-        # Pack msg body
-        raw_msg += payload_str  # Variable size
-        raw_msg += struct.pack(">i", binascii.crc32(raw_msg))  # 32 bit CRC
+            # Pack EMP "Variable Header"
+            raw_msg += struct.pack(">B", var_headsize)  # 8 bit variable header size
+            raw_msg += struct.pack(">H", 120)  # 16 bit network TTL (seconds)
+            raw_msg += struct.pack(">H", 0)  # 16 bit QoS, 0 = no preference
+            raw_msg += sender_addr  # 64 byte (max) msg source addr string
+            raw_msg += '\x00'  # null terminate msg source address
+            raw_msg += dest_addr  # 64 byte (max) msg dest addr string
+            raw_msg += '\x00'  # null terminate destination address
+            
+            # Pack msg body
+            raw_msg += payload_str  # Variable size
+            raw_msg += struct.pack(">i", binascii.crc32(raw_msg))  # 32 bit CRC
+        except:
+            raise Exception("Msg format is invalid")
 
         return raw_msg
 
@@ -92,14 +91,16 @@ class Message(object):
     def _to_tuple(raw_msg):
         """ Returns a tuple representation of the msg contained in raw_msg.
         """
-        print('raw: "' + raw_msg + '"')  # debug
+        # Validate raw_msg
+        if not raw_msg or len(raw_msg) >= 20:  # 20 byte min msg size
+            print('raw: "' + raw_msg + '"')  # debug
+            raise Exception("Invalid message format")
 
-        # Ensure good CRC match
+        # Ensure good CRC
         msg_crc = struct.unpack(">i", raw_msg[-4::])[0]  # last 4 bytes
         raw_crc = binascii.crc32(raw_msg[:-4])
 
         if msg_crc != raw_crc:
-            # TODO: Exception type
             raise Exception("CRC Mismatch - message may be corrupt.")
 
         # Unpack msg fields, noting that unpack returns results as a tuple
@@ -118,8 +119,7 @@ class Message(object):
         try:
             payload = eval(payload)
         except:
-            # TODO: Exception type
-            raise Exception('Invalid message payload encountered.')
+            raise Exception('Msg payload not of form { key: value, ... }')
 
         # debug
         # print('type: ' + str(msg_type))
@@ -134,9 +134,9 @@ class Message(object):
         return (msg_type, sender_addr, dest_addr, payload)
 
 
-class MsgReceiver(object):
-    """ The message receiver. Monitors the given queue at the specified 
-        broker for messages.
+class MsgWatcher(object):
+    """ The message watcher. Monitors the given broker for messages in the
+        queue specified.
     """
     def __init__(self, broker_address, queue_name, refresh_rate=1):
         """
@@ -148,17 +148,13 @@ class MsgReceiver(object):
 
     def open(self):
         """ Opens a connection to the broker.
-            # TODO: Raises...
         """
-        self.connection = Connection(self.broker)
-        self.connection.open()
-        self.session = self.connection.session()
+        assert(False)
 
     def close(self):
-        """ Closes the connection with the broker.
+        """ Closes the connection to the broker.
         """
-        self.session.close()
-        self.connection.close()
+        assert(False)
 
     def get_next_msg(self, timeout=5):
         """ Blocks for the given timeout (seconds) while waiting for a new msg
@@ -179,22 +175,15 @@ class MsgSender(object):
         """ Opens a connection to the broker.
             # TODO: Raises...
         """
-        self.connection = Connection(self.broker)
-        self.connection.open()
-        self.session = self.connection.session()
+        assert(False)
 
     def close(self):
         """ Closes the connection with the broker.
         """
-        self.session.close()
-        self.connection.close()
+        assert(False)
 
     def send_msg(self, message):
-        """ Sends the raw form of the given message (of type Message) through 
-            the broker to the queue specified in the message. 
+        """ Sends the given message over TCP/IP to the broker specified. At
+            the broker, the msg is enqueued in the queue specified in the msg. 
         """
-        # Start a QPID session for the given destination, send the msg, then
-        # close the session.
-        sender = self.session.sender(message.destination)
-        sender.send(message.packed_msg)
-        sender.close()
+        assert(False)
