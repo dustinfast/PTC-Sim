@@ -116,8 +116,8 @@ class Message(object):
             self.raw_msg = self._to_raw(msg_content)
 
         self.msg_type = msg_content[0]
-        self.dest_addr = msg_content[1]
-        self.sender_addr = msg_content[2]
+        self.sender_addr = msg_content[1]
+        self.dest_addr = msg_content[2]
         self.payload = msg_content[3]
 
     @staticmethod
@@ -250,18 +250,18 @@ class MsgWatcher(object):
 
             if response == 'OK':
                 sock.send('READY'.encode())  # Send "READY to receive"
-                raw_msg = conn.recv(MAX_MSG_SIZE).decode()
+                raw_msg = sock.recv(MAX_MSG_SIZE).decode()
                 try:
                     msg = Message(raw_msg.decode('hex'))
                 except Exception as e:
                     errstr = 'Transfer failed due to ' + str(e)
                     if recv_tries < MAX_TRIES:
                         print(errstr + '... Will retry.')
-                        conn.send('RETRY'.encode())
+                        sock.send('RETRY'.encode())
                         continue
                     else:
                         print(errstr + '... Retries exhausted.')
-                        conn.send('FAIL'.encode())
+                        sock.send('FAIL'.encode())
                         break
                 print('Msg fetch succesful')  # debug
                 return msg

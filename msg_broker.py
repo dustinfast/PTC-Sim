@@ -45,14 +45,14 @@ class Broker(object):  # TODO: test mp?
     def __init__(self):
         """ Instantiates a message broker object.
         """
+        # The outgoing msg queues, keyed by address: { dest_addr: MsgQueue }
+        self.outgoing_queues = {}
+
         # The msg receiver thread
         self.msg_recvr = Thread(target=self._msgreceiver())
         
         # The fetch watcher thread
         self.req_watcher = Thread(target=self._fetchwatcher())
-
-        # The outgoing msg queues, keyed by address: { dest_addr: MsgQueue }
-        self.outgoing_queues = {}
 
     def run(self):
         """ Start the msg broker, including the msg receiver and fetch watcher 
@@ -95,7 +95,7 @@ class Broker(object):  # TODO: test mp?
             while True:
                 recv_tries += 1
                 queue_name = conn.recv(MAX_MSG_SIZE).decode()
-                print('' + queue_name + ' fetch requested.')
+                print('*' + queue_name + ' fetch requested.')
 
                 # Ensure queue exists and is not empty
                 # try:
