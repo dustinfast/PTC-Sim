@@ -85,7 +85,7 @@ sim.b
 From a terminal, start the demonstration with `./demo.py`, then navigate to http://localhost/loco_sim.  
 
 ## TODO
-
+REPL's for each module
 Logger output
 check all docstrings for PEP8
 Base station module

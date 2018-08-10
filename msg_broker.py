@@ -26,21 +26,26 @@
         Dustin Fast, 2018
 """
 import socket
-import ConfigParser
+from ConfigParser import RawConfigParser
 from time import sleep
 from threading import Thread
 from msg_lib import Message, MsgQueue
 
 # Import config data
-config = ConfigParser.RawConfigParser()
+config = RawConfigParser()
 config.read('conf.dat')
-
 BROKER = config.get('messaging', 'broker')
 MAX_TRIES = config.get('misc', 'max_retries')
-BROKER_RECV_PORT = config.get('messaging', 'send_port')
-BROKER_FETCH_PORT = config.get('messaging', 'fetch_port')
+BROKER_RECV_PORT = int(config.get('messaging', 'send_port'))
+BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = config.get('messaging', 'max_msg_size')
+REFRESH_TIME = float(config.get('misc', 'refresh_sleep_time'))
 
+# TODO: Symbolic constants
+OK = 'OK'
+READY = 'READY'
+FAIL = 'FAIL'
+EMPTY = 'EMPTY'
 
 class Broker(object):  # TODO: test mp?
     """ The message broker.
@@ -48,139 +53,145 @@ class Broker(object):  # TODO: test mp?
     def __init__(self):
         """ Instantiates a message broker object.
         """
-        # The outgoing msg queues, keyed by address: { dest_addr: MsgQueue }
+        # Dict of outgoing msg queues, by address: { dest_addr: MsgQueue }
+        # Example: { 'sim.l.7357': MsgQueue }
         self.outgoing_queues = {}
 
+        # On/Off flag for stopping threads. Set by self.start and self.stop.
+        self.running = True
+
         # The msg receiver thread
-        self.msg_recvr = Thread(target=self._msgreceiver())
+        self.msg_recvr = Thread(target=self._msgreceiver)
         
         # The fetch watcher thread
-        self.req_watcher = Thread(target=self._fetchwatcher())
+        self.fetch_watcher = Thread(target=self._fetchwatcher)
 
-    def run(self):
-        """ Start the msg broker, including the msg receiver and fetch watcher 
-            threads. Also parses self.outgoing_queues and discards expired msg
-            every s.
+        # The queue parser thread
+        self.queue_parser = Thread(target=self._queueparser)
+
+    def start(self):
+        """ Start the msg broker, i.e., the msg receiver, fetch watcher and
+            queue parser threads. 
         """
-        # Start msg receiver and request watcher threads
+        self.running = True
+        print('Broker: Starting...')
         self.msg_recvr.start()
-        self.req_watcher.start()
+        self.fetch_watcher.start()
+        self.queue_parser.start()
+        print('Broker: Started.')
 
-        for i in range(10):
-            # TODO: Parse all msgs for TTL
-            # while not g_new_msgs.is_empty():
-            #     msg = g_new_msgs.pop()
-
-            sleep(2)
-
-        # Do cleanup
-        # TODO: Gracefully kill all threads
-        print('Broker closed.')  # debug
-
-    def _fetchwatcher(self):
-        """ Watches for incoming TCP/IP msg requests (i.e.: A loco or the BOS
-            checking its msg queue) and serve messages as appropriate.
+    def stop(self):
+        """ Stops the msg brokeri.e., the msg receiver, fetch watcher and
+            queue parser threads. 
         """
-        # Init listener
-        sock = socket.socket()
-        sock.bind((BROKER, BROKER_FETCH_PORT))
-        sock.listen(1)
-
-        while True:
-            # Block until a a fetch request is received
-            print('Watching on ' + str(BROKER_FETCH_PORT) + '.')
-            conn, client = sock.accept()
-            
-            print ('Fetch request received from: ' + str(client))
-
-            # Try MAX_TRIES to process request, responding with 'OK' or 'EMPTY'
-            recv_tries = 0
-            while True:
-                recv_tries += 1
-                queue_name = conn.recv(MAX_MSG_SIZE).decode()
-                print('*' + queue_name + ' fetch requested.')
-
-                # Ensure queue exists and is not empty
-                # try:
-                msg = self.outgoing_queues[queue_name].pop()
-                # except Exception:
-                #     conn.send('EMPTY'.encode())
-                #     break
-
-                conn.send('OK'.encode())
-                conn.send(msg.raw_msg.encode('hex'))  # Send msg
-
-                # Acck with sender
-                conn.send('OK'.encode())
-                break
-
-            # We're done with client connection, so close it.
-            conn.close()
-            print('Closing after 1st msg fetched for debug')
-            break  # debug
-
-        # Do cleanup
-        sock.close()
-        print('Watcher Closed.')  # debug
+        print('Broker: Stopping...')
+        self.running = False
+        self.msg_recvr.join(timeout=REFRESH_TIME)
+        self.fetch_watcher.join(timeout=REFRESH_TIME)
+        print('Broker: Stopped.')
 
     def _msgreceiver(self):
         """ Watches for incoming messages over TCP/IP on the interface and port 
             specified.
-            Usage: Instantiate, then run as a thread with _MsgReceiver.start()
         """
         # Init TCP/IP listener
+        # TOOD: Move to lib
         sock = socket.socket()
+        sock.settimeout(REFRESH_TIME)
         sock.bind((BROKER, BROKER_RECV_PORT))
         sock.listen(1)
 
-        while True:
-            # Block until a send request is received
-            print('Listening on ' + str(BROKER_RECV_PORT) + '.')
-            conn, client = sock.accept()
-            print ('Snd request received from: ' + str(client))
+        while self.running:
+            # Block until timeout or a send request is received
+            try:
+                conn, client = sock.accept()
+            except:
+                continue
+            print ('Broker: Send request received from: ' + str(client))
 
-            # Try MAX_TRIES to recv msg, responding with either 'OK',
-            # 'RETRY', or 'FAIL'.
-            recv_tries = 0
-            while True:
-                recv_tries += 1
+            # Receive the msg from sender, responding with either OK or FAIL
+            try:
                 raw_msg = conn.recv(MAX_MSG_SIZE).decode()
+                msg = Message(raw_msg.decode('hex'))
+            except Exception as e:
+                print('Broker: Msg recv failed due to ' + str(e))
                 try:
-                    msg = Message(raw_msg.decode('hex'))
-                except Exception as e:
-                    errstr = 'Transfer failed due to ' + str(e)
-                    if recv_tries < MAX_TRIES:
-                        print(errstr + '... Will retry.')
-                        conn.send('RETRY'.encode())
-                        continue
-                    else:
-                        print(errstr + '... Retries exhausted.')
-                        conn.send('FAIL'.encode())
-                        break
+                    conn.send('FAIL'.encode())
+                    conn.close()
+                except:
+                    continue
 
-                # Add msg to global new_msgs queue, then ack with sender
+                # Add msg to outgoing queue dict, keyed by dest_addr
                 if not self.outgoing_queues.get(msg.dest_addr):
                     self.outgoing_queues[msg.dest_addr] = MsgQueue()
                 self.outgoing_queues[msg.dest_addr].push(msg)
-                print('Broker: Enqued outgoing msg for: ' + msg.dest_addr)
+                logstr = 'Broker: Received msg from ' + msg.sender_addr + ' '
+                logstr += 'for ' + msg.dest_addr
+                print(logstr)
 
-                conn.send('OK'.encode())
-                break
-
-            # We're done with client connection, so close it.
-            conn.close()
-            print('Closing after 1st msg received for debug')
-            break  # debug
+                # Ack success with sender and close connection
+                try:
+                    conn.send('OK'.encode())
+                    conn.close()
+                except:
+                    continue
 
         # Do cleanup
         sock.close()
-        print('Receiver Closed.')  # debug
 
+    def _fetchwatcher(self):
+        """ Watches for incoming TCP/IP msg requests (i.e.: A loco or the BOS
+            checking its msg queue) and serves messages as appropriate.
+        """
+        # Init listener
+        sock = socket.socket()
+        sock.settimeout(REFRESH_TIME)
+        sock.bind((BROKER, BROKER_FETCH_PORT))
+        sock.listen(1)
 
-if __name__ == '__main__':
-    global on_flag
-    on_flag = True
-    broker = Broker()
-    broker.run()
-    print('end main')
+        while self.running:
+            # Block until timeout or a send request is received
+            try:
+                conn, client = sock.accept()
+            except:
+                continue
+            print ('Broker: Fetch request received from: ' + str(client))
 
+            # Process the request, responding with either READY, EMPTY, OK
+            # or FAIL.
+            try:
+                queue_name = conn.recv(MAX_MSG_SIZE).decode()
+                print('*' + queue_name + ' fetch requested.')
+
+                # Ensure queue exists and is not empty
+                # TODO: Ensure success before removing msg from queue
+                try:
+                    msg = self.outgoing_queues[queue_name].pop()
+                except:
+                    # As far as the client is concerned, the queue is empty.
+                    msg = None  # implicit, but defined here for clarity
+
+                try:
+                    if msg:
+                        conn.send('READY'.encode())  # Signal READY to send
+                        conn.send(msg.raw_msg.encode('hex'))  # Send msg
+                    else:
+                        conn.send('EMPTY'.encode())
+                    conn.close()
+                except:
+                    continue
+            except:
+                continue
+
+        # Do cleanup
+        sock.close()
+        
+    def _queueparser(self):
+        """ Parses self.outgoing_queues and discards expired messages.
+        """
+        while self.running:
+            # TODO: Parse all msgs for TTL
+            # while not g_new_msgs.is_empty():
+            #     msg = g_new_msgs.pop()
+
+            sleep(REFRESH_TIME)
