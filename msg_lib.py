@@ -221,25 +221,56 @@ class Message(object):
         return (msg_type, sender_addr, dest_addr, payload)
 
 
-class MsgWatcher(object):
-    """ The message watcher. Watches the given broker for messages in the
-        queue specified.
+class Client(object):
+    """ Exposes send_msg() and fetch_msg() interfaces to broker clients.
     """
-    def __init__(self, broker=BROKER, port=FETCH_PORT):
+    def __init__(self, 
+                 broker=BROKER,
+                 broker_send_port=RECV_PORT,
+                 broker_fetch_port=FETCH_PORT):
         """
         """
-        self.broker = BROKER
-        self.port = port
+        self.broker = broker
+        self.send_port = broker_send_port
+        self.fetch_port = broker_fetch_port
 
-    def get_next(self, queue_name):
-        """ Requests a fetch from the given queue from MsgWatcher's broker. The
-            message is removed from the broker on ack.
-            Raises Queue.Empty if specified queue is empty at broker.
+    def send_msg(self, message):
+        """ Sends the given message (of type Message) over TCP/IP to the 
+            broker. The msg will wait at the broker in the queue specified by
+            the message to be fetched by other broker clients.
         """
         # Establish socket connection
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.broker, self.port))
-        print('Connected to broker: ' + self.broker)
+        sock.connect((self.broker, self.send_port))
+        print('Connected to broker ' + self.broker + ':' + str(self.send_port))
+
+        # Send the msg repeatedly until the recipient gives 'OK' or 'FAIL'
+        while True:
+            sock.send(message.raw_msg.encode('hex'))  # Send msg
+            response = sock.recv(MAX_MSG_SIZE).decode()  # get response
+
+            if response == 'RETRY':
+                print('Msg failed to send... Retrying.')
+            else:
+                if response == 'OK':
+                    print('Msg sent succesfully')  # debug
+                elif response == 'FAIL':  
+                    print('Msg failed to send... No retry requested.')  # debug
+                else:
+                    print('Invalid response received... Aborting.')  # debug
+                break
+
+        sock.close()
+
+    def fetch_next_msg(self, queue_name):
+        """ Fetches a msg from the broker.queue_name. The message is removed 
+            from the broker on success.
+            Raises Queue.Empty if specified queue is empty.
+        """
+        # Establish socket connection
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self.broker, self.fetch_port))
+        print('Connected to broker ' + self.broker + ':' + str(self.fetch_port))
 
         # Send fetch request until receipt of 'EMPTY', 'FAIL', or a valid msg.
         recv_tries = 0
@@ -257,7 +288,8 @@ class MsgWatcher(object):
                     errstr = 'Transfer failed due to ' + str(e)
                     if recv_tries < MAX_TRIES:
                         print(errstr + '... Will retry.')
-                        sock.send('RETRY'.encode())
+                        e = 'RETRY'.encode()
+                        sock.send(e)
                         continue
                     else:
                         print(errstr + '... Retries exhausted.')
@@ -273,38 +305,4 @@ class MsgWatcher(object):
 
         sock.close()
 
-# TODO: Combine MsgSender and MsgFWathcer into a single class. i.e. Connection.fetch and Connection.send
-class MsgSender(object):
-    """ The message sender. Sends msgs to the broker.
-    """
-    def __init__(self, broker=BROKER, port=RECV_PORT):
-        self.broker = broker
-        self.port = port
 
-    def send_msg(self, msg):
-        """ Sends the given message over TCP/IP to the MsgSender's broker. At
-            the broker, the msg will be enqueued for the destination specified 
-            in the message.
-        """
-        # Establish socket connection
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.broker, self.port))
-        print('Connected to broker: ' + self.broker)
-
-        # Send the msg repeatedly until the recipient gives 'OK' or 'FAIL'
-        while True:
-            sock.send(msg.raw_msg.encode('hex'))  # Send msg
-            response = sock.recv(MAX_MSG_SIZE).decode()  # get response
-
-            if response == 'RETRY':
-                print('Msg failed to send... Retrying.')
-            else:
-                if response == 'OK':
-                    print('Msg sent succesfully')  # debug
-                elif response == 'FAIL':  
-                    print('Msg failed to send... No retry requested.')  # debug
-                else:
-                    print('Invalid response received... Aborting.')  # debug
-                break
-
-        sock.close()

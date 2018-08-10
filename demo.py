@@ -26,13 +26,13 @@ if __name__ == '__main__':
                               payload))
 
     # Send test msg
-    sender = msg_lib.MsgSender()
-    sender.send_msg(message)
+    client = msg_lib.Client()
+    client.send_msg(message)
     time.sleep(1)
+
     # Try to fetch msg from the queue we just sent for
-    watcher = msg_lib.MsgWatcher()
     # TODO: try/catch
-    msg = watcher.get_next(msg_dest)
+    msg = client.fetch_next_msg(msg_dest)
     print(msg.payload)
 
 
