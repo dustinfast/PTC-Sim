@@ -227,7 +227,7 @@ class Client(object):
     """
     def __init__(self, 
                  broker=BROKER,
-                 broker_send_port=RECV_PORT,
+                 broker_send_port=SEND_PORT,
                  broker_fetch_port=FETCH_PORT):
         """
         """

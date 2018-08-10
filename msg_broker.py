@@ -41,6 +41,7 @@ BROKER_RECV_PORT = config.get('messaging', 'send_port')
 BROKER_FETCH_PORT = config.get('messaging', 'fetch_port')
 MAX_MSG_SIZE = config.get('messaging', 'max_msg_size')
 
+
 class Broker(object):  # TODO: test mp?
     """ The message broker.
     """
