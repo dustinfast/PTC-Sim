@@ -305,5 +305,3 @@ class Client(object):
             break
 
         sock.close()
-
-
