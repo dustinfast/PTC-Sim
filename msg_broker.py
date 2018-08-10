@@ -25,18 +25,21 @@
     Author:
         Dustin Fast, 2018
 """
-from time import sleep
 import socket
-from msg_lib import Message, MsgQueue
+import ConfigParser
+from time import sleep
 from threading import Thread
+from msg_lib import Message, MsgQueue
 
-# TODO: Conf variables
-MAX_TRIES = 3
-MAX_RECV_HZ = 2  # TODO: Recv hz
-BROKER_RECV_PORT = 18182
-BROKER_FETCH_PORT = 18183
-BROKER = 'localhost'
-MAX_MSG_SIZE = 1024
+# Import config data
+config = ConfigParser.RawConfigParser()
+config.read('conf.dat')
+
+BROKER = config.get('messaging', 'broker')
+MAX_TRIES = config.get('misc', 'max_retries')
+BROKER_RECV_PORT = config.get('messaging', 'send_port')
+BROKER_FETCH_PORT = config.get('messaging', 'fetch_port')
+MAX_MSG_SIZE = config.get('messaging', 'max_msg_size')
 
 # Globals
 g_new_msgs = MsgQueue()  # Msgs awaiting placment in g_outgoing_queues

@@ -1,16 +1,29 @@
-[global]
-broker = localhost                  ; Message broker IP address/hostname
+; conf.dat - The loco_sim global configuration file.
+; 
+; Author: Dustin Fast, 2018
+
+[track]
 track_rails = track_rail.json       ; Track model file
 track_bases = track_bases.json      ; Base stations file
 
-[broker]
+[messaging]
+broker = localhost                  ; Message broker IP address/hostname
+send_port = 18181                   ; Broker-side "receive" listener port
+fetch_port = 18182                  ; Broker-side "fetch" listener port
+max_msg_size = 1024                 ; Max allowed EMP message max_msg_size
 
 [bos]
+emp_address = sim.b                 ; Back office server EMP address
 
 [loco]
-start_direction = increasing        ; Intial loco dir of travel
+start_direction = increasing        ; Either 'increasing' or 'decreasing'
 start_heading = 90.0                ; Initial loco heading
 start_milepost = 3.0                ; Initial loco milepost
 start_speed = 10.0                  ; Initial speed of loco
-sim_refresh = 10                    ; Sim thread refresh interval in seconds
 
+[misc]
+refresh_sleep_time = 2              ; Thread and loop sleep on each iteration
+max_retries = 2                     ; Max number of transfer tries.
+                                    ; Ex: When a client attempt s to send a msg 
+                                    ; to the broker but it fails, it will be
+                                    ; retried up to max_retries times

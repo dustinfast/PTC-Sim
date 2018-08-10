@@ -12,22 +12,23 @@
 import struct
 import socket
 import binascii
-from Queue import Empty, Full  # Queue.Empty exception type
+import ConfigParser
+from Queue import Empty, Full  # Queue.Empty and Queue.Full exception types
 
-# TODO: Conf variables
-MAX_TRIES = 2
-MAX_RECV_HZ = 2
-SEND_PORT = 18181
-RECV_PORT = 18182
-FETCH_PORT = 18183
-BROKER = 'localhost'
-MAX_MSG_SIZE = 1024
+# Import config data
+config = ConfigParser.RawConfigParser()
+config.read('conf.dat')
+
+BROKER = config.get('messaging', 'broker')
+MAX_TRIES = config.get('misc', 'max_retries')
+SEND_PORT = config.get('messaging', 'send_port')
+FETCH_PORT = config.get('messaging', 'fetch_port')
+MAX_MSG_SIZE = config.get('messaging', 'max_msg_size')
 
 
 class MsgQueue:
     """ A message queue with push pop, peek, remove, is_empty, and item_count.
     """
-
     def __init__(self, maxsize=None):
         self._items = []            # Container
         self.maxsize = maxsize      # Max size of self._items
@@ -277,7 +278,7 @@ class MsgWatcher(object):
 class MsgSender(object):
     """ The message sender. Sends msgs to the broker.
     """
-    def __init__(self, broker=BROKER, port=RECV_PORT):
+    def __init__(self, broker=BROKER, port=SEND_PORT):
         self.broker = broker
         self.port = port
 
