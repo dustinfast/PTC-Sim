@@ -26,15 +26,14 @@ if __name__ == '__main__':
                               payload))
 
     # Send test msg
-    sender = msg_lib.MsgSender()
-    sender.send_msg(message)
-    time.sleep(2)
+    client = msg_lib.Client()
+    client.send_msg(message)
+    time.sleep(1)
+
     # Try to fetch msg from the queue we just sent for
-    watcher = msg_lib.MsgWatcher()
-    try:
-        watcher.get_next(msg_dest)
-    except:
-        print('Msg queue empty... Too bad.')
+    # TODO: try/catch
+    msg = client.fetch_next_msg(msg_dest)
+    print(msg.payload)
 
 
 # class proc(multiprocessing.Process):
