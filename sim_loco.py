@@ -27,8 +27,7 @@ config.read('conf.dat')
 # Import conf data
 REFRESH_TIME = float(config.get('misc', 'refresh_sleep_time'))
 LOCO_START_DIR = config.get('loco', 'start_direction')
-LOCO_START_HEADING = config.get('loco', 'start_heading')
-LOCO_START_MP = config.get('loco', 'start_milepost')  
+LOCO_START_MP = float(config.get('loco', 'start_milepost'))
 LOCO_START_SPEED = float(config.get('loco', 'start_speed'))
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
@@ -58,13 +57,17 @@ class LocoSim(Loco):
         # Locomotive
         Loco.__init__(self, id_number)
         self.track = Track()
-        self.curr_milepost = self.track._get_mp_obj(start_mp)
         self.mph = start_speed
         self.direction = start_dir
 
+        # Current milepost
+        self.milepost = self.track.get_milepost_at(start_mp)
+        if not self.milepost:
+            raise ValueError('No milepost exists at the given start_mp')
+
         # Simulation
         self.running = False
-        self.dist_makeup = 0
+        self.makeup_dist = 0
         self.loco_emp = emp_prefix + id_number 
         self.broker_emp = broker_emp
         self.msg_client = Client(broker, broker_send_port, broker_fetch_port)
@@ -119,7 +122,7 @@ class LocoSim(Loco):
             msg_source = self.loco_emp
             msg_dest = self.broker_emp
 
-            payload = {'sent': time.now(),
+            payload = {'sent': time(),
                        'loco': self.ID,
                        'speed': self.mph,
                        'heading': self.heading,
@@ -139,14 +142,14 @@ class LocoSim(Loco):
             try:
                 cmd_msg = self.msg_client.fetch_next_msg(self.loco_emp)
             except:
-                # Either msg transfer failed or there was no message to fetch.
-                cmd_msg = None  # implicit, shown here for clarity
+                # Queue empty at broker. I.e., no msg to fetch.
+                cmd_msg = None  # explicit, for clarity
             
-            # Process msgs, ensuring they're for this loco
-            if cmd_msg and cmd_msg.get('loco') == self.ID:
+            # Process msg, ensuring its for this loco
+            if cmd_msg and cmd_msg.payload.get('loco') == self.ID:
                 try:
                     content = cmd_msg.payload
-                    self.curr_milepost = self.track._get_mp_obj(content['mp'])
+                    self.milepost = self.track.get_milepost_at(content['mp'])
                     self.speed = content['speed']
                     self.direction = content['direction']
                 except:
@@ -159,31 +162,53 @@ class LocoSim(Loco):
             seconds.
         """
         while self.running:
+            # TODO: If helicoptering
             # Move loco, if at speed
             if self.mph > 0:
-                # Determine dist traveled since last iter
-                thours = REFRESH_TIME / 3600.0  # Seconds to hours
-                dist = self.mph * thours * 1.0  # dist = speed * time
-                dist += self.dist_makeup  # Add any dist to make up
+                # Determine dist traveled since last iteration, including
+                # makeup distance, if any.
+                hours = REFRESH_TIME / 3600.0  # Seconds to hours for mph
+                dist = self.mph * hours * 1.0  # distance = speed * time
+                dist += self.makeup_dist 
 
-                # Set sign of dist, depending on dir of travel
-                if self.dot == DECREASING:
-                    dist = dist * -1
+                # Set sign of dist based on dir of travel
+                if self.direction == 'DECREASGIN':
+                    dist *= -1
 
-                # get next mp and any distance to make up in the next iteration.
+                # Get next milepost and any makeup distance
                 new_mp, dist = self.track._get_next_mp(self.milepost, dist)
-                if new_mp:
-                    self._set_heading([self.milepost.lat, self.milepost.long],
-                                      [new_mp.lat, new_mp.long])
-                    self.milepost = new_mp
-                    self.dist_makeup = dist
+                if not new_mp:
+                    print('End of track reached... Changing direction of travel.')
+                    self.direction *= -1
                 else:
-                    raise Exception('No new MP returned from get_next_mp()')
+                    self._set_heading(self.milepost, new_mp)
+                    self.milepost = new_mp
+                    self.makeup_dist = dist
 
-            # Update radio base station connections
-            self._update_base_conns()
+                    # Determine base stations in range of current position
+                    self.base_conns = []
+                    for base in self.track.bases.values():
+                        if base.covers_milepost(self.milepost, int(base.ID)):
+                            self.base_conns.append(base)
+                    print('Bases in range:' + str([b.ID for b in self.base_conns]))
 
             sleep(REFRESH_TIME)
+
+    def _set_heading(self, prev_mp, curr_mp):
+        """ Set loco heading based on current and prev milepost lat/long
+        """
+        lat1 = radians(prev_mp.lat)
+        lat2 = radians(curr_mp.lat)
+
+        long_diff = radians(prev_mp.long - curr_mp.long)
+
+        x = sin(long_diff) * cos(lat2)
+        y = cos(lat1) * sin(lat2) - (sin(lat1) * cos(lat2) * cos(long_diff))   
+        deg = degrees(atan2(x, y))
+        compass_bearing = str((deg + 360) % 360)
+        print('heading: ' + compass_bearing)
+
+        self.heading = compass_bearing[:compass_bearing.find(".") + 2]
 
 
 if __name__ == '__main__':
@@ -203,7 +228,7 @@ if __name__ == '__main__':
     else:
         # Init the Read-Eval-Print-Loop and start it
         welcome = ('-- Loco Sim Locotive Simulator --\nTry "help" for assistance.')
-        repl = REPL(loco, prompt='Loco>> ')
+        repl = REPL(loco, prompt='Loco >> ')
         exit_cond = 'running == False'
         repl.set_exitcond(exit_cond, 'Cannot exit while running. Try "stop" first')
         repl.add_cmd('start', 'start()')  # TODO: Allow cmd params

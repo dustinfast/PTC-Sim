@@ -18,8 +18,7 @@ max_msg_size = 1024                 ; Max allowed EMP message max_msg_size
 
 [loco]
 start_direction = increasing        ; Either 'increasing' or 'decreasing'
-start_heading = 90.0                ; Initial loco heading
-start_milepost = 3.0                ; Initial loco milepost
+start_milepost = 2.0                ; Initial loco milepost
 start_speed = 10.0                  ; Initial speed of loco
 
 [misc]

@@ -19,11 +19,11 @@ The BOS monitors the messaging subsystem and displays loco status graphically vi
 
 **conf.dat** - Configuration information. For example, the message broker hostname/IP address.  
 **lib.py** - Shared classes and helper functions.  
-**sim_bos.py** - The Back Office Server, or "BOS" (pronounced like "boss").  
-**sim_broker.py** - The QPID message broker.  
-**sim_loco.py** - The locomotive simulator.
+**bos.py** - The Back Office Server, or "BOS" (pronounced like "boss").  
+**broker.py** - The QPID message broker.  
+**loco.py** - The locomotive simulator.
 **track_bases.json** - JSON representation of the base stations providing radio communication to on-track locos. Each base station consists of a unique ID and the on-track mileposts it provides coverage for. Gaps in coverage area allowed, as are areas of overlapping coverage.  
-**track_rail.json** - JSON representation of a railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees) of each.
+**track_rail.json** - JSON representation of a railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees) of each. In this particular instance, the track is a model of the Alaska Railroad's main branch.
 
 ## Message Specification
 
@@ -95,8 +95,7 @@ sim.b
 For a demonstration of all packages, enter `./demo.py` at the a terminal, then navigate to http://localhost/loco_sim
 
 **Command Line**
-The loco sim, broker, and BOS may all be run independently from the command line. Each contains a command line interface. Run each with `loco.py`, `/broker.py` and `bos.py`, then follow the prompts.
-
+The loco sim, broker, and BOS may all be run independently from the command line. Each contains a command line interface. Run each with `loco.py`, `/broker.py` and `bos.py` (type `help` at the prompt for assistance).
 
 ## Unsupported
 

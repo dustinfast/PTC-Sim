@@ -40,7 +40,6 @@ class Track(object):
         self.mp_linear_rev = []
 
         # Populate self.bases from TRACK_BASES json
-        print('Populating Base Stations...')
         try:
             with open(bases_file) as base_data:
                 bases = loads(base_data.read())
@@ -63,7 +62,6 @@ class Track(object):
             self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
 
         # Populate self.mp_objects from TRACK_RAILS json
-        print('Populating Mileposts...')
         try:
             with open(TRACK_RAILS) as rail_data:
                 mileposts = loads(rail_data.read())
@@ -102,6 +100,7 @@ class Track(object):
                 next_mp   = nearest mp for curr_mp + distance without going over
                 dist_diff = difference between next_mp and actual location
             Note: If next_mp = curr_mp, diff = distance.
+                  If no next mp (end of track), returns None.
         """
         # If no distance, next_mp is curr_mp
         if distance == 0:
@@ -113,13 +112,13 @@ class Track(object):
         dist_diff = 0
         next_mp = None
 
-        # Set mp list to iterate, depending on direction
+        # Set the milepost object list to iterate, depending on direction
         if distance > 0:
             mps = self.mp_linear
         elif distance < 0:
             mps = self.mp_linear_rev
 
-        # Find next mp marker, noting diff between next mp and actual location
+        # Find next mp marker, noting unconsumed distance
         for i, marker in enumerate(mps):
             if marker == target_mp:
                 next_mp = marker
@@ -133,13 +132,12 @@ class Track(object):
                 dist_diff = abs(target_mp - next_mp)
                 break
 
-        # If we didn't find a marker, next_mp = curr_mp because end of track.
+        # If we didn't find a next mp (i.e. end of track)
         if not next_mp:
-            print('Warning: Next mp is beyond end of track ')  # TODO Change direction
-            next_mp = mp
+            return
 
         # Get mp object associated with next_mp
-        next_mp_obj = self._get_mp_obj(next_mp)
+        next_mp_obj = self.get_milepost_at(next_mp)
         if not next_mp_obj:
             # Print debug info
             print(str(mps))
@@ -153,11 +151,10 @@ class Track(object):
 
         return next_mp_obj, dist_diff
 
-    def _get_mp_obj(self, mp):
-        """ Returns the MP object for the given mp (a float), if exists. Else,
-            returns None.
+    def get_milepost_at(self, mile):
+        """ Returns the Milepost at distance (a float) iff one exists.
         """
-        return self.mp_objects.get(mp, None)
+        return self.mp_objects.get(mile, None)
 
 
 class Loco(object):
@@ -170,7 +167,7 @@ class Loco(object):
         self.speed = None
         self.heading = None
         self.direction = None
-        self.curr_milepost = None
+        self.milepost = None
         self.current_base = None
         self.bases_inrange = []
 
@@ -179,7 +176,7 @@ class Loco(object):
         """
         ret_str = 'Loco ' + self.ID + ' at mp '
         ret_str += str(self.milepost) + ' traveling in an ' + self.direction
-        ret_str += 'going ' + str(self.mph) + 'mph'
+        ret_str += 'going ' + str(self.speed) + 'mph'
         return ret_str
 
 
@@ -214,7 +211,7 @@ class Base:
         """ Returns a string representation of the base station """
         return self.ID
 
-    def covers_mp(self, milepost):
+    def covers_milepost(self, milepost):
         """ Given a milepost, returns True if this base station provides 
             coverage at that milepost, else returns False.
         """
