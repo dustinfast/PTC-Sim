@@ -1,26 +1,25 @@
 """ msg_broker.py - A message broker for Edge Message Protocol (EMP) messages.
     Msgs received are enqued for receipt and dequed/served on request.
 
-    The broker consists of 3 main components:
-        MsgReceiver     - Watchers for incoming messages over TCP/IP. Runs as
-                            a thread.
-        RequestWatcher  - Watches for incoming TCP/IP msg fetch requests (ex: A
+    The broker consists of 3 seperate threads:
+        Msg Receiver    - Watchers for incoming messages over TCP/IP.
+        Fetch Watcher   - Watches for incoming TCP/IP msg fetch requests (ex: A
                             loco checking its msgqueue), serving msgs as 
                             appropriate. Runs as a Thread.
-        Broker          - The public interface. Manages the MsgReceiver, 
-                            RequestWatcher, and outgoing message queues.
+        Queue Parser    - Parses each msg queue and discards expires msgs.
 
     Message Specification:
         EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
         containing a variable-length header section.
         See README.md for implementation specific information.
 
-    Note: Data is not persistent - when broker execution is terminated, all
-    unfetched msgs are lost.
+    Notes: 
+    + Data is not persistent - when broker execution is terminated, all
+      unfetched msgs are lost.
 
-    Note: For this simulation/demo implementation, we can assume a minimal load,
-    therefore, no session management is performed - a connection to the broker
-    must be created each time a msg is sent to, or fetched from, the broker.
+    + For this demo/simulated implementation, we can assume minimal clients.
+      Therefore no session management is performed - TCP/IP connections are
+      created and torn down each time a msg is sent or fetched.
 
     Author:
         Dustin Fast, 2018
@@ -30,6 +29,7 @@ from ConfigParser import RawConfigParser
 from time import sleep
 from threading import Thread
 from msg_lib import Message, MsgQueue
+from lib import REPL
 
 # Init conf
 config = RawConfigParser()
@@ -196,88 +196,6 @@ class Broker(object):  # TODO: test mp?
             #     msg = g_new_msgs.pop()
 
             sleep(REFRESH_TIME)
-
-class REPL(object):
-    """ A dynamic Read-Eval-Print-Loop. I.e. A command line interface.
-        Contains two predefined commands: help, and exit. Additional cmds may
-        be added with add_cmd(). These additional cmds all operate on the object
-        given as the context. 
-        Note: Assumes all expressions provided are well-formed. 
-    """
-    def __init__(self, context, prompt='>>', welcome_msg=None):
-        """ Instantiates an REPL object.
-            context: The object all commands operate on.
-            prompt: The REPL prompt.
-            welcome: String to display on REPL start.
-        """
-        self.context = context
-        self.prompt = prompt
-        self.welcome_msg = welcome_msg
-        self.exit_conditions = {}
-        self.commands = {'help': 'self._help()',
-                         'exit': 'self._exit()'
-                         }
-
-    def start(self):
-        """ Starts the REPL.
-        """
-        if self.welcome_msg:
-            print(self.welcome_msg)
-        while True:
-            # TODO: readline
-            uinput = raw_input(self.prompt)
-            cmd = self.commands.get(uinput)
-
-            # Process user input
-            if not uinput:
-                continue  # if null input
-            if not cmd:
-                print('Invalid command. Try "help".')
-            else:
-                print('Trying: ' + cmd)
-                eval(cmd)
-
-    def add_cmd(self, cmd_txt, expression):
-        """ Makes a command available via the REPL
-                cmd_txt: Txt cmd entered by the user
-                expression: A well-formed python expression string.
-                            ex: 'print('Hello World)'
-        """
-        if cmd_txt == 'help' or cmd_txt == 'exit':
-            raise ValueError('An internal cmd override was attempted.')
-        self.commands[cmd_txt] = 'self.context.' + expression
-
-    def set_exitcond(self, expression, error_string):
-        """ Specifies what must be true, in the given context, before exit.
-                expression: A well formed python expression.
-                            ex: 'stopped == True'
-                error_string: The error string to display on exit when
-                              expression resolves to False
-        """
-        self.exit_conditions['self.context.' + expression] = error_string
-
-    def _help(self):
-        """ Outputs all available commands to the console, excluding 'help'.
-        """
-        cmds = [c for c in sorted(self.commands.keys()) if c != 'help']
-        if cmds:
-            print('Available commands:')
-            print('\n'.join(cmds))
-        else:
-            print('No commands defined.')
-
-    def _exit(self):
-        """ Calls exit(). If set_exit_cond() was used, exits conditionally.
-        """
-        ok_to_exit = True
-        for cond, errstr in self.exit_conditions.items():
-            if not eval(cond):
-                print(errstr)
-                ok_to_exit = False
-                break
-        
-        if ok_to_exit:
-            exit()
 
 
 if __name__ == '__main__':

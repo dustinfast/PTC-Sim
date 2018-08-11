@@ -380,82 +380,96 @@ class _LocoSim(object):
 # REPL #
 ########
 
-def start(boss_mode=None):
-    """ Starts the tool, including the REPL.
-        If not in webmode, input/output is via terminal. Else, all input is 
-        received via HTTP and all output (including print statements) is 
-        redirected to HTTP.
-        Once this function is called, the only graceful exit is an input of 'q'.
-    """
-    print('Initializing...')
+# def start(boss_mode=None):
+#     """ Starts the tool, including the REPL.
+#         If not in webmode, input/output is via terminal. Else, all input is 
+#         received via HTTP and all output (including print statements) is 
+#         redirected to HTTP.
+#         Once this function is called, the only graceful exit is an input of 'q'.
+#     """
+#     print('Initializing...')
     
-    # Instantiate objects
-    global g_track
-    g_track = _Track()
-    loco = _LocoSim()
+#     # Instantiate objects
+#     global g_track
+#     g_track = _Track()
+#     loco = _LocoSim()
 
-    # Ini prompt, show welcome, and build help
-    print('\n--- Loco Sim ---')
-    print("Type q to exit. \n")
+#     # Ini prompt, show welcome, and build help
+#     print('\n--- Loco Sim ---')
+#     print("Type q to exit. \n")
     
-    # REPL
-    while True:
-        # Block until a cmd is received. If boss_mode, cmds are recv'd from the
-        # BOS via messages over TCP/IP, else they're received via command line.
-        if boss_mode:
-            pass
-            #TODO: Check for new msgs - QPID?
-            # 
-            # if timeout:
-            #   continue 
-        else:
-            uinput = raw_input('LT >> ').strip()
+#     # REPL
+#     while True:
+#         # Block until a cmd is received. If boss_mode, cmds are recv'd from the
+#         # BOS via messages over TCP/IP, else they're received via command line.
+#         if boss_mode:
+#             pass
+#             #TODO: Check for new msgs - QPID?
+#             # 
+#             # if timeout:
+#             #   continue 
+#         else:
+#             uinput = raw_input('LT >> ').strip()
 
-        # On blank input, continue.
-        if not uinput:
-            continue
-        # On exit, break.
-        elif uinput == 'q':
-            break
-        # On malformed input (i.e. no whitespace seperator), continue
-        elif ' ' not in uinput:
-            print_err('Malformed command')
-            continue
+#         # On blank input, continue.
+#         if not uinput:
+#             continue
+#         # On exit, break.
+#         elif uinput == 'q':
+#             break
+#         # On malformed input (i.e. no whitespace seperator), continue
+#         elif ' ' not in uinput:
+#             print_err('Malformed command')
+#             continue
         
-        # TODO: all cmds starts with 'loco'
-        # Explode user input on whitespace to build device, cmd, and args
-        uinput = uinput.split(' ')
-        device = uinput[0]
-        cmd = uinput[1]
-        args = uinput[2:]
+#         # TODO: all cmds starts with 'loco'
+#         # Explode user input on whitespace to build device, cmd, and args
+#         uinput = uinput.split(' ')
+#         device = uinput[0]
+#         cmd = uinput[1]
+#         args = uinput[2:]
 
-        # Build eval string from cmd
-        arg_string = str(args).replace('[', '').replace(']', '')
-        eval_string = device.lower() + '.' + cmd + '(' + arg_string + ')'
+#         # Build eval string from cmd
+#         arg_string = str(args).replace('[', '').replace(']', '')
+#         eval_string = device.lower() + '.' + cmd + '(' + arg_string + ')'
 
-        # Attempt to evaluate command
-        # print('--DEBUG INFO: Evaluating "' + eval_string + '"...')
-        # try:
-        #     if boss_mode:
-        #         print(' '.join(uinput))
-        eval(eval_string)
-        # except Exception as e:
-        #     print_err('Malformed command', CMDFORMAT)
-        #     # print('--DEBUG INFO: ' + str(e))  # debug
+#         # Attempt to evaluate command
+#         # print('--DEBUG INFO: Evaluating "' + eval_string + '"...')
+#         # try:
+#         #     if boss_mode:
+#         #         print(' '.join(uinput))
+#         eval(eval_string)
+#         # except Exception as e:
+#         #     print_err('Malformed command', CMDFORMAT)
+#         #     # print('--DEBUG INFO: ' + str(e))  # debug
 
-    # On exit, do cleanup
-    if loco.sim_on:  
-        print('Stopping threads...')
-        loco.sim('stop')
+#     # On exit, do cleanup
+#     if loco.sim_on:  
+#         print('Stopping threads...')
+#         loco.sim('stop')
 
 
 if __name__ == '__main__':
     # Check cmd line args
     opts = OptionParser()
-    opts.add_option('-b', action='store_true', dest='bos',
+    opts.add_option('-b', action='store_true', dest='bos-mode',
                     help='Accept commands via msging system (vs. command line)')
     (options, args) = opts.parse_args()
 
-    # Start the interface
-    start(options.bos)
-    
+
+    # Init the loco simulator
+    loco = _LocoSim()
+
+    # If BOS mode, loco receives commands from the BOS,
+    # else, loco receives commands from the cmd line.
+    if options.bos-mode:
+        pass # TODO: BOS mode.
+    else:
+    # Init the Read-Eval-Print-Loop and start it
+    welcome = ('-- Loco Sim Locotive Simulator --\nTry "help" for assistance.')
+    repl = REPL(loco, prompt='Loco>> ')
+    exit_cond = 'running == False'
+    repl.set_exitcond(exit_cond, 'Cannot exit while running. Try "stop" first')
+    repl.add_cmd('start', 'start()') # TODO: Allow cmd params
+    repl.add_cmd('stop', 'stop()')
+    repl.start()

@@ -3,6 +3,7 @@
     Author: Dustin Fast, 2018
 """
 
+from lib import REPL
 from ConfigParser import RawConfigParser
 
 # Init conf
@@ -20,7 +21,25 @@ REFRESH_TIME = float(config.get('misc', 'refresh_sleep_time'))
 
 class BOS(object):
     def __init__(self):
+        self.running = False
         pass
         
     def start(self):
         pass
+
+    def stop(self):
+        pass
+
+
+if __name__ == '__main__':
+    # Init broker
+    bos = BOS()
+
+    # Init the Read-Eval-Print-Loop and start it
+    welcome = ('-- Loco Sim Back Office Server  --\nTry "help" for assistance.')
+    repl = REPL(bos, prompt='BOS>> ')
+    exit_cond = 'running == False'
+    repl.set_exitcond(exit_cond, 'Cannot exit while running. Try "stop" first')
+    repl.add_cmd('start', 'start()')
+    repl.add_cmd('stop', 'stop()')
+    repl.start()
