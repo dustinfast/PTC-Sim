@@ -60,7 +60,7 @@ class Broker(object):  # TODO: test mp?
         self.outgoing_queues = {}
 
         # On/Off flag for stopping threads. Set by self.start and self.stop.
-        self.running = True
+        self.running = False
 
         # The msg receiver thread
         self.msg_recvr = Thread(target=self._msgreceiver)
@@ -76,20 +76,19 @@ class Broker(object):  # TODO: test mp?
             queue parser threads. 
         """
         self.running = True
-        print('Broker: Starting...')
         self.msg_recvr.start()
         self.fetch_watcher.start()
         self.queue_parser.start()
-        print('Broker: Started.')
+        print('Broker: Listening for requests...')
 
     def stop(self):
         """ Stops the msg brokeri.e., the msg receiver, fetch watcher and
             queue parser threads. 
         """
-        print('Broker: Stopping...')
-        self.running = False
-        self.msg_recvr.join(timeout=REFRESH_TIME)
-        self.fetch_watcher.join(timeout=REFRESH_TIME)
+        if self.running:
+            self.running = False 
+            self.msg_recvr.join(timeout=REFRESH_TIME)
+            self.fetch_watcher.join(timeout=REFRESH_TIME)
         print('Broker: Stopped.')
 
     def _msgreceiver(self):
@@ -163,7 +162,7 @@ class Broker(object):  # TODO: test mp?
             # or FAIL.
             try:
                 queue_name = conn.recv(MAX_MSG_SIZE).decode()
-                print('*' + queue_name + ' fetch requested.')
+                print('Broker: ' + queue_name + ' fetch requested.')
 
                 # Ensure queue exists and is not empty
                 # TODO: Ensure success before removing msg from queue
@@ -197,3 +196,99 @@ class Broker(object):  # TODO: test mp?
             #     msg = g_new_msgs.pop()
 
             sleep(REFRESH_TIME)
+
+class REPL(object):
+    """ A dynamic Read-Eval-Print-Loop. I.e. A command line interface.
+        Contains two predefined commands: help, and exit. Additional cmds may
+        be added with add_cmd(). These additional cmds all operate on the object
+        given as the context. 
+        Note: Assumes all expressions provided are well-formed. 
+    """
+    def __init__(self, context, prompt='>>', welcome_msg=None):
+        """ Instantiates an REPL object.
+            context: The object all commands operate on.
+            prompt: The REPL prompt.
+            welcome: String to display on REPL start.
+        """
+        self.context = context
+        self.prompt = prompt
+        self.welcome_msg = welcome_msg
+        self.exit_conditions = {}
+        self.commands = {'help': 'self._help()',
+                         'exit': 'self._exit()'
+                         }
+
+    def start(self):
+        """ Starts the REPL.
+        """
+        if self.welcome_msg:
+            print(self.welcome_msg)
+        while True:
+            # TODO: readline
+            uinput = raw_input(self.prompt)
+            cmd = self.commands.get(uinput)
+
+            # Process user input
+            if not uinput:
+                continue  # if null input
+            if not cmd:
+                print('Invalid command. Try "help".')
+            else:
+                print('Trying: ' + cmd)
+                eval(cmd)
+
+    def add_cmd(self, cmd_txt, expression):
+        """ Makes a command available via the REPL
+                cmd_txt: Txt cmd entered by the user
+                expression: A well-formed python expression string.
+                            ex: 'print('Hello World)'
+        """
+        if cmd_txt == 'help' or cmd_txt == 'exit':
+            raise ValueError('An internal cmd override was attempted.')
+        self.commands[cmd_txt] = 'self.context.' + expression
+
+    def set_exitcond(self, expression, error_string):
+        """ Specifies what must be true, in the given context, before exit.
+                expression: A well formed python expression.
+                            ex: 'stopped == True'
+                error_string: The error string to display on exit when
+                              expression resolves to False
+        """
+        self.exit_conditions['self.context.' + expression] = error_string
+
+    def _help(self):
+        """ Outputs all available commands to the console, excluding 'help'.
+        """
+        cmds = [c for c in sorted(self.commands.keys()) if c != 'help']
+        if cmds:
+            print('Available commands:')
+            print('\n'.join(cmds))
+        else:
+            print('No commands defined.')
+
+    def _exit(self):
+        """ Calls exit(). If set_exit_cond() was used, exits conditionally.
+        """
+        ok_to_exit = True
+        for cond, errstr in self.exit_conditions.items():
+            if not eval(cond):
+                print(errstr)
+                ok_to_exit = False
+                break
+        
+        if ok_to_exit:
+            exit()
+
+
+if __name__ == '__main__':
+    # Init broker
+    broker = Broker()
+    
+    # Init the Read-Eval-Print-Loop and start it
+    welcome = ('-- Loco Sim Message Broker --\nTry "help" for assistance.')
+    repl = REPL(broker, prompt='Broker>> ')
+    exit_cond = 'running == False'
+    repl.set_exitcond(exit_cond, 'Cannot exit while running. Try "stop" first')
+    repl.add_cmd('start', 'start()')
+    repl.add_cmd('stop', 'stop()')
+    repl.start()

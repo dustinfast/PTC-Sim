@@ -7,7 +7,7 @@
 
 import time
 import msg_lib
-from msg_broker import Broker
+import msg_broker
 # import sim_bos
 # import sim_loco
 
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     """
     """
     # Start msg broker
-    broker = Broker()
+    broker = msg_broker.Broker()
     broker.start()
     print('Msg Broker started')
 
