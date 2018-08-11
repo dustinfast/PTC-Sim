@@ -89,5 +89,6 @@ REPL's for each module
 Logger output
 check all docstrings for PEP8
 Base station module
-
-
+Privatize necessary members
+Symbolic constants
+Combine msg_lib and lib and put all conf data in lib

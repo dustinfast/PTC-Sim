@@ -15,11 +15,11 @@
 
     Notes: 
     + Data is not persistent - when broker execution is terminated, all
-      unfetched msgs are lost.
+    unfetched msgs are lost.
 
     + For this demo/simulated implementation, we can assume minimal clients.
-      Therefore no session management is performed - TCP/IP connections are
-      created and torn down each time a msg is sent or fetched.
+    Therefore no session management is performed - TCP/IP connections are
+    created and torn down each time a msg is sent or fetched.
 
     Author:
         Dustin Fast, 2018
@@ -43,12 +43,6 @@ BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 REFRESH_TIME = float(config.get('misc', 'refresh_sleep_time'))
 
-# TODO: Symbolic constants
-OK = 'OK'
-READY = 'READY'
-FAIL = 'FAIL'
-EMPTY = 'EMPTY'
-
 class Broker(object):  # TODO: test mp?
     """ The message broker.
     """
@@ -56,7 +50,6 @@ class Broker(object):  # TODO: test mp?
         """ Instantiates a message broker object.
         """
         # Dict of outgoing msg queues, by address: { dest_addr: MsgQueue }
-        # Example: { 'sim.l.7357': MsgQueue }
         self.outgoing_queues = {}
 
         # On/Off flag for stopping threads. Set by self.start and self.stop.
@@ -72,13 +65,21 @@ class Broker(object):  # TODO: test mp?
         self.queue_parser = Thread(target=self._queueparser)
 
     def start(self):
-        """ Start the msg broker, i.e., the msg receiver, fetch watcher and
+        """ Start the message broker, i.e., the msg receiver, fetch watcher and
             queue parser threads. 
         """
         self.running = True
+
+        # Redefine threads, to allow starting after stopping
+        self.msg_recvr = Thread(target=self._msgreceiver)
+        self.fetch_watcher = Thread(target=self._fetchwatcher)
+        self.queue_parser = Thread(target=self._queueparser)
+
+        # Start threads
         self.msg_recvr.start()
         self.fetch_watcher.start()
         self.queue_parser.start()
+
         print('Broker: Listening for requests...')
 
     def stop(self):
