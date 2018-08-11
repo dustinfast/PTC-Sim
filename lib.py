@@ -1,12 +1,187 @@
-""" sim_lib.py - A collection of classes and helpers for the simulator
+""" sim_lib.py - A collection of shared classes and helpers for the loco_sim
+    package.
 
-    Author:
-        Dustin Fast, 2018
+    Author: Dustin Fast, 2018
 """
 
-###########
-# Classes #
-###########
+from json import loads
+from ConfigParser import RawConfigParser
+
+# Init conf
+config = RawConfigParser()
+config.read('conf.dat')
+
+# Import conf data
+TRACK_RAILS = config.get('track', 'track_rails')
+TRACK_BASES = config.get('track', 'track_bases')
+
+#############################################################
+# Railroad/Locomotive Component Classes                     #
+#############################################################
+
+class Track(object):
+    """ A representation of the track, including mileposts, and radio base 
+        stations with their associated coverage areas.
+    
+        self.bases = A dict of radio base stations, used by locos  to send msgs. 
+            Format: { BASEID: BASE_OBJECT }
+        self.mp_objects = Used to associate BRANCH/MP with MPOBJ.
+            Format: { MP: MPOBJ }
+        self.mp_linear = A representation of the track in order of mps.
+            Format: [ MP1, ... , MPn ], where MP1 < MPn
+        self.mp_linear_rev = A represention the track in reverse order of mps.
+            Format: [ MPn, ... , MP1], where MP1 < MPn
+        Note: BASEID = string, MP/lat/long = floats, MPOBJs = Milepost objects.
+    """
+    def __init__(self, track_file=TRACK_RAILS, bases_file=TRACK_BASES):
+        self.bases = {}
+        self.mp_objects = {}
+        self.mp_linear = []
+        self.mp_linear_rev = []
+
+        # Populate self.bases from TRACK_BASES json
+        print('Populating Base Stations...')
+        try:
+            with open(bases_file) as base_data:
+                bases = loads(base_data.read())
+        except Exception as e:
+            raise Exception('Error reading ' + bases_file + ': ' + str(e))
+
+        for b in bases:
+            try:
+                baseID = b['id']
+                coverage_start = float(b['coverage'][0])
+                coverage_end = float(b['coverage'][1])
+            except ValueError:
+                print('WARNING: Discarding base "' +
+                      baseID + '": Conversion Error')
+                continue
+            except KeyError:
+                raise Exception(
+                    'Improperly formatted JSON encountered in get_mileposts()')
+
+            self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
+
+        # Populate self.mp_objects from TRACK_RAILS json
+        print('Populating Mileposts...')
+        try:
+            with open(TRACK_RAILS) as rail_data:
+                mileposts = loads(rail_data.read())
+        except Exception as e:
+            raise Exception('Error reading ' + TRACK_RAILS + ': ' + str(e))
+
+        # Build self.mp_objects dict
+        for m in mileposts:
+            try:
+                mp = float(m['milemarker'])
+                lat = float(m['lat'])
+                lng = float(m['long'])
+            except ValueError:
+                print('WARNING: Discarding mp "' +
+                      str(mp) + '": Conversion Error')
+                continue
+            except KeyError:
+                raise Exception(
+                    'Improperly formatted JSON encountered in get_mileposts()')
+
+            self.mp_objects[mp] = Milepost(mp, lat, lng)
+
+        # Populate self.mp_linear and self.mp_linear_rev from self.mp_objects
+        for mp in sorted(self.mp_objects.keys()):
+            self.mp_linear.append(mp)
+        self.mp_linear_rev = self.mp_linear[::-1]
+
+    def _get_next_mp(self, curr_mp, distance):
+        """ Given a curr_mp and distance, returns the nearest mp marker at
+            curr_mp + distance. Also returns any difference not accounted
+            for.
+            Accepts:
+                curr_mp  = Curr location (a Milepost)
+                distance = Distance in miles (neg dist denotes decreasing DOT)
+            Returns:
+                next_mp   = nearest mp for curr_mp + distance without going over
+                dist_diff = difference between next_mp and actual location
+            Note: If next_mp = curr_mp, diff = distance.
+        """
+        # If no distance, next_mp is curr_mp
+        if distance == 0:
+            return curr_mp, distance
+
+        # Working vars
+        mp = curr_mp.mp
+        target_mp = mp + distance
+        dist_diff = 0
+        next_mp = None
+
+        # Set mp list to iterate, depending on direction
+        if distance > 0:
+            mps = self.mp_linear
+        elif distance < 0:
+            mps = self.mp_linear_rev
+
+        # Find next mp marker, noting diff between next mp and actual location
+        for i, marker in enumerate(mps):
+            if marker == target_mp:
+                next_mp = marker
+                dist_diff = 0
+                break
+            elif (distance > 0 and marker > target_mp) or \
+                 (distance < 0 and marker < target_mp):
+                next_mp = mp
+                if i > 0:
+                    next_mp = mps[i - 1]
+                dist_diff = abs(target_mp - next_mp)
+                break
+
+        # If we didn't find a marker, next_mp = curr_mp because end of track.
+        if not next_mp:
+            print('Warning: Next mp is beyond end of track ')  # TODO Change direction
+            next_mp = mp
+
+        # Get mp object associated with next_mp
+        next_mp_obj = self._get_mp_obj(next_mp)
+        if not next_mp_obj:
+            # Print debug info
+            print(str(mps))
+            print('cur_mp: ' + str(mp))
+            print('moved : ' + str(distance))
+            print('tgt_mp: ' + str(target_mp))
+            print('mp_idx: ' + str(i))
+            print('nxt_mp: ' + str(next_mp))
+            print('disdif: ' + str(dist_diff))
+            raise Exception('Could not find next mp for loco.')
+
+        return next_mp_obj, dist_diff
+
+    def _get_mp_obj(self, mp):
+        """ Returns the MP object for the given mp (a float), if exists. Else,
+            returns None.
+        """
+        return self.mp_objects.get(mp, None)
+
+
+class Loco(object):
+    """ An abstration of a locomotive.
+    """
+    def __init__(self, id_number):
+        """
+        """
+        self.ID = str(id_number)
+        self.speed = None
+        self.heading = None
+        self.direction = None
+        self.curr_milepost = None
+        self.current_base = None
+        self.bases_inrange = []
+
+    def __str__(self):
+        """ Returns a string representation of the locomotive.
+        """
+        ret_str = 'Loco ' + self.ID + ' at mp '
+        ret_str += str(self.milepost) + ' traveling in an ' + self.direction
+        ret_str += 'going ' + str(self.mph) + 'mph'
+        return ret_str
+
 
 class Milepost:
     """ An abstraction of a milepost.
