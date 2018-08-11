@@ -16,8 +16,7 @@ from time import sleep
 from threading import Thread
 from optparse import OptionParser
 from math import degrees, radians, sin, cos, atan2
-from sim_lib import print_err
-from sim_lib import Base, Milepost
+from lib import print_err, Base, Milepost
 
 # Init conf
 config = ConfigParser.RawConfigParser()
