@@ -1,19 +1,19 @@
 # loco_sim
 
-This application is a work in progress based on my experience in Postive Train Control. It demonstrates communication between simulated on-track locomotives (locos) and a Back Office Server (BOS) and consists of three top-level parts:
+This application is a work based on my experience in Postive Train Control demonstrating broker-assisted communication between simulated locomotives and a Back Office Server (BOS).
+
+The application adheres to the Edge Messaging Protocol (see below for specification) and consists of three top-level parts:
   
-**Locomotive Simulator**  
-A simulated loco traveling on a track (as modeled by `track_rail.json`). As the loco travels, it connects to the radio base stations specified in `track_bases.json` for the purpose of communicating it's status (location, speed, etc.) to the BOS at regular intervals (defined in `conf.dat`). If a status would be transmitted while no base station is available, the loco does not send it's status at that time.  
+**Locomotive Simulator (loco.py)**  
+A simulated locomotive (loco) traveling on a track and connecting to radio base stations in its area for the purpose of communicating its status (location, speed, etc.) to the BOS at regular intervals. Additionally, the loco fetches messages addressed to it in order to receive commands (reduce speed, change direction, etc.) from the BOS.  
 
-The loco also fetches messages addressed to it in the messaging subsystem in order to receive commands (reduce speed, change direction, etc.) from the BOS.
+Multiple instances of the locomotive simulator may instantiated. However, tracks exist seperately for each instance. I.e. Virtual locos may occupy identical track sections simultaneously without collision.
 
-Multiple instances of the locomitive simulator may instantiated - each will give a simulated loco with a unique ID. However, tracks exist seperately for each instance. i.e. virtual locos may occupy identical track sections simultaneously  without collision.
-
-**Message Broker / Messaging Subsystem**  
-Allows bi-directional communication between locos and the BOS by acting as a message broker - loco-to-BOS msgs are sent to the broker to be fetched by the BOS, and BOS-to-loco msgs are sent to the broker to be fetched by the loco with the address specified in the msg.
+**Message Broker / Messaging Subsystem (broker.py)**  
+Brokers messages between the BOS and locomotives, allowing bi-directional communication. Loco-to-BOS msgs are sent to the broker to be fetched by the BOS, and BOS-to-loco msgs are sent to the broker to be fetched by the loco.
 
 **Back Office Server**  
-The BOS monitors the messaging subsystem and displays loco status graphically via its website and GoogleEarth. Additionally, the simulated loco may be controlled from the BOS.
+The BOS monitors each locomotive and displays status graphically via its website and Google Earth mapping. Additionally, the BOS may send the locomotive commands.
 
 ## File Description
 
@@ -82,27 +82,20 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 |               |    }                                  |
 |-------------------------------------------------------|
 
-**Well-formed Command Strings**
-speed(55), etc..
-
-**Addressing**
-sim.l.7357
-sim.b
-
 ## Usage
   
 **Demonstration**
-For a demonstration of all packages, enter `./demo.py` at the a terminal, then navigate to http://localhost/loco_sim
+For a demonstration of all packages, enter `./demo.py` at the terminal, then navigate to http://localhost/loco_sim
 
 **Command Line**
 The loco sim, broker, and BOS may all be run independently from the command line. Each contains a command line interface. Run each with `loco.py`, `/broker.py` and `bos.py` (type `help` at the prompt for assistance).
 
-## Unsupported
+## Caveats
 
 Although typically implemented, this demonstration/simulation makes the following concessions for simplicity:
 
+## # TODO
 
-## TODO
 REPL's for each module
 Logger output
 Standardize file headers
