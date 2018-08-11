@@ -268,6 +268,7 @@ class Client(object):
         """ Fetches a msg from the broker.queue_name. The message is removed 
             from the broker on success.
             Raises Queue.Empty if specified queue is empty.
+            Returns a Message.
         """
         # Establish socket connection
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

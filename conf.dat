@@ -10,10 +10,11 @@ track_bases = track_bases.json      ; Base stations file
 broker = localhost                  ; Message broker IP address/hostname
 send_port = 18181                   ; Broker-side "receive" listener port
 fetch_port = 18182                  ; Broker-side "fetch" listener port
+bos_emp_addr = sim.bos              ; The Back Office Server's EMP address
+loco_emp_prefix = sim.l.            ; Locomotive EMP address prefix
+msg_expire_time = 30                ; Time msgs sit in queue before expiring
 max_msg_size = 1024                 ; Max allowed EMP message max_msg_size
 
-[bos]
-emp_address = sim.b                 ; Back office server EMP address
 
 [loco]
 start_direction = increasing        ; Either 'increasing' or 'decreasing'

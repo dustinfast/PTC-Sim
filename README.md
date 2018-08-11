@@ -9,7 +9,7 @@ The loco also fetches messages addressed to it in the messaging subsystem in ord
 
 Multiple instances of the locomitive simulator may instantiated - each will give a simulated loco with a unique ID. However, tracks exist seperately for each instance. i.e. virtual locos may occupy identical track sections simultaneously  without collision.
 
-**Messaging Subsystem / Message Broker**  
+**Message Broker / Messaging Subsystem**  
 Allows bi-directional communication between locos and the BOS by acting as a message broker - loco-to-BOS msgs are sent to the broker to be fetched by the BOS, and BOS-to-loco msgs are sent to the broker to be fetched by the loco with the address specified in the msg.
 
 **Back Office Server**  
@@ -59,11 +59,20 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 | 6000:         | 0: A key/value string of the form     |
 | Loco status   |    {sent          : Unix Time,         |
 | message       |     loco          : 4 digit integer,   |
-|               |     speed        : 2 digit integer,   |
+|               |     speed        : integer,   |
+|               |     direction    : string,   |
+|               |     heading        : integer,   |
 |               |     lat     : Integer,           |
 |               |     long    : Integer,           |
 |               |     base : Integer            |
 |               |    }                                  |
+                    {'sent': time.now(),
+                       'loco': self.ID,
+                       'speed': self.mph,
+                       'heading': self.heading,
+                       'lat': self.loco.milepost.lat,
+                       'long': self.loco.milepost.long,
+                       'base': self.loco.current_base}
 |-------------------------------------------------------|
 | 6001:         | 0: A key/value string of the form     |
 | BOS to loco   |    {sent    : Unix Time,         |
@@ -82,13 +91,24 @@ sim.b
 
 ## Usage
   
-From a terminal, start the demonstration with `./demo.py`, then navigate to http://localhost/loco_sim.  
+**Demonstration**
+For a demonstration of all packages, enter `./demo.py` at the a terminal, then navigate to http://localhost/loco_sim
+
+**Command Line**
+The loco sim, broker, and BOS may all be run independently from the command line. Each contains a command line interface. Run each with `loco.py`, `/broker.py` and `bos.py`, then follow the prompts.
+
+
+## Unsupported
+
+Although typically implemented, this demonstration/simulation makes the following concessions for simplicity:
+
 
 ## TODO
 REPL's for each module
 Logger output
+Standardize file headers
 check all docstrings for PEP8
 Base station module
-Privatize necessary members
+Privatize necessary members and do validation on public members
 Symbolic constants
 Combine msg_lib and lib and put all conf data in lib
