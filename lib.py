@@ -1,5 +1,4 @@
-""" sim_lib.py - A collection of shared classes and helpers for the loco_sim
-    package.
+""" lib.py - A collection of shared classes and helpers for loco_sim.
 
     Author: Dustin Fast, 2018
 """

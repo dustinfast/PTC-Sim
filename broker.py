@@ -1,4 +1,4 @@
-""" msg_broker.py - A message broker for Edge Message Protocol (EMP) messages.
+""" broker.py - A message broker for Edge Message Protocol (EMP) messages.
     Msgs received are enqued for receipt and dequed/served on request.
 
     The broker consists of 3 seperate threads:
@@ -21,8 +21,7 @@
     Therefore no session management is performed - TCP/IP connections are
     created and torn down each time a msg is sent or fetched.
 
-    Author:
-        Dustin Fast, 2018
+    Author: Dustin Fast, 2018
 """
 import socket
 from ConfigParser import RawConfigParser

@@ -1,13 +1,7 @@
-""" loco_sim.py -
-Simulates a locomotive traveling on a railroad track. 
+""" loco.py - Simulates a locomotive traveling on a railroad track and
+    sending/receiving status/command messages. See README.md for more info.
 
-The user may interact with this module via command line or the Back Office
-Server. 
-
-See README.md for more info.
-
-Author:
-    Dustin Fast, 2018
+Author: Dustin Fast, 2018
 """
 
 from time import time, sleep

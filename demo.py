@@ -6,10 +6,10 @@
 """
 
 import time
-import msg_lib
-import msg_broker
-# import sim_bos
-# import sim_loco
+import lib
+import broker
+import bos
+import loco
 import multiprocessing
 
 

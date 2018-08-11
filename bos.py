@@ -1,4 +1,4 @@
-""" sim_bos.py - The Back Office Server (BOS)
+""" bos.py - The Back Office Server (BOS).
 
     Author: Dustin Fast, 2018
 """
