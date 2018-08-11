@@ -1,6 +1,6 @@
 # loco_sim
 
-This application is a work based on my experience in Postive Train Control demonstrating broker-assisted communication between simulated locomotives and a Back Office Server (BOS).
+This application is a work based on my experience in Postive Train Control. It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS).
 
 The application adheres to the Edge Messaging Protocol (see below for specification) and consists of three top-level parts:
   
@@ -96,11 +96,11 @@ Although typically implemented, this demonstration/simulation makes the followin
 
 ## # TODO
 
-REPL's for each module
-Logger output
+Logger output?
 Standardize file headers
 check all docstrings for PEP8
 Base station module
 Privatize necessary members and do validation on public members
 Symbolic constants
 Combine msg_lib and lib and put all conf data in lib
+Flask
