@@ -1,4 +1,4 @@
-""" sim_lib.py - A collection of classes and helpers for loco_sim
+""" sim_lib.py - A collection of classes and helpers for the simulator
 
     Author:
         Dustin Fast, 2018

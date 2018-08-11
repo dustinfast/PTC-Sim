@@ -31,14 +31,16 @@ from time import sleep
 from threading import Thread
 from msg_lib import Message, MsgQueue
 
-# Import config data
+# Init conf
 config = RawConfigParser()
 config.read('conf.dat')
+
+# Import conf data
 BROKER = config.get('messaging', 'broker')
 MAX_TRIES = config.get('misc', 'max_retries')
 BROKER_RECV_PORT = int(config.get('messaging', 'send_port'))
 BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
-MAX_MSG_SIZE = config.get('messaging', 'max_msg_size')
+MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 REFRESH_TIME = float(config.get('misc', 'refresh_sleep_time'))
 
 # TODO: Symbolic constants

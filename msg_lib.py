@@ -15,15 +15,16 @@ import binascii
 import ConfigParser
 from Queue import Empty, Full  # Queue.Empty and Queue.Full exception types
 
-# Import config data
+# Init conf
 config = ConfigParser.RawConfigParser()
 config.read('conf.dat')
 
+# Import conf data
 BROKER = config.get('messaging', 'broker')
 MAX_TRIES = config.get('misc', 'max_retries')
-SEND_PORT = config.get('messaging', 'send_port')
-FETCH_PORT = config.get('messaging', 'fetch_port')
-MAX_MSG_SIZE = config.get('messaging', 'max_msg_size')
+SEND_PORT = int(config.get('messaging', 'send_port'))
+FETCH_PORT = int(config.get('messaging', 'fetch_port'))
+MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 
 
 class MsgQueue:

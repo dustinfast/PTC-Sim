@@ -1,12 +1,13 @@
 """ demo.py - Starts the necessary services and processes
-    The locomotive, bos, and msg broker all exist in seperate processes.
+    The Locomotive, Back Office Serverm, and Message Broker each exist in
+     seperate processes.
 
     Author: Dustin Fast, 2018
 """
 
 import time
 import msg_lib
-# import msg_broker
+from msg_broker import Broker
 # import sim_bos
 # import sim_loco
 
@@ -14,6 +15,11 @@ import msg_lib
 if __name__ == '__main__':
     """
     """
+    # Start msg broker
+    broker = Broker()
+    broker.start()
+    print('Msg Broker started')
+
     # Define test msg
     msg_type = 6000
     msg_source = 'sim.l.7357'
@@ -29,6 +35,7 @@ if __name__ == '__main__':
     client = msg_lib.Client()
     client.send_msg(message)
     time.sleep(1)
+    print('Test msg sent to broker')
 
     # Try to fetch msg from the queue we just sent for
     # TODO: try/catch

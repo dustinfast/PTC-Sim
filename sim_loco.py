@@ -19,26 +19,18 @@ from math import degrees, radians, sin, cos, atan2
 from sim_lib import print_err
 from sim_lib import Base, Milepost
 
-# Import config data
-try:
-    config = ConfigParser.RawConfigParser()
-    config.read('conf.dat')
+# Init conf
+config = ConfigParser.RawConfigParser()
+config.read('conf.dat')
 
-    TRACK_RAILS = config.get('track', 'track_rails')
-    TRACK_BASES = config.get('track', 'track_bases')
-    LOCO_START_DIR = config.get('loco', 'start_direction')
-    LOCO_START_HEADING = config.get('loco', 'start_heading')
-    LOCO_START_MP = config.get('loco', 'start_milepost')  
-    LOCO_START_SPEED = float(config.get('loco', 'start_speed'))
-    LOCO_SIM_REFRESH = float(config.get('misc', 'refresh_sleep_time'))
-except ConfigParser.NoSectionError:
-    errstr = 'Error loading configuration file - Ensure conf.dat exists '
-    errstr += 'and contains necessary section headers.'
-    raise ConfigParser.NoSectionError(errstr)
-except ConfigParser.NoOptionError:
-    errstr = 'Error reading configuration file - One or more required options '
-    errstr += 'are missing in conf.dat.'
-    raise ConfigParser.NoSectionError(errstr)
+# Import conf data
+TRACK_RAILS = config.get('track', 'track_rails')
+TRACK_BASES = config.get('track', 'track_bases')
+LOCO_START_DIR = config.get('loco', 'start_direction')
+LOCO_START_HEADING = config.get('loco', 'start_heading')
+LOCO_START_MP = config.get('loco', 'start_milepost')  
+LOCO_START_SPEED = float(config.get('loco', 'start_speed'))
+LOCO_SIM_REFRESH = float(config.get('misc', 'refresh_sleep_time'))
 
 
 ##############
