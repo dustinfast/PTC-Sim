@@ -6,7 +6,7 @@
     Author: Dustin Fast, 2018
 """
 
-from lib import REPL
+from lib import Loco, REPL, logger
 from time import sleep
 from Queue import Empty
 from threading import Thread
@@ -60,7 +60,7 @@ class BOS(object):
             self.repl_running = True
             self._repl()
         else:
-            print('BOS: Running.')
+            logger.info('BOS Running.')
 
     def stop(self):
         """ Stops the BOS.
@@ -73,31 +73,29 @@ class BOS(object):
             # Redefine threads, to allow starting after stopping
             self.status_watcher = Thread(target=self._statuswatcher)
 
-        print('BOS: Stopped.')
+        logger.info('BOS Stopped.')
 
     def _statuswatcher(self):
-        """ The status message watcher thread - watches for locomotive status
-            messages addressed to it at the broker.
+        """ The status message watcher thread - watches the broker for msgs
+            addressed to it and processes them.
         """
         while self.running:
             # Fetch the next available msg, if any
-            raw_msg = None
+            msg = None
             try:
-                raw_msg = self.msg_client.fetch_next_msg(BOS_EMP)
+                msg = self.msg_client.fetch_next_msg(BOS_EMP)
             except Empty:
-                print('BOS: No msgs avaiable to fetch.')
+                logger.info('Status msg queue empty.')
             except Exception as e:
-                print('BOS: Msg fetch failed due to: ' + str(e))
+                logger.error('Msg fetch failed due to: ' + str(e))
 
-            # Process msg
-            if raw_msg:
-                try:
-                    sender = raw_msg.sender_addr
-                    print('BOS: Status received for loco ' + str(sender))
-                    # TODO: process status msg
-                    # content = raw_msg.payload
-                except:
-                    print('BOS: Malformed status msg recevied.')
+            # TODO: Process loco status msg
+            # if msg:
+            #     try:
+            #         loco = Loco(msg.payload['loco'], msg)
+            #         logger.info(str(loco))
+            #     except KeyError as e:
+            #         logger.error('Malformed status msg received: ' + str(e))
 
             sleep(MSG_INTERVAL)
 

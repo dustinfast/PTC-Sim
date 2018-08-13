@@ -73,6 +73,7 @@ class SimLoco(Loco):
     def status(self):
         """ Prints the simulated locomotives status to the console.
         """
+        # TODO: Test status cmd
         pnt_str = 'Loco ID: ' + self.ID + '\n'
         pnt_str += 'Sim: ' + {True: 'on', False: 'off'}.get(self.running) + '\n'
         pnt_str += 'Speed: ' + str(self.mph) + ' mph\n'

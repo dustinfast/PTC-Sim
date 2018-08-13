@@ -2,7 +2,7 @@
 
     Author: Dustin Fast, 2018
 """
-
+# TODO: Move into init where they're used?
 import logging
 from json import loads
 from ConfigParser import RawConfigParser
@@ -48,7 +48,7 @@ class Track(object):
 
         logger.info('Initializing Track...')
 
-        # Populate self.bases from TRACK_BASES json
+        # Populate bases station (self.bases) from base_file json
         try:
             with open(bases_file) as base_data:
                 bases = loads(base_data.read())
@@ -61,14 +61,14 @@ class Track(object):
                 coverage_start = float(b['coverage'][0])
                 coverage_end = float(b['coverage'][1])
             except ValueError:
-                logger.warning('Discarding base "' + baseID + '": Conversion Error')
+                logger.warning('Discarded base "' + baseID + '": Conversion Error')
                 continue
             except KeyError:
                 raise Exception('Invalid data in ' + bases_file + '.')
 
             self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
 
-        # Populate self.mp_objects from TRACK_RAILS json
+        # Populate milepost objects (self.mp_objects) from track_file json
         try:
             with open(TRACK_RAILS) as rail_data:
                 mileposts = loads(rail_data.read())
@@ -167,7 +167,7 @@ class Track(object):
 class Loco(object):
     """ An abstration of a locomotive.
     """
-    def __init__(self, id_number):
+    def __init__(self, id_number, status_msg=None):
         """
         """
         self.ID = str(id_number)
@@ -178,12 +178,36 @@ class Loco(object):
         self.current_base = None
         self.bases_inrange = []
 
+        if status_msg:
+            self.update_from_msg(status_msg)
+
+    def update_from_msg(self, msg):
+        """ Updates the loco with parameters from the given Message object.
+            Assumes msg.payload is well-formed 6001 msg data.
+        """
+        content = msg.payload
+        print(type(content['loco']))
+
+        # try:
+        #     msg_locoID = content['loco']
+        #     if content['loco'] != self.ID:
+        #         warn_str = 'Updated loco ' + self.ID
+        #         warn_str += ' from a msg for loco ' + msg_locoID
+        #         logger.warning(warn_str)
+        #     self.speed = content['speed']
+        #     self.heading = content['heading']
+        #     self.direction = content['direction']
+        #     self.current_base = content['base']
+        # except KeyError:
+        #     raise Exception('Attempted loco update from a malformed message')
+
     def __str__(self):
         """ Returns a string representation of the locomotive.
         """
-        ret_str = 'Loco ' + self.ID + ' at mp '
-        ret_str += str(self.milepost) + ' traveling in an ' + self.direction
-        ret_str += 'going ' + str(self.speed) + 'mph'
+        ret_str = 'Loco ' + self.ID
+        ret_str += ' at mp ' + str(self.milepost)
+        ret_str += ' traveling in a(n) ' + str(self.direction)
+        ret_str += ' going ' + str(self.speed) + 'mph'
         return ret_str
 
 
@@ -289,13 +313,10 @@ class REPL(object):
         """ Outputs all available commands to the console, excluding 'help'.
         """
         cmds = [c for c in sorted(self.commands.keys()) if c != 'help']
-        if cmds:
-            print('\n'.join(cmds))
-        else:
-            print('No commands defined.')
+        print('\n'.join(cmds))
 
     def _exit(self):
-        """ Calls exit() after doing the cmd specified by self.exit_command.
+        """ Calls exit() after doing self.exit_command (if defined).
         """
         if self.exit_command:
             eval(self.commands[self.exit_command])

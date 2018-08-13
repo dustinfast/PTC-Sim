@@ -7,11 +7,11 @@
 
 import time
 # import lib
-from lib import logger
-import sim_broker
-import sim_bos
-import sim_loco
-import multiprocessing
+import lib
+# import sim_broker
+# import sim_bos
+# import sim_loco
+# import multiprocessing
 
 
 # class #TODO: proc(multiprocessing.Process):
@@ -27,9 +27,10 @@ import multiprocessing
 
 
 if __name__ == '__main__':
+    pass
     # Start msg broker
-    broker = sim_broker.Broker()
-    logger.error('Broker started')
+    # broker = sim_broker.Broker()
+    # logger.error('Broker started')
 
     # # Define test msg
     # msg_type = 6000

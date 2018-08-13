@@ -1,6 +1,6 @@
 # loco_sim
 
-This application is a work based on my experience in Postive Train Control. It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using the Edge Message Protocol (EMP) and consists of three top-level parts:
+This application is for educational purposes, based on my experience in Postive Train Control. It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using the Edge Message Protocol (EMP) and consists of three top-level parts:
   
 **Locomotive Simulator (sim_loco.py)**  
 A simulated locomotive (loco) traveling on a track and connecting to track-section specific radio base stations for the purpose of communicating its status (location, speed, etc.) to the BOS at regular intervals. 

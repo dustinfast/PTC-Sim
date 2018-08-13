@@ -30,7 +30,7 @@ NET_TIMEOUT = float(config.get('misc', 'network_timeout'))
 # Set the timeout for all socket connections
 socket.setdefaulttimeout(NET_TIMEOUT)
 
-class MsgQueue: # TODO: Remove maxsize (msgs expire, no need for it)
+class MsgQueue:  # TODO: Remove maxsize (msgs expire, no need for it)
     """ A message queue with push pop, peek, remove, is_empty, and item_count.
     """
     def __init__(self, maxsize=None):
@@ -169,14 +169,6 @@ class Message(object):
             raw_msg += struct.pack(">i", binascii.crc32(raw_msg))  # 32 bit CRC
         except:
             raise Exception("Msg format is invalid")
-
-        # debug
-        # print('ENCODED MSG - ')
-        # print('type: ' + str(msg_type))
-        # print('body size: ' + str(body_size))
-        # print('sender: ' + sender_addr)
-        # print('dest: ' + dest_addr)
-        # print('payload: ' + payload_str)
         
         return raw_msg
 
@@ -186,7 +178,6 @@ class Message(object):
         """
         # Validate raw_msg
         if not raw_msg or len(raw_msg) < 20:  # 20 byte min msg size
-            # print('raw: "' + raw_msg + '"')  # debug
             raise Exception("Invalid message format")
 
         # Ensure good CRC
@@ -213,15 +204,6 @@ class Message(object):
             payload = eval(payload)
         except:
             raise Exception('Msg payload not of form { key: value, ... }')
-
-        # debug
-        # print('DECODED MSG - ')
-        # print('type: ' + str(msg_type))
-        # print('vhead size: ' + str(vhead_size))
-        # print('vhead: ' + str(vhead))
-        # print('sender: ' + sender_addr)
-        # print('dest: ' + dest_addr)
-        # print('payload: ' + str(payload))
 
         return (msg_type, sender_addr, dest_addr, payload)
 
@@ -250,7 +232,6 @@ class Client(object):
             # Init socket and connect to broker
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((self.broker, self.send_port))
-            # print('** Connected to ' + self.broker + ' for fetch.')  # debug
 
             # Send message and wait for a response
             sock.send(message.raw_msg.encode('hex'))
@@ -273,23 +254,18 @@ class Client(object):
             # Establish socket connection
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((self.broker, self.fetch_port))
-            print('Connected to ' + self.broker + ' for fetch.')
 
             # Send queue name and wait for response
             sock.send(queue_name.encode())
             resp = sock.recv(MAX_MSG_SIZE)
-
-            msg = None
-            if resp == 'EMPTY':
-                raise Empty('Queue empty.')  # No msg available to fetch
-            else:
-                try:
-                    msg = Message(resp.decode('hex'))  # Response is the msg
-                except Exception as e:
-                        raise Exception('Msg fetched but was invalid: ' + str(e))
-    
         except Exception as e:
             raise Exception(e)
+
+        msg = None
+        if resp == 'EMPTY':
+            raise Empty  # No msg available to fetch
+        else:
+            msg = Message(resp.decode('hex'))  # Response is the msg
 
         sock.close()
 
