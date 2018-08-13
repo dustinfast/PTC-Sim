@@ -36,7 +36,7 @@ class SimLoco(Loco):
         # Locomotive
         Loco.__init__(self, str(locoID))
         self.track = Track()
-        self.mph = START_SPEED
+        self.speed = START_SPEED
         self.direction = START_DIR
         self.disp_str = 'Loco ' + self.ID + ' -'  # For log output convenience
 
@@ -56,27 +56,6 @@ class SimLoco(Loco):
         self.loco_emp = EMP_PREFIX + self.ID
         self.broker_emp = BOS_EMP
         self.msg_client = Client()
-
-    def status(self):
-        """ Prints the simulated locomotives status to the console.
-        """
-        if not self.bases_inrange:
-            in_range = 'None'
-        else:
-            in_range = ', '.join(b.ID for b in self.bases_inrange)
-
-        pnt_str = '-- Loco ' + self.ID + ' --\n'
-        pnt_str += 'Sim: ' + {True: 'on', False: 'off'}.get(self.running) + '\n'
-        pnt_str += 'Speed: ' + str(self.mph) + ' mph\n'
-        pnt_str += 'DOT: ' + str(self.direction) + '\n'
-        pnt_str += 'MP: ' + str(self.milepost) + '\n'
-        pnt_str += 'Lat: ' + str(self.milepost.lat) + '\n'
-        pnt_str += 'Long: ' + str(self.milepost.long) + '\n'
-        pnt_str += 'Heading: ' + str(self.heading) + '\n'
-        pnt_str += 'Current base: ' + str(self.current_base) + '\n'
-        pnt_str += 'Bases in range: ' + in_range
-
-        print(pnt_str)
 
     def start(self, terminal=False):
         """ Starts the simulator threads. 
@@ -106,6 +85,14 @@ class SimLoco(Loco):
             self.messaging_thread = Thread(target=self._messaging)
             logger.info(self.disp_str + ' Simulation stopped.')
 
+    def status(self):
+        """ Prints the locomotive and simulator status to the console.
+        """
+        status = self.get_status()
+        status += 'Sim: ' + {True: 'on', False: 'off'}.get(self.running) + '\n'
+
+        print(status)
+
     def _messaging(self):
         """ The loco messaging simulator thread. Sends status msgs and 
             receives/processes inbound command msgs every MSG_INTERVAL seconds.
@@ -118,7 +105,7 @@ class SimLoco(Loco):
 
             payload = {'sent': time(),
                        'loco': self.ID,
-                       'speed': self.mph,
+                       'speed': self.speed,
                        'heading': self.heading,
                        'lat': self.milepost.lat,
                        'long': self.milepost.long,
@@ -163,11 +150,11 @@ class SimLoco(Loco):
         """
         while self.running:
             # Move loco, if at speed
-            if self.mph > 0:
+            if self.speed > 0:
                 # Determine dist traveled since last iteration, including
                 # makeup distance, if any.
                 hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
-                dist = self.mph * hours * 1.0  # distance = speed * time
+                dist = self.speed * hours * 1.0  # distance = speed * time
                 dist += self.makeup_dist 
 
                 # Set sign of dist based on dir of travel

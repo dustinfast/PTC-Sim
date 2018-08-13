@@ -101,6 +101,7 @@ class BOS(object):
         repl = REPL(self, 'BOS >> ', welcome)
         repl.add_cmd('start', 'start()')
         repl.add_cmd('stop', 'stop()')
+        # TODO: Loco cmd msg
         repl.set_exitcmd('stop')
         repl.start()
 

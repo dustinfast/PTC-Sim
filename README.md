@@ -66,7 +66,7 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 |               |    }                                  |
                     {'sent': time.now(),
                        'loco': self.ID,
-                       'speed': self.mph,
+                       'speed': self.speed,
                        'heading': self.heading,
                        'lat': self.loco.milepost.lat,
                        'long': self.loco.milepost.long,

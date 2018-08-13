@@ -8,6 +8,7 @@ refresh_time = 5                    ; Thread & loop sleep seconds before next it
 [track]
 track_rails = track_rails.json      ; Track model file
 track_bases = track_bases.json      ; Base stations file
+speed_units = mph                   ; mph or kmh
 
 [messaging]
 broker = localhost                  ; Message Broker IP address/hostname

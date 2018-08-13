@@ -6,9 +6,9 @@
 """
 
 #############################################################
-# Library Initialization                                    #
+# Applicable Imports and Conf Data                          #
 #############################################################
-
+# TODO: Add lib sectoin class and move these into each
 # Init conf
 from ConfigParser import RawConfigParser
 config = RawConfigParser()
@@ -18,13 +18,13 @@ config.read('conf.dat')
 from json import loads
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
+SPEED_UNITS = config.get('track', 'speed_units')
 
 # Messaging lib imports and conf data
 import Queue
-from struct import pack, unpack
 import socket
 from binascii import crc32
-
+from struct import pack, unpack
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
@@ -33,8 +33,7 @@ NET_TIMEOUT = float(config.get('messaging', 'network_timeout'))
 
 # Input/Output lib imports and conf data
 import logging
-from logging.handlers import RotatingFileHandler as RFHandler
-
+import logging.handlers
 LOG_NAME = config.get('logging', 'filename')
 LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_FILES = config.get('logging', 'num_logfiles')
@@ -227,20 +226,24 @@ class Loco(object):
         #     raise Exception('Attempted loco update from a malformed message')
 
     def get_status(self):
-        """ Returns a string representation of the locos current status.
+        """ Returns a newline delimited string representing the loco's 
+            current status.
         """
-        # TODO: Combine with sim_loco.status
         if not self.bases_inrange:
-            bases = 'no bases.'
+            in_range = 'None'
         else:
-            bases = 'bases ' + ', '.join(self.bases_inrange)
-            bases += ' and connected to base ' + str(self.current_base) + '.'
+            in_range = ', '.join(b.ID for b in self.bases_inrange)
 
-        ret_str = 'Loco ' + self.ID
-        ret_str += ' at mp ' + str(self.milepost)
-        ret_str += ' traveling in a(n) ' + str(self.direction)
-        ret_str += ' going ' + str(self.speed) + 'mph'
-        ret_str += ' is in range of ' + bases
+        ret_str = 'Loco: ' + self.ID + ' --\n'
+        ret_str += 'Speed: ' + str(self.speed) + ' ' + SPEED_UNITS + '\n'
+        ret_str += 'Direction of travel: ' + str(self.direction) + '\n'
+        ret_str += 'Milepost: ' + str(self.milepost) + '\n'
+        ret_str += 'Lat: ' + str(self.milepost.lat) + '\n'
+        ret_str += 'Long: ' + str(self.milepost.long) + '\n'
+        ret_str += 'Heading: ' + str(self.heading) + '\n'
+        ret_str += 'Current base: ' + str(self.current_base) + '\n'
+        ret_str += 'Bases in range: ' + in_range
+        
         return ret_str
 
 
@@ -337,7 +340,7 @@ class Message(object):
         # i.e. len(source and destination strings) + null terminators.
         var_headsize = len(sender_addr) + len(dest_addr) + 2
 
-        # Build the raw msg  using struct.pack, noting:
+        # Build the raw msg msg using struct.pack, noting that
         #   B = unsigned char, 8 bits
         #   H = unsigned short, 16 bits
         #   I = unsigned int, 32 bits
@@ -574,9 +577,9 @@ class Logger(object):
         console_handler.setFormatter(console_fmt)
 
         # Init log file rotation
-        rotate_handler = RFHandler(filename, 
-                                   max_filesize,
-                                   num_files)  
+        rotate_handler = logging.handlers.RotatingFileHandler(filename, 
+                                                              max_filesize,
+                                                              num_files)  
         rotate_handler.setLevel(level)
         rotate_handler.setFormatter(log_fmt)
 
