@@ -197,8 +197,6 @@ class SimLoco(Loco):
                             self.base_conns.append(base)
                             self.current_base = base
                     
-                    print('Bases in range:' + str([b.ID for b in self.base_conns]))  # debug
-
             sleep(MSG_INTERVAL)
 
     def _set_heading(self, prev_mp, curr_mp):
