@@ -13,28 +13,20 @@
         containing a variable-length header section.
         See README.md for implementation specific information.
 
-    Notes: 
-    + Data is not persistent - when broker execution is terminated, all
-    unfetched msgs are lost.
-
-    + For this demo/simulated implementation, we can assume minimal clients.
-    Therefore no session management is performed - TCP/IP connections are
-    created and torn down each time a msg is sent or fetched.
-
     Author: Dustin Fast, 2018
 """
 import socket  
-from ConfigParser import RawConfigParser
 from time import sleep
 from threading import Thread
-from lib import Message, MsgQueue, REPL, logger  # Also sets socket timeout from conf.dat
+from ConfigParser import RawConfigParser
+from sim_lib import Message, MsgQueue, REPL, logger  # Also sets socket timeout
 
 # Init conf
 config = RawConfigParser()
 config.read('conf.dat')
 
 # Import conf data
-REFRESH_TIME = float(config.get('application', 'sleep_time'))
+REFRESH_TIME = float(config.get('application', 'refresh_time'))
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))

@@ -10,24 +10,20 @@ from time import time, sleep
 from threading import Thread
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
-from lib import Track, Loco, Client, Message, REPL, logger
+from sim_lib import Track, Loco, Client, Message, REPL, logger
 
 # Init conf
 config = RawConfigParser()
 config.read('conf.dat')
 
 # Import conf data
-REFRESH_TIME = float(config.get('application', 'sleep_time'))
+REFRESH_TIME = float(config.get('application', 'refresh_time'))
 START_DIR = config.get('locomotive', 'start_direction')
 START_MP = float(config.get('locomotive', 'start_milepost'))
 START_SPEED = float(config.get('locomotive', 'start_speed'))
 MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
-
-# Symbolic constants
-INCREASING = 'increasing'
-DECREASING = 'decreasing'
 
 
 class SimLoco(Loco):
@@ -176,7 +172,7 @@ class SimLoco(Loco):
                 dist += self.makeup_dist 
 
                 # Set sign of dist based on dir of travel
-                if self.direction == DECREASING:
+                if self.direction == 'decreasing':
                     dist *= -1
 
                 # Get next milepost and any makeup distance

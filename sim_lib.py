@@ -14,12 +14,12 @@ from ConfigParser import RawConfigParser
 config = RawConfigParser()
 config.read('conf.dat')
 
-# Railroad imports and conf data
+# Railroad lib imports and conf data
 from json import loads
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
 
-# Messaging imports and conf data
+# Messaging lib imports and conf data
 import struct
 import socket
 import binascii
@@ -31,7 +31,7 @@ FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 NET_TIMEOUT = float(config.get('messaging', 'network_timeout'))
 
-# Input/Output imports and conf data
+# Input/Output lib imports and conf data
 import logging
 from logging.handlers import RotatingFileHandler as RFHandler
 

@@ -2,14 +2,11 @@
 ; 
 ; Author: Dustin Fast, 2018
 
-[logging]
-filename = logfile.log              ; The logfile name
-level = 10                          ; 10 = DEBUG, 20 = INFO, 30 = WARN
-num_logfiles = 1                    ; Max number of rotating logfiles
-max_logfile_size = 500000           ; Max log size before rotation, in bytes
-
+[application]
+refresh_time = 5                    ; Thread & loop sleep seconds before next iteration
+                                    
 [track]
-track_rails = track_rails.json       ; Track model file
+track_rails = track_rails.json      ; Track model file
 track_bases = track_bases.json      ; Base stations file
 
 [messaging]
@@ -28,6 +25,8 @@ start_direction = increasing        ; Either 'increasing' or 'decreasing'
 start_milepost = 2.0                ; Initial loco milepost
 start_speed = 10.0                  ; Initial speed of loco
 
-[application]
-sleep_time = 5                      ; Thread & loop sleep before next iteration.
-                                    
+[logging]
+filename = logfile.log              ; The logfile name
+level = 10                          ; 10 = DEBUG, 20 = INFO, 30 = WARN
+num_logfiles = 1                    ; Max number of rotating logfiles
+max_logfile_size = 500000           ; Max log size before rotation, in bytes

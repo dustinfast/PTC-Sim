@@ -6,21 +6,21 @@
     Author: Dustin Fast, 2018
 """
 
-from lib import Loco, Client, REPL, logger
 from time import sleep
 from Queue import Empty
 from threading import Thread
 from ConfigParser import RawConfigParser
+from sim_lib import Loco, Client, REPL, logger
 
 # Init conf
 config = RawConfigParser()
 config.read('conf.dat')
 
 # Import conf data
+REFRESH_TIME = float(config.get('application', 'refresh_time'))
 BROKER = config.get('messaging', 'broker')
 BROKER_SEND_PORT = int(config.get('messaging', 'send_port'))
 BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
-REFRESH_TIME = float(config.get('application', 'sleep_time'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 
 

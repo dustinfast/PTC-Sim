@@ -1,13 +1,11 @@
 # loco_sim
 
-This application is for educational purposes, based on my experience in Postive Train Control. It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using the Edge Message Protocol (EMP) and consists of three top-level parts:
+This application is  based on my experience in Postive Train Control. It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using the Edge Message Protocol (EMP) and consists of three top-level parts:
   
 **Locomotive Simulator (sim_loco.py)**  
-A simulated locomotive (loco) traveling on a track and connecting to track-section specific radio base stations for the purpose of communicating its status (location, speed, etc.) to the BOS at regular intervals. 
+A simulated locomotive (loco) traveling on a track and connecting to track-section specific radio base stations for the purpose of communicating its status (location, speed, etc.) to the BOS at regular intervals. Additionally, locos fetch messages addressed to them in order to receive speed and direction of travel adjustments from the BOS.  
 
-Additionally, the loco fetches messages addressed to it in order to receive speed and direction of travel adjustments from the BOS. 
-
-Multiple instances of the locomotive simulator may instantiated. However, tracks exist seperately for each instance. I.e. Virtual locos may occupy identical track sections simultaneously without collision.
+Note: Multiple instances of the locomotive simulator may instantiated. However, tracks exist seperately for each instance. I.e. Virtual locos may occupy identical track sections simultaneously without collision.
 
 **Message Broker (sim_broker.py)**  
 Brokers messages between the BOS and locomotives, allowing bi-directional communication. Loco-to-BOS msgs are sent to the broker to be fetched by the BOS, and BOS-to-loco msgs are sent to the broker to be fetched by the loco.
@@ -78,7 +76,7 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 | BOS to loco   |    {sent    : Unix Time,         |
 | command msg   |     loco : 4 digit integer,   |
 |               |     speed:      integer,      |
-|               |     dir:    'incr' or 'decr'   |
+|               |     dir:    'incresing' or 'decreasing'   |
 |               |    }                                  |
 |-------------------------------------------------------|
 
@@ -88,21 +86,29 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 For a demonstration of all packages, enter `./demo.py` at the terminal, then navigate to http://localhost/loco_sim
 
 **Command Line**
-The loco sim, message broker, and BOS each contain a command line interface and may run from the command line. Start each with `loco.py`, `/broker.py` and `bos.py`, respectively.
+The loco sim, message broker, and BOS each provide a command line interface when run independently from the terminal. Start each with `./sim_loco.py`, `/sim_broker.py` and `./sim_bos.py`, respectively.
 
 **Dev**
-The application as a whole has little practical purpose beyond demonstration. However, each module is well documented and was developed with re-usability and educational value in mind. It is free for use under the MIT Software License.
+Each module is well documented and was developed with re-usability and educational value in mind. It is free for use under the MIT Software License.
 
 ## Caveats
 
 Although typically implemented, this application makes the following concessions for simplicity and demonstrations purposes:
 
 **High Availability**
+Queues, threads, etc., are not redundant or highly available in any way.
+
 **TCP.IP Session mgmt**
-**Cmd msgs**
+No TCP/IP session management is performed - TCP/IP connections are created and torn down each time a msg is sent or fetched.
+
+**Locomotive Command Messages**
+**Persistent Message Queues**
+Messages are not persistent - when the message broker is terminated, all unfetched msgs are lost.
 
 ## # TODO
 
+Class D
+Shebang
 Contextual repl (for demo)
 Move prompt below console output
 Consolidate lib sections under one class each?
@@ -110,9 +116,9 @@ Ensure normalized app name
 Better output on connection error
 Standardize file headers
 check all docstrings for PEP8
-Base station module?
 Privatize necessary members and do validation on public members
 Symbolic constants
 Empty to lib (class.Empty)
 readme screenshots
+TrackCircuits
 Flask
