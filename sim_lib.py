@@ -8,7 +8,7 @@
 #############################################################
 # Applicable Imports and Conf Data                          #
 #############################################################
-# TODO: Add lib sectoin class and move these into each
+# TODO: Add lib section classes and move these into each
 # Init conf
 from ConfigParser import RawConfigParser
 config = RawConfigParser()
