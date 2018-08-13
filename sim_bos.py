@@ -30,28 +30,26 @@ class BOS(object):
     def __init__(self):
         """
         """
-        # On/Off flag for threads. Set by self.start and self.stop.
+        # On/Off flags.
         self.running = False
+        self.repl_started = False
 
         # Messaging client
         self.msg_client = Client(BROKER, BROKER_SEND_PORT, BROKER_FETCH_PORT)
 
-        # Message receiver thread
-        self.status_watcher = Thread(target=self._statuswatcher)
+        # Message watcher thread
+        self.status_watcher_thread = Thread(target=self._statuswatcher)
 
-        # Flag denoting status of REPL
-        self.repl_running = False
-        
     def start(self, terminal=False):
         """ Start the BOS. I.e., the status watcher thread. If terminal, also
             starts the repl.
         """
         if not self.running:
             self.running = True
-            self.status_watcher.start()
+            self.status_watcher_thread.start()
 
-        if terminal and not self.repl_running:
-            self.repl_running = True
+        if terminal and not self.repl_started:
+            self.repl_started = True
             self._repl()
         else:
             logger.info('BOS running.')
@@ -62,10 +60,10 @@ class BOS(object):
         if self.running:
             # Signal stop to threads and join
             self.running = False
-            self.status_watcher.join(timeout=REFRESH_TIME)
+            self.status_watcher_thread.join(timeout=REFRESH_TIME)
 
             # Redefine threads, to allow starting after stopping
-            self.status_watcher = Thread(target=self._statuswatcher)
+            self.status_watcher_thread = Thread(target=self._statuswatcher)
 
         logger.info('BOS stopped.')
 

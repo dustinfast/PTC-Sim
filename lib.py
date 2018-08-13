@@ -538,8 +538,7 @@ class REPL(object):
         self.welcome_msg = welcome_msg
         self.exit_command = None
         self.commands = {'help': 'self._help()',
-                         'exit': 'self._exit()'
-                         }
+                         'exit': 'self._exit()'}
 
     def start(self):
         """ Starts the REPL.

@@ -50,20 +50,16 @@ class Broker(object):
         # Dict of outgoing msg queues, by address: { dest_addr: MsgQueue }
         self.outgoing_queues = {}
 
-        # On/Off flag for stopping threads. Set by self.start and self.stop.
+        # On/Off flags
         self.running = False
+        self.repl_started = False
 
-        # The msg receiver thread
-        self.msg_recvr = Thread(target=self._msgreceiver)
-        
-        # The fetch watcher thread
-        self.fetch_watcher = Thread(target=self._fetchwatcher)
-
-        # The queue parser thread
-        self.queue_parser = Thread(target=self._queueparser)
+        # Threads
+        self.msg_recvr_thread = Thread(target=self._msgreceiver)
+        self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
+        self.queue_parser_thread = Thread(target=self._queueparser)
 
         # Flag denoting status of REPL
-        self.repl_running = False
 
     def start(self, terminal=False):
         """ Start the message broker, i.e., the msg receiver, fetch watcher and
@@ -71,12 +67,12 @@ class Broker(object):
         """
         if not self.running:
             self.running = True
-            self.msg_recvr.start()
-            self.fetch_watcher.start()
-            self.queue_parser.start()
+            self.msg_recvr_thread.start()
+            self.fetch_watcher_thread.start()
+            self.queue_parser_thread.start()
 
-        if terminal and not self.repl_running:
-            self.repl_running = True
+        if terminal and not self.repl_started:
+            self.repl_started = True
             self._repl()
         else:
             logger.info('Broker running.')
@@ -88,13 +84,13 @@ class Broker(object):
         if self.running:
             # Signal stop to threads and join
             self.running = False
-            self.msg_recvr.join(timeout=REFRESH_TIME)
-            self.fetch_watcher.join(timeout=REFRESH_TIME)
+            self.msg_recvr_thread.join(timeout=REFRESH_TIME)
+            self.fetch_watcher_thread.join(timeout=REFRESH_TIME)
 
             # Redefine threads, to allow starting after stopping
-            self.msg_recvr = Thread(target=self._msgreceiver)
-            self.fetch_watcher = Thread(target=self._fetchwatcher)
-            self.queue_parser = Thread(target=self._queueparser)
+            self.msg_recvr_thread = Thread(target=self._msgreceiver)
+            self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
+            self.queue_parser_thread = Thread(target=self._queueparser)
 
         logger.info('Broker stopped.')
 

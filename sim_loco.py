@@ -7,7 +7,6 @@ Author: Dustin Fast, 2018
 from time import time, sleep
 from random import randint
 from threading import Thread
-from optparse import OptionParser
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 from Queue import Empty  # TODO: Empty to lib
@@ -49,13 +48,13 @@ class SimLoco(Loco):
         # Current milepost
         self.milepost = self.track.get_milepost_at(START_MP)
         if not self.milepost:
-            raise ValueError('No milepost exists at the given start_mp')
+            raise ValueError('No milepost exists at the given start milep')
 
-        # Simulation
+        # Simulation 
         self.running = False
-        self.repl_running = False
+        self.repl_started = False
         self.makeup_dist = 0
-        self.movement_thread = Thread(target=self._movement)  # TODO: Normalize thread var names
+        self.movement_thread = Thread(target=self._movement)
         self.messaging_thread = Thread(target=self._messaging)
 
         # Messaging
@@ -92,8 +91,8 @@ class SimLoco(Loco):
             self.movement_thread.start()
             self.messaging_thread.start()
 
-        if terminal and not self.repl_running:
-            self.repl_running = True
+        if terminal and not self.repl_started:
+            self.repl_started = True
             self._repl()
         else:
             logger.info(self.disp_str + ' Simulation started.')
