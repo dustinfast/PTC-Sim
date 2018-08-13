@@ -9,7 +9,7 @@ num_logfiles = 1                    ; Max number of rotating logfiles
 max_logfile_size = 500000           ; Max log size before rotation, in bytes
 
 [track]
-track_rails = track_rail.json       ; Track model file # TODO: rename?
+track_rails = track_rails.json       ; Track model file
 track_bases = track_bases.json      ; Base stations file
 
 [messaging]

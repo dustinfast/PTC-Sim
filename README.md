@@ -103,6 +103,7 @@ Although typically implemented, this application makes the following concessions
 
 ## # TODO
 
+Move prompt below console output
 Fix stopped/running msg on already stopped/starting
 Consolidate lib sections under one class each?
 Ensure normalized app name

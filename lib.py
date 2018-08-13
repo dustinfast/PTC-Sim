@@ -23,7 +23,7 @@ TRACK_BASES = config.get('track', 'track_bases')
 import struct
 import socket
 import binascii
-from Queue import Empty, Full  # TODO: No Full
+from Queue import Empty
 
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
@@ -293,30 +293,23 @@ class Base:
 socket.setdefaulttimeout(NET_TIMEOUT)
 # TODO: Ensure this is set in each init where it's necessary for proper operation
 
-class MsgQueue:  # TODO: Remove maxsize (msgs expire, no need for it)
-    """ A message queue with push pop, peek, remove, is_empty, and item_count.
+class MsgQueue:
+    """ A threadsafe message queue with push, pop, front, remove, is_empty, 
+        and item_count methods. 
     """
-
-    def __init__(self, maxsize=None):
+    def __init__(self):
         self._items = []            # Container
-        self.maxsize = maxsize      # Max size of self._items
-        # TODO: self.lock = False   # Threadsafe lock
-
-        # Validate maxsize and populate with defaultdata
-        if maxsize and maxsize < 0:
-                raise ValueError('Invalid maxsize.')
+        self.lock = False   # TODO: Threadsafe lock
+        # TODO: Empty exception member
 
     def push(self, item):
         """ Adds an item to the back of queue.
-        Raises Queue.Full if queue at max capacity,
         """
-        if self.is_full():
-            raise Full()
         self._items.append(item)
 
     def pop(self):
         """ Pops front item from queue and returns it.
-            Raises Queue.Empty if queue empty on pop().
+            Raises Queue.Empty if is_empty on pop.
         """
         if self.is_empty():
             raise Empty
@@ -324,39 +317,18 @@ class MsgQueue:  # TODO: Remove maxsize (msgs expire, no need for it)
         self._items = self._items[1:]
         return d
 
-    def peek(self, n=0):
-        """ Returns the nth item from queue front, leaving queue unchanged.
-            Raises IndexError if no nth item.
+    def front(self):
+        """ Returns the item at the queue front, leaving queue unchanged.
             Raises Queue.Empty if queue empty.
         """
         if self.is_empty():
             raise Empty
-
-        try:
-            return self._items[n]
-        except IndexError:
-            raise IndexError('No element at position ' + str(n))
-
-    def remove(self, n=0):
-        """ Removes the nth item from the queue and shuffles other msgs forward.
-            Raises IndexError if no nth item.
-        """
-        try:
-            self._items[n]
-        except IndexError:
-            raise IndexError('No element at position ' + str(n))
-
-        self._items = self._items[0:n] + self._items[n + 1:]
+        return self._items[0]
 
     def is_empty(self):
         """ Returns true iff queue empty.
         """
         return self.item_count() == 0
-
-    def is_full(self):
-        """ Returns true iff queue at max capacity.
-        """
-        return self.maxsize and self.item_count() >= self.maxsize
 
     def item_count(self):
         return len(self._items)
