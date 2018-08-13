@@ -278,7 +278,6 @@ class REPL(object):
         """
         cmds = [c for c in sorted(self.commands.keys()) if c != 'help']
         if cmds:
-            print('Available commands:')
             print('\n'.join(cmds))
         else:
             print('No commands defined.')

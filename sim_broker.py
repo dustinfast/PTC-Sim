@@ -64,16 +64,24 @@ class Broker(object):  # TODO: test mp?
         # The queue parser thread
         self.queue_parser = Thread(target=self._queueparser)
 
-    def start(self):
-        """ Start the message broker, i.e., the msg receiver, fetch watcher and
-            queue parser threads. 
-        """
-        self.running = True
-        self.msg_recvr.start()
-        self.fetch_watcher.start()
-        self.queue_parser.start()
+        # Flag denoting status of REPL
+        self.repl_running = False
 
-        print('Broker: Listening for requests...')
+    def start(self, terminal=False):
+        """ Start the message broker, i.e., the msg receiver, fetch watcher and
+            queue parser threads. If terminal, starts the REPL
+        """
+        if not self.running:
+            self.running = True
+            self.msg_recvr.start()
+            self.fetch_watcher.start()
+            self.queue_parser.start()
+
+        if terminal and not self.repl_running:
+            self.repl_running = True
+            self._repl()
+        else:
+            print('Broker: Running.')
 
     def stop(self):
         """ Stops the msg brokeri.e., the msg receiver, fetch watcher and
@@ -185,16 +193,20 @@ class Broker(object):  # TODO: test mp?
 
             sleep(REFRESH_TIME)
 
+    def _repl(self):
+        """ Blocks while watching for terminal input, then processes it.
+        """
+        # Init the Read-Eval-Print-Loop and start it
+        welcome = '-- Loco Sim Message broker  --\n'
+        welcome += "Try 'help' for a list of commands."
+        repl = REPL(self, 'Broker >> ', welcome)
+        repl.add_cmd('start', 'start()')
+        repl.add_cmd('stop', 'stop()')
+        repl.set_exitcmd('stop')
+        repl.start()
+
 
 if __name__ == '__main__':
-    # Init broker
+    # Start the broker in terminal mode
     broker = Broker()
-    
-    # Init the Read-Eval-Print-Loop and start it
-    welcome = ('-- Loco Sim Message Broker --\nTry "help" for assistance.')
-    repl = REPL(broker, 'Broker >> ', welcome)
-    exit_cond = 'running == False'
-    repl.add_cmd('start', 'start()')
-    repl.add_cmd('stop', 'stop()')
-    repl.set_exitcmd('stop')
-    repl.start()
+    broker.start(terminal=True)

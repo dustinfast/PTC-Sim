@@ -96,7 +96,8 @@ Although typically implemented, this demonstration/simulation makes the followin
 
 ## # TODO
 
-Logger output?
+Logger
+Add sender_addr to log statments
 Standardize file headers
 check all docstrings for PEP8
 Base station module

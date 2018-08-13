@@ -35,15 +35,13 @@ LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 INCREASING = 'increasing'
 DECREASING = 'decreasing'
 
-class LocoSim(Loco):
-    """ A simulated locomotive, including its messaging system.Travels up/down
-        a track and sends/fetches messages.
+class SimLoco(Loco):
+    """ A simulated locomotive, including its messaging system. Travels up/down
+        a track and sends/fetches messages on self.start().
     """
+    # TODO: remove params
     def __init__(self, 
                  id_number=str(randint(1000, 9999)),
-                 broker=BROKER,
-                 broker_send_port=SEND_PORT,
-                 broker_fetch_port=FETCH_PORT,
                  emp_prefix=LOCO_EMP_PREFIX,
                  broker_emp=BOS_EMP,
                  start_mp=LOCO_START_MP,
@@ -64,15 +62,16 @@ class LocoSim(Loco):
 
         # Simulation
         self.running = False
+        self.repl_running = False
         self.makeup_dist = 0
         self.loco_emp = emp_prefix + id_number 
-        self.broker_emp = broker_emp
-        self.msg_client = Client(broker, broker_send_port, broker_fetch_port)
+        self.broker_emp = BOS_EMP
+        self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)
         self.movement_thread = Thread(target=self._movement)
         self.messaging_thread = Thread(target=self._messaging)
 
     def status(self):
-        """ Prints the simulation/locomotive status to the console.
+        """ Prints the simulated locomotives status to the console.
         """
         pnt_str = 'Loco ID: ' + self.ID + '\n'
         pnt_str += 'Sim: ' + {True: 'on', False: 'off'}.get(self.running) + '\n'
@@ -81,20 +80,26 @@ class LocoSim(Loco):
         pnt_str += 'MP: ' + str(self.milepost) + '\n'
         pnt_str += 'Lat: ' + str(self.milepost.lat) + '\n'
         pnt_str += 'Long: ' + str(self.milepost.long) + '\n'
-        pnt_str += 'Heading: ' + self.heading + '\n'
+        pnt_str += 'Heading: ' + str(self.heading) + '\n'
         pnt_str += 'Current base: ' + self.current_base + '\n'
         pnt_str += 'Bases in range: ' + \
                    ', '.join(b.ID for b in self.bases_inrange) + '\n'
 
         print(pnt_str)
 
-    def start(self):
+    def start(self, terminal=False):
         """ Starts the simulator threads. 
         """
-        self.running = True
-        self.movement_thread.start()
-        self.messaging_thread.start()
-        print('Loco ' + self.ID + ': Simulation started...')
+        if not self.running:
+            self.running = True
+            self.movement_thread.start()
+            self.messaging_thread.start()
+
+        if terminal and not self.repl_running:
+            self.repl_running = True
+            self._repl()
+        else:
+            print('Loco ' + self.ID + ': Simulation started...')
 
     def stop(self):
         """ Stops the simulator threads.
@@ -212,27 +217,27 @@ class LocoSim(Loco):
 
         self.heading = compass_bearing
 
-
-if __name__ == '__main__':
-    # Check cmd line args
-    opts = OptionParser()
-    opts.add_option('-b', action='store_true', dest='bos',
-                    help='Accept commands via msging system (vs. command line)')
-    (options, args) = opts.parse_args()
-
-    # Init the loco simulator
-    loco = LocoSim()
-
-    # If BOS mode, loco receives commands from the BOS,
-    # else, loco receives commands from the cmd line.
-    if options.bos:
-        pass  # TODO: BOS mode.
-    else:
+    def _repl(self):
+        """ Blocks while watching for terminal input, then processes it.
+        """
         # Init the Read-Eval-Print-Loop and start it
-        welcome = ('-- Loco Sim Locotive Simulator --\nTry "help" for assistance.')
-        repl = REPL(loco, 'Loco >> ', welcome)
-        exit_cond = 'running == False'
-        repl.add_cmd('start', 'start()')  # TODO: Allow cmd params
+        welcome = '-- Message broker  --\n'
+        welcome += "Try 'help' for a list of commands."
+        repl = REPL(self, 'Loco >> ')
+        repl.add_cmd('start', 'start()')
+        repl.add_cmd('status', 'status()')
         repl.add_cmd('stop', 'stop()')
         repl.set_exitcmd('stop')
         repl.start()
+
+
+if __name__ == '__main__':
+    # TODO: Check cmd line args
+    # opts = OptionParser()
+    # opts.add_option('-b', action='store_true', dest='bos',
+    #                 help='Accept commands via msging system (vs. command line)')
+    # (options, args) = opts.parse_args()
+
+    # Start the locomotive simulation in terminal mode
+    loco = SimLoco()
+    loco.start(terminal=True)

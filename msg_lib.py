@@ -30,7 +30,7 @@ NET_TIMEOUT = float(config.get('misc', 'network_timeout'))
 # Set the timeout for all socket connections
 socket.setdefaulttimeout(NET_TIMEOUT)
 
-class MsgQueue:
+class MsgQueue: # TODO: Remove maxsize (msgs expire, no need for it)
     """ A message queue with push pop, peek, remove, is_empty, and item_count.
     """
     def __init__(self, maxsize=None):
