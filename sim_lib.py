@@ -199,7 +199,7 @@ class Loco(object):
         self.heading = None
         self.direction = None
         self.milepost = None
-        self.current_base = None
+        self.current_baseID = None
         self.bases_inrange = []
 
         if status_msg:
@@ -221,7 +221,7 @@ class Loco(object):
         #     self.speed = content['speed']
         #     self.heading = content['heading']
         #     self.direction = content['direction']
-        #     self.current_base = content['base']
+        #     self.current_baseID = content['base']
         # except KeyError:
         #     raise Exception('Attempted loco update from a malformed message')
 
@@ -234,15 +234,15 @@ class Loco(object):
         else:
             in_range = ', '.join(b.ID for b in self.bases_inrange)
 
-        ret_str = 'Loco: ' + self.ID + ' --\n'
+        ret_str = 'Loco: ' + self.ID + '\n'
         ret_str += 'Speed: ' + str(self.speed) + ' ' + SPEED_UNITS + '\n'
-        ret_str += 'Direction of travel: ' + str(self.direction) + '\n'
+        ret_str += 'Direction of Travel: ' + str(self.direction) + '\n'
         ret_str += 'Milepost: ' + str(self.milepost) + '\n'
         ret_str += 'Lat: ' + str(self.milepost.lat) + '\n'
         ret_str += 'Long: ' + str(self.milepost.long) + '\n'
         ret_str += 'Heading: ' + str(self.heading) + '\n'
-        ret_str += 'Current base: ' + str(self.current_base) + '\n'
-        ret_str += 'Bases in range: ' + in_range
+        ret_str += 'Current Base: ' + str(self.current_baseID) + '\n'
+        ret_str += 'Base(s) in Range: ' + in_range
         
         return ret_str
 

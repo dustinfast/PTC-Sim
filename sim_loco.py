@@ -88,8 +88,8 @@ class SimLoco(Loco):
     def status(self):
         """ Prints the locomotive and simulator status to the console.
         """
-        status = self.get_status()
-        status += 'Sim: ' + {True: 'on', False: 'off'}.get(self.running) + '\n'
+        status = self.get_status() + '\n'
+        status += 'Sim: ' + {True: 'running', False: 'off'}.get(self.running)
 
         print(status)
 
@@ -109,7 +109,7 @@ class SimLoco(Loco):
                        'heading': self.heading,
                        'lat': self.milepost.lat,
                        'long': self.milepost.long,
-                       'base': self.current_base.ID}
+                       'base': self.current_baseID}
 
             status_msg = Message((msg_type,
                                   msg_source,
@@ -173,11 +173,11 @@ class SimLoco(Loco):
                     self.makeup_dist = dist
 
                     # Determine base stations in range of current position
-                    self.base_conns = []
-                    for base in self.track.bases.values():
-                        if base.covers_milepost(self.milepost):
-                            self.base_conns.append(base)
-                            self.current_base = base
+                    self.bases_inrange = [b for b in self.track.bases.values()
+                                          if b.covers_milepost(self.milepost)]
+                    self.current_baseID = None
+                    if self.bases_inrange:
+                        self.current_baseID = self.bases_inrange[0].ID
                     
             sleep(MSG_INTERVAL)
 
