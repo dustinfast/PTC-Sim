@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ sim_bos.py - The Back Office Server (BOS). Watches for locomotive status
     msgs addressed to it at the broker and updates itself based on thier
     content. Also accepts user commands from either the terminal or its web

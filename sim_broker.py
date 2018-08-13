@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ broker.py - A message broker for Edge Message Protocol (EMP) messages.
     Msgs received are enqued for receipt and dequed/served on request.
 
@@ -49,20 +50,18 @@ class Broker(object):
         # Threads
         self.msg_recvr_thread = Thread(target=self._msgreceiver)
         self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
-        self.queue_parser_thread = Thread(target=self._queueparser)
 
         # Flag denoting status of REPL
         self.repl_started = False
 
     def start(self, terminal=False):
-        """ Start the message broker, i.e., the msg receiver, fetch watcher and
-            queue parser threads. If terminal, starts the REPL
+        """ Start the message broker, i.e., the msg receiver and fetch watche
+            threads. If terminal, also starts the REPL
         """
         if not self.running:
             self.running = True
             self.msg_recvr_thread.start()
             self.fetch_watcher_thread.start()
-            self.queue_parser_thread.start()
 
             if terminal and not self.repl_started:
                 self.repl_started = True
@@ -71,8 +70,8 @@ class Broker(object):
                 logger.info('Broker running.')
 
     def stop(self):
-        """ Stops the msg brokeri.e., the msg receiver, fetch watcher and
-            queue parser threads. 
+        """ Stops the msg broker. I.e., the msg receiver and fetch watcher 
+            threads. 
         """
         if self.running:
             # Signal stop to threads and join
@@ -83,7 +82,6 @@ class Broker(object):
             # Redefine threads, to allow starting after stopping
             self.msg_recvr_thread = Thread(target=self._msgreceiver)
             self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
-            self.queue_parser_thread = Thread(target=self._queueparser)
 
         logger.info('Broker stopped.')
 
@@ -174,16 +172,6 @@ class Broker(object):
 
         # Do cleanup
         sock.close()
-        
-    def _queueparser(self):
-        """ Parses self.outgoing_queues and discards expired messages.
-        """
-        while self.running:
-            # TODO: Parse all msgs for TTL
-            # while not g_new_msgs.is_empty():
-            #     msg = g_new_msgs.pop()
-
-            sleep(REFRESH_TIME)
 
     def _repl(self):
         """ Blocks while watching for terminal input, then processes it.

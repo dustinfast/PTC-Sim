@@ -294,8 +294,7 @@ socket.setdefaulttimeout(NET_TIMEOUT)
 # TODO: Ensure this is set in each init where it's necessary for proper operation
 
 class MsgQueue:
-    """ A threadsafe message queue with push, pop, front, remove, is_empty, 
-        and item_count methods. 
+    """ A message queue with push, pop, trim, is_empty, and item_count methods. 
     """
     # TODO: class Empty(Empty):
     #     """ A MsgQueue.Empty Exception. Inherits from Queue.Empty
@@ -305,7 +304,7 @@ class MsgQueue:
 
     def __init__(self):
         self._items = []            # Container
-        self.lock = False   # TODO: Threadsafe lock
+        self.lock = False           # TODO: Threadsafe lock, or use python.Queue
         # TODO: Empty exception member
 
     def push(self, item):
@@ -322,14 +321,6 @@ class MsgQueue:
         d = self._items[0]
         self._items = self._items[1:]
         return d
-
-    def front(self):
-        """ Returns the item at the queue front, leaving queue unchanged.
-            Raises Queue.Empty if queue empty.
-        """
-        if self.is_empty():
-            raise Empty
-        return self._items[0]
 
     def is_empty(self):
         """ Returns true iff queue empty.

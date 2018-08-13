@@ -93,22 +93,12 @@ Each module is well documented and was developed with re-usability and education
 
 ## Caveats
 
-Although typically implemented, this application makes the following concessions for simplicity and demonstrations purposes:
-
-**High Availability**
-Queues, threads, etc., are not redundant or highly available in any way.
-
-**TCP.IP Session mgmt**
-No TCP/IP session management is performed - TCP/IP connections are created and torn down each time a msg is sent or fetched.
-
-**Locomotive Command Messages**
-**Persistent Message Queues**
-Messages are not persistent - when the message broker is terminated, all unfetched msgs are lost.
+This application takes several liberties for the sake of simplicity in demonstration. For example, no high availability, redundancy, or persistent data is implmented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched).
 
 ## # TODO
 
-Class D
-Shebang
+Class D/Qpid?
+Shebang permissions
 Contextual repl (for demo)
 Move prompt below console output
 Consolidate lib sections under one class each?

@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 """ loco.py - Simulates a locomotive traveling on a railroad track and
     sending/receiving status/command messages. See README.md for more info.
 
-Author: Dustin Fast, 2018
+    Author: Dustin Fast, 2018
 """
 
 from Queue import Empty
