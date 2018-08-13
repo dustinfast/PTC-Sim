@@ -1,4 +1,6 @@
 """ lib.py - A collection of shared classes and helpers for loco_sim.
+    Contains railroad components, input/output handlers, and messaging classes.
+    See each section's docstring for more info, as well as README.md.
 
     Author: Dustin Fast, 2018
 """
@@ -22,6 +24,7 @@ TRACK_BASES = config.get('track', 'track_bases')
 
 # Decalare global logger (defined at eof)
 logger = None
+
 
 #############################################################
 # Railroad/Locomotive Component Classes                     #
@@ -258,7 +261,7 @@ class Base:
 
 
 #############################################################
-# Input Classes (REPL, Logger, and Web)                     #
+# Input/Output Handlers (REPL, Logger, and Web)             #
 #############################################################
 
 class REPL(object):
@@ -332,7 +335,7 @@ class REPL(object):
 
 
 class Logger(object):  
-    # TODO: Test write access req. Test inherit from logging.logger.
+    # TODO: Inherit from logging.logger?
     """ A wrapper for Python's logging module. Implements a log with console
         output and rotating log files.
         Example usage: RotatingLog.error('Invalid Value!')
@@ -341,8 +344,8 @@ class Logger(object):
     def __init__(self, 
                  name=LOG_NAME,
                  level=LOG_LEVEL,
-                 files=LOG_FILES,
-                 max_size=LOG_SIZE):
+                 num_files=LOG_FILES,
+                 max_filesize=LOG_SIZE):
         """
         """
         self.logger = logging.getLogger()
@@ -350,7 +353,7 @@ class Logger(object):
         # Define log output format
         fmt_string = '%(asctime)s - %(levelname)s: %(message)s'
         console_fmt = logging.Formatter(fmt_string)
-        log_fmt = logging.Formatter('%(module)s @ ' + fmt_string)
+        log_fmt = logging.Formatter(fmt_string + '@ %(module)s - ')
 
         # Init Console handler (stmnts go to console in addition to logfile)
         console_handler = logging.StreamHandler()
@@ -359,8 +362,8 @@ class Logger(object):
 
         # Init log file rotation
         rotate_handler = RFHandler(name.lower() + ".log", 
-                                   max_size * 1000000,
-                                   files)  
+                                   max_filesize,
+                                   num_files)  
         rotate_handler.setLevel(level)
         rotate_handler.setFormatter(log_fmt)
 

@@ -102,6 +102,8 @@ Although typically implemented, this application makes the following concessions
 
 ## # TODO
 
+Ensure normalized app name
+Seperate log files?
 Better output on connection error
 Debug level logging (status msg send output, queue empty, etc)
 Add sender_addr to log statments

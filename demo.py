@@ -5,25 +5,33 @@
     Author: Dustin Fast, 2018
 """
 
-import time
-# import lib
-import lib
-# import sim_broker
-# import sim_bos
-# import sim_loco
-# import multiprocessing
+import multiprocessing
 
 
-# class #TODO: proc(multiprocessing.Process):
-#     """ Starts a subprocess with the given object.
-#         Assumes object.start() exists. .end()?
-#     """
-#     def __init__(self):
-#         multiprocessing.Process.__init__(self)
-#         self.obj = msg_broker.Broker()
+class demo_process(multiprocessing.Process):
+    """ Starts a subprocess for the loco_sim demo.
+    """
+    def __init__(self, module_name):
+        multiprocessing.Process.__init__(self)
+        self.module_name = module_name
 
-#     def run(self):
-#         self.obj.start()
+    def run(self):
+        if self.module_name == 'loco':
+            import sim_loco as module
+            self.obj = module.SimLoco()
+        elif self.module_name == 'broker':
+            import sim_broker as module
+            self.obj = module.Broker()
+        elif self.module_name == 'bos':
+            import sim_bos as module
+            self.obj = module.BOS
+        else:
+            raise ValueError(self.module_name)
+
+        self.obj.start()
+
+    def stop(self):
+        self.obj.stop()
 
 
 if __name__ == '__main__':
@@ -43,19 +51,28 @@ if __name__ == '__main__':
     #                           msg_dest,
     #                           payload))
 
-    # # Send test msg
-    # client = msg_lib.Client()
-    # client.send_msg(message)
-    # time.sleep(1)
-    # print('Test msg sent to broker')
+    print('-- Loco Sim Demo --\n')
 
-    # # Try to fetch msg from the queue we just sent for
-    # # TODO: try/catch
-    # msg = client.fetch_next_msg(msg_dest)
-    # print(msg.payload)
+    # Start demo procs
+    loco_proc = demo_process('loco').start()
+    broker_proc = demo_process('broker')
+    bos_proc = demo_process('bos')
+
+    
+
+    # Init the Read-Eval-Print-Loop and start it
+    # TODO: Use REPL class
     # while True:
-    #     uinput = raw_input('Demo >>')
-    #     if not uinput:
-    #         continue
-    #     print('Trying: ' + uinput)  # debug
-    #     eval(uinput)
+    #     uinput = raw_input('LocoSim >> ' )
+
+        # Process user input
+        # if not uinput:
+        #     continue  # if null input
+        # if uinput == 'q':
+            
+        #     print('Invalid command. Try "help".')
+        # else:
+        #     eval(cmd)
+    
+
+    

@@ -41,7 +41,7 @@ class SimLoco(Loco):
     """
     # TODO: remove params
     def __init__(self, 
-                 id_number=str(randint(1000, 9999)),
+                 id_number=randint(1000, 9999),
                  emp_prefix=LOCO_EMP_PREFIX,
                  broker_emp=BOS_EMP,
                  start_mp=LOCO_START_MP,
@@ -50,7 +50,7 @@ class SimLoco(Loco):
         """ Instantiates a locomotive simulation.
         """
         # Locomotive
-        Loco.__init__(self, id_number)
+        Loco.__init__(self, str(id_number))
         self.track = Track()
         self.mph = start_speed
         self.direction = start_dir
@@ -65,7 +65,7 @@ class SimLoco(Loco):
         self.running = False
         self.repl_running = False
         self.makeup_dist = 0
-        self.loco_emp = emp_prefix + id_number 
+        self.loco_emp = emp_prefix + self.ID
         self.broker_emp = BOS_EMP
         self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)
         self.movement_thread = Thread(target=self._movement)
