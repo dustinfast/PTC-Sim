@@ -21,11 +21,14 @@ config.read('conf.dat')
 
 # Import conf data
 BROKER = config.get('messaging', 'broker')
-MAX_TRIES = config.get('misc', 'max_retries')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
+REFRESH_TIME = float(config.get('misc', 'refresh_sleep_time'))
+NET_TIMEOUT = float(config.get('misc', 'network_timeout'))
 
+# Set the timeout for all socket connections
+socket.setdefaulttimeout(NET_TIMEOUT)
 
 class MsgQueue:
     """ A message queue with push pop, peek, remove, is_empty, and item_count.
@@ -240,70 +243,57 @@ class Client(object):
         """ Sends the given message (of type Message) over TCP/IP to the 
             broker. The msg will wait at the broker in the queue specified by
             the message to be fetched by other broker clients.
+            Returns True if msg sent succesfully, else raises an issue-
+            specific exception.
         """
-        # Establish socket connection
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.broker, self.send_port))
-        print('Connected to broker ' + self.broker + ':' + str(self.send_port))
+        try:
+            # Init socket and connect to broker
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((self.broker, self.send_port))
+            # print('** Connected to ' + self.broker + ' for fetch.')  # debug
 
-        # Send the msg repeatedly until the recipient gives 'OK' or 'FAIL'
-        while True:
-            sock.send(message.raw_msg.encode('hex'))  # Send msg
-            response = sock.recv(MAX_MSG_SIZE).decode()  # get response
-
-            if response == 'RETRY':
-                print('Msg failed to send... Retrying.')
+            # Send message and wait for a response
+            sock.send(message.raw_msg.encode('hex'))
+            response = sock.recv(MAX_MSG_SIZE).decode()
+            sock.close()
+            if response == 'OK':
+                return True
+            elif response == 'FAIL':  
+                raise Exception('Msg send failed: Broker responded with FAIL.')
             else:
-                if response == 'OK':
-                    print('Msg sent succesfully')  # debug
-                elif response == 'FAIL':  
-                    print('Msg failed to send... No retry requested.')  # debug
-                else:
-                    print('Invalid response received... Aborting.')  # debug
-                break
-
-        sock.close()
+                raise Exception('Unhandled response received from broker - Send aborted.')
+        except Exception as e:
+            raise Exception('Msg send failed: ' + str(e))
 
     def fetch_next_msg(self, queue_name):
-        """ Fetches a msg from the broker.queue_name. The message is removed 
-            from the broker on success.
+        """ Fetches the next msg from queue_name from the broker and returns it,
             Raises Queue.Empty if specified queue is empty.
-            Returns a Message.
         """
-        # Establish socket connection
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.broker, self.fetch_port))
-        print('Connected to broker ' + self.broker + ':' + str(self.fetch_port))
+        try:
+            # Establish socket connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((self.broker, self.fetch_port))
+            print('Connected to ' + self.broker + ' for fetch.')
 
-        # Send fetch request until receipt of 'EMPTY', 'FAIL', or a valid msg.
-        recv_tries = 0
-        while True:
-            recv_tries += 1
-            sock.send(queue_name.encode())  # Send queue_name
-            response = sock.recv(MAX_MSG_SIZE).decode()  # get response
+            # Send queue name and wait for response
+            sock.send(queue_name.encode())
+            response = sock.recv(MAX_MSG_SIZE).decode()
+            print('got response: ' + str(response))
 
-            if response == 'OK':
-                sock.send('READY'.encode())  # Send "READY to receive"
+            msg = None
+            if response == 'EMPTY':
+                raise Empty('Queue empty.')  # No msg available to fetch
+            else:
+                # The response is the msg
                 raw_msg = sock.recv(MAX_MSG_SIZE).decode()
                 try:
                     msg = Message(raw_msg.decode('hex'))
                 except Exception as e:
-                    errstr = 'Transfer failed due to ' + str(e)
-                    if recv_tries < MAX_TRIES:
-                        print(errstr + '... Will retry.')
-                        e = 'RETRY'.encode()
-                        sock.send(e)
-                        continue
-                    else:
-                        print(errstr + '... Retries exhausted.')
-                        sock.send('FAIL'.encode())
-                        break
-                print('Msg fetch succesful')  # debug
-                return msg
-            elif response == 'EMPTY':
-                raise Empty()
-            else:
-                print('Invalid response received... Aborting.')  # debug
-            break
+                        raise Exception('Msg fetched but was invalid: ' + str(e))
+    
+        except Exception as e:
+            raise Exception(e)
 
         sock.close()
+
+        return msg

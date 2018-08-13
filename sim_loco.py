@@ -10,6 +10,7 @@ from threading import Thread
 from optparse import OptionParser
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
+from Queue import Empty
 
 from lib import Track, Loco, REPL
 from msg_lib import Client, Message
@@ -24,6 +25,7 @@ LOCO_START_DIR = config.get('loco', 'start_direction')
 LOCO_START_MP = float(config.get('loco', 'start_milepost'))
 LOCO_START_SPEED = float(config.get('loco', 'start_speed'))
 BROKER = config.get('messaging', 'broker')
+MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
@@ -34,7 +36,8 @@ INCREASING = 'increasing'
 DECREASING = 'decreasing'
 
 class LocoSim(Loco):
-    """ A simulated locomotive, including its messaging system.
+    """ A simulated locomotive, including its messaging system.Travels up/down
+        a track and sends/fetches messages.
     """
     def __init__(self, 
                  id_number=str(randint(1000, 9999)),
@@ -46,7 +49,7 @@ class LocoSim(Loco):
                  start_mp=LOCO_START_MP,
                  start_dir=LOCO_START_DIR,
                  start_speed=LOCO_START_SPEED):
-        """
+        """ Instantiates a locomotive simulation.
         """
         # Locomotive
         Loco.__init__(self, id_number)
@@ -65,51 +68,52 @@ class LocoSim(Loco):
         self.loco_emp = emp_prefix + id_number 
         self.broker_emp = broker_emp
         self.msg_client = Client(broker, broker_send_port, broker_fetch_port)
-        self.travel_thread = Thread(target=self._movement)
+        self.movement_thread = Thread(target=self._movement)
         self.messaging_thread = Thread(target=self._messaging)
 
     def status(self):
         """ Prints the simulation/locomotive status to the console.
         """
-        ret_str = 'Loco ID: ' + self.ID + '\n'
-        ret_str += 'Sim: ' + {True: 'on', False: 'off'}.get(self.running) + '\n'
-        ret_str += 'Speed: ' + str(self.mph) + ' mph\n'
-        ret_str += 'DOT: ' + self.direction + '\n'
-        ret_str += 'MP: ' + str(self.milepost) + '\n'
-        ret_str += 'Lat: ' + str(self.milepost.lat) + '\n'
-        ret_str += 'Long: ' + str(self.milepost.long) + '\n'
-        ret_str += 'Heading: ' + self.heading + '\n'
-        ret_str += 'Current base: ' + self.current_base + '\n'
-        ret_str += 'Bases in range: ' + \
+        pnt_str = 'Loco ID: ' + self.ID + '\n'
+        pnt_str += 'Sim: ' + {True: 'on', False: 'off'}.get(self.running) + '\n'
+        pnt_str += 'Speed: ' + str(self.mph) + ' mph\n'
+        pnt_str += 'DOT: ' + self.direction + '\n'
+        pnt_str += 'MP: ' + str(self.milepost) + '\n'
+        pnt_str += 'Lat: ' + str(self.milepost.lat) + '\n'
+        pnt_str += 'Long: ' + str(self.milepost.long) + '\n'
+        pnt_str += 'Heading: ' + self.heading + '\n'
+        pnt_str += 'Current base: ' + self.current_base + '\n'
+        pnt_str += 'Bases in range: ' + \
                    ', '.join(b.ID for b in self.bases_inrange) + '\n'
 
-        print(ret_str)
+        print(pnt_str)
 
     def start(self):
-        """ Starts the message sending/receving thread. 
+        """ Starts the simulator threads. 
         """
         self.running = True
-        self.travel_thread.start()
+        self.movement_thread.start()
         self.messaging_thread.start()
-        print('Loco ' + self.ID + ': Messaging started...')
+        print('Loco ' + self.ID + ': Simulation started...')
 
     def stop(self):
-        """ Stops the message sending/receving thread.
+        """ Stops the simulator threads.
         """
         if self.running:
+            # Signal stop to threads and join
             self.running = False
-            self.travel_thread.join(timeout=REFRESH_TIME)
+            self.movement_thread.join(timeout=REFRESH_TIME)
             self.messaging_thread.join(timeout=REFRESH_TIME)
-            self.messaging_thread = Thread(target=self._movement)
+
+            # Redefine threads, to allow starting after stopping
+            self.movement_thread = Thread(target=self._movement)
             self.messaging_thread = Thread(target=self._messaging)
-        print('Loco ' + self.ID + ': Messaging Stopped.')
+            print('Loco ' + self.ID + ': Simulation Stopped.')
 
     def _messaging(self):
         """ The loco messaging simulator thread. Sends status msgs and 
-            receives/processes inbound command msgs every REFRESH_TIME seconds.
+            receives/processes inbound command msgs every MSG_INTERVAL seconds.
         """
-        # Init messageing client
-
         while self.running:
             # Build status msg
             msg_type = 6000
@@ -130,43 +134,48 @@ class LocoSim(Loco):
                                   payload))
 
             # Send status message
-            self.msg_client.send_msg(status_msg)
+            try:
+                self.msg_client.send_msg(status_msg)
+                print('Loco: Msg Send success')
+            except Exception as e:
+                print('Loco: Msg send failed due to: ' + str(e))
 
-            # Receive and process any available cmd messages            
+            # Receive and process the next available cmd message, if any
+            cmd_msg = None
             try:
                 cmd_msg = self.msg_client.fetch_next_msg(self.loco_emp)
-            except:
-                # Queue empty at broker. I.e., no msg to fetch.
-                cmd_msg = None  # explicit, for clarity
+            except Empty:
+                print('Loco: No msg avaiable to fetch.')
+            except Exception as e:
+                print('Loco: Msg fetch failed due to: ' + str(e))
             
-            # Process msg, ensuring its for this loco
+            # Process msg, ensuring that its actually for this loco
             if cmd_msg and cmd_msg.payload.get('loco') == self.ID:
                 try:
                     content = cmd_msg.payload
-                    self.milepost = self.track.get_milepost_at(content['mp'])
                     self.speed = content['speed']
                     self.direction = content['direction']
+                    print('Loco: Cmd msg fetched and processed.')
                 except:
-                    print('Malformed cmd msg recevied.')
+                    print('Loco: Malformed cmd msg recevied.')
 
-            sleep(REFRESH_TIME)
+            sleep(MSG_INTERVAL)
 
     def _movement(self):
-        """ The loco movement simulator thread. Refreshes every REFRESH_TIME 
+        """ The loco movement simulator thread. Refreshes every STATUS INTERVAL
             seconds.
         """
         while self.running:
-            # TODO: If helicoptering
             # Move loco, if at speed
             if self.mph > 0:
                 # Determine dist traveled since last iteration, including
                 # makeup distance, if any.
-                hours = REFRESH_TIME / 3600.0  # Seconds to hours for mph
+                hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
                 dist = self.mph * hours * 1.0  # distance = speed * time
                 dist += self.makeup_dist 
 
                 # Set sign of dist based on dir of travel
-                if self.direction == 'DECREASGIN':
+                if self.direction == DECREASING:
                     dist *= -1
 
                 # Get next milepost and any makeup distance
@@ -182,14 +191,14 @@ class LocoSim(Loco):
                     # Determine base stations in range of current position
                     self.base_conns = []
                     for base in self.track.bases.values():
-                        if base.covers_milepost(self.milepost, int(base.ID)):
+                        if base.covers_milepost(self.milepost):
                             self.base_conns.append(base)
                     print('Bases in range:' + str([b.ID for b in self.base_conns]))
 
-            sleep(REFRESH_TIME)
+            sleep(MSG_INTERVAL)
 
     def _set_heading(self, prev_mp, curr_mp):
-        """ Set loco heading based on current and prev milepost lat/long
+        """ Sets loco heading based on current and prev milepost lat/long
         """
         lat1 = radians(prev_mp.lat)
         lat2 = radians(curr_mp.lat)
@@ -199,10 +208,9 @@ class LocoSim(Loco):
         x = sin(long_diff) * cos(lat2)
         y = cos(lat1) * sin(lat2) - (sin(lat1) * cos(lat2) * cos(long_diff))   
         deg = degrees(atan2(x, y))
-        compass_bearing = str((deg + 360) % 360)
-        print('heading: ' + compass_bearing)
+        compass_bearing = (deg + 360) % 360
 
-        self.heading = compass_bearing[:compass_bearing.find(".") + 2]
+        self.heading = compass_bearing
 
 
 if __name__ == '__main__':
@@ -222,9 +230,9 @@ if __name__ == '__main__':
     else:
         # Init the Read-Eval-Print-Loop and start it
         welcome = ('-- Loco Sim Locotive Simulator --\nTry "help" for assistance.')
-        repl = REPL(loco, prompt='Loco >> ')
+        repl = REPL(loco, 'Loco >> ', welcome)
         exit_cond = 'running == False'
-        repl.set_exitcond(exit_cond, 'Cannot exit while running. Try "stop" first')
         repl.add_cmd('start', 'start()')  # TODO: Allow cmd params
         repl.add_cmd('stop', 'stop()')
+        repl.set_exitcmd('stop')
         repl.start()

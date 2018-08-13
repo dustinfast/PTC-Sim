@@ -214,7 +214,7 @@ class Base:
         """ Given a milepost, returns True if this base station provides 
             coverage at that milepost, else returns False.
         """
-        return milepost >= self.cov_start and milepost <= self.cov_end
+        return milepost.mp >= self.cov_start and milepost <= self.cov_end
 
 
 class REPL(object):
@@ -234,7 +234,7 @@ class REPL(object):
         self.context = context
         self.prompt = prompt
         self.welcome_msg = welcome_msg
-        self.exit_conditions = {}
+        self.exit_command = None
         self.commands = {'help': 'self._help()',
                          'exit': 'self._exit()'
                          }
@@ -255,7 +255,6 @@ class REPL(object):
             if not cmd:
                 print('Invalid command. Try "help".')
             else:
-                # print('Trying: ' + cmd)  # debug
                 eval(cmd)
 
     def add_cmd(self, cmd_txt, expression):
@@ -268,14 +267,11 @@ class REPL(object):
             raise ValueError('An internal cmd override was attempted.')
         self.commands[cmd_txt] = 'self.context.' + expression
 
-    def set_exitcond(self, expression, error_string):
-        """ Specifies what must be true, in the given context, before exit.
-                expression: A well formed python expression.
-                            ex: 'stopped == True'
-                error_string: The error string to display on exit when
-                              expression resolves to False
+    def set_exitcmd(self, cmd):
+        """ Specifies a command to run on exit. Example: 'stop', if a stop
+            command is defined and performs cleanup, etc.
         """
-        self.exit_conditions['self.context.' + expression] = error_string
+        self.exit_command = cmd
 
     def _help(self):
         """ Outputs all available commands to the console, excluding 'help'.
@@ -288,17 +284,11 @@ class REPL(object):
             print('No commands defined.')
 
     def _exit(self):
-        """ Calls exit(). If set_exit_cond() was used, exits conditionally.
+        """ Calls exit() after doing the cmd specified by self.exit_command.
         """
-        ok_to_exit = True
-        for cond, errstr in self.exit_conditions.items():
-            if not eval(cond):
-                print(errstr)
-                ok_to_exit = False
-                break
-
-        if ok_to_exit:
-            exit()
+        if self.exit_command:
+            eval(self.commands[self.exit_command])
+        exit()
 
 
 #############

@@ -23,12 +23,13 @@
 
     Author: Dustin Fast, 2018
 """
-import socket
+import socket  # Also sets socket timeout based on conf.dat
 from ConfigParser import RawConfigParser
 from time import sleep
 from threading import Thread
 from msg_lib import Message, MsgQueue
 from lib import REPL
+from Queue import Empty
 
 # Init conf
 config = RawConfigParser()
@@ -68,13 +69,6 @@ class Broker(object):  # TODO: test mp?
             queue parser threads. 
         """
         self.running = True
-
-        # Redefine threads, to allow starting after stopping
-        self.msg_recvr = Thread(target=self._msgreceiver)
-        self.fetch_watcher = Thread(target=self._fetchwatcher)
-        self.queue_parser = Thread(target=self._queueparser)
-
-        # Start threads
         self.msg_recvr.start()
         self.fetch_watcher.start()
         self.queue_parser.start()
@@ -86,9 +80,16 @@ class Broker(object):  # TODO: test mp?
             queue parser threads. 
         """
         if self.running:
-            self.running = False 
+            # Signal stop to threads and join
+            self.running = False
             self.msg_recvr.join(timeout=REFRESH_TIME)
             self.fetch_watcher.join(timeout=REFRESH_TIME)
+
+            # Redefine threads, to allow starting after stopping
+            self.msg_recvr = Thread(target=self._msgreceiver)
+            self.fetch_watcher = Thread(target=self._fetchwatcher)
+            self.queue_parser = Thread(target=self._queueparser)
+
         print('Broker: Stopped.')
 
     def _msgreceiver(self):
@@ -98,7 +99,7 @@ class Broker(object):  # TODO: test mp?
         # Init TCP/IP listener
         # TOOD: Move to lib
         sock = socket.socket()
-        sock.settimeout(REFRESH_TIME)
+        # sock.settimeout(REFRESH_TIME)
         sock.bind((BROKER, BROKER_RECV_PORT))
         sock.listen(1)
 
@@ -108,34 +109,30 @@ class Broker(object):  # TODO: test mp?
                 conn, client = sock.accept()
             except:
                 continue
-            print ('Broker: Send request received from: ' + str(client))
+            print ('Broker: Incoming msg from ' + str(client[0]))
 
             # Receive the msg from sender, responding with either OK or FAIL
             try:
                 raw_msg = conn.recv(MAX_MSG_SIZE).decode()
                 msg = Message(raw_msg.decode('hex'))
+                conn.send('OK'.encode())
+                conn.close()
             except Exception as e:
                 print('Broker: Msg recv failed due to ' + str(e))
                 try:
                     conn.send('FAIL'.encode())
-                    conn.close()
                 except:
-                    continue
+                    pass
+                conn.close()
+                continue
 
-                # Add msg to outgoing queue dict, keyed by dest_addr
-                if not self.outgoing_queues.get(msg.dest_addr):
-                    self.outgoing_queues[msg.dest_addr] = MsgQueue()
-                self.outgoing_queues[msg.dest_addr].push(msg)
-                logstr = 'Broker: Received msg from ' + msg.sender_addr + ' '
-                logstr += 'for ' + msg.dest_addr
-                print(logstr)
-
-                # Ack success with sender and close connection
-                try:
-                    conn.send('OK'.encode())
-                    conn.close()
-                except:
-                    continue
+            # Add msg to outgoing queue dict, keyed by dest_addr
+            if not self.outgoing_queues.get(msg.dest_addr):
+                self.outgoing_queues[msg.dest_addr] = MsgQueue()
+            self.outgoing_queues[msg.dest_addr].push(msg)
+            logstr = 'Broker: Received msg from ' + msg.sender_addr + ' '
+            logstr += 'for ' + msg.dest_addr
+            print(logstr)
 
         # Do cleanup
         sock.close()
@@ -146,7 +143,7 @@ class Broker(object):  # TODO: test mp?
         """
         # Init listener
         sock = socket.socket()
-        sock.settimeout(REFRESH_TIME)
+        # sock.settimeout(REFRESH_TIME)
         sock.bind((BROKER, BROKER_FETCH_PORT))
         sock.listen(1)
 
@@ -156,31 +153,22 @@ class Broker(object):  # TODO: test mp?
                 conn, client = sock.accept()
             except:
                 continue
-            print ('Broker: Fetch request received from: ' + str(client))
 
-            # Process the request, responding with either READY, EMPTY, OK
-            # or FAIL.
+            # Process the request
             try:
                 queue_name = conn.recv(MAX_MSG_SIZE).decode()
-                print('Broker: ' + queue_name + ' fetch requested.')
+                print('Broker: ' + queue_name +
+                      ' fetch requested from ' + str(client[0]))
 
-                # Ensure queue exists and is not empty
-                # TODO: Ensure success before removing msg from queue
+                msg = None
                 try:
                     msg = self.outgoing_queues[queue_name].pop()
                 except:
-                    # As far as the client is concerned, the queue is empty.
-                    msg = None  # implicit, but defined here for clarity
-
-                try:
-                    if msg:
-                        conn.send('READY'.encode())  # Signal READY to send
-                        conn.send(msg.raw_msg.encode('hex'))  # Send msg
-                    else:
-                        conn.send('EMPTY'.encode())
-                    conn.close()
-                except:
-                    continue
+                    conn.send('EMPTY'.encode())
+                
+                if msg:
+                    conn.send(msg.raw_msg.encode('hex'))  # Send msg
+                conn.close()
             except:
                 continue
 
@@ -204,9 +192,9 @@ if __name__ == '__main__':
     
     # Init the Read-Eval-Print-Loop and start it
     welcome = ('-- Loco Sim Message Broker --\nTry "help" for assistance.')
-    repl = REPL(broker, prompt='Broker>> ')
+    repl = REPL(broker, 'Broker >> ', welcome)
     exit_cond = 'running == False'
-    repl.set_exitcond(exit_cond, 'Cannot exit while running. Try "stop" first')
     repl.add_cmd('start', 'start()')
     repl.add_cmd('stop', 'stop()')
+    repl.set_exitcmd('stop')
     repl.start()
