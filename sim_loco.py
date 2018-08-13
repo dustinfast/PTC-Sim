@@ -5,13 +5,12 @@
     Author: Dustin Fast, 2018
 """
 
-from Queue import Empty
 from random import randint
 from time import time, sleep
 from threading import Thread
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
-from sim_lib import Track, Loco, Client, Message, REPL, logger
+from sim_lib import Track, Loco, Client, Queue, Message, REPL, logger
 
 # Init conf
 config = RawConfigParser()
@@ -31,7 +30,6 @@ class SimLoco(Loco):
     """ A simulated locomotive, including its messaging system. Travels up/down
         a track and sends status msgs/fetches cmd messages on self.start().
     """
-    # TODO: remove params (emp to parent)
     def __init__(self, locoID=randint(1000, 9999)):
         """ Instantiates a locomotive simulation.
         """
@@ -45,7 +43,7 @@ class SimLoco(Loco):
         # Current milepost
         self.milepost = self.track.get_milepost_at(START_MP)
         if not self.milepost:
-            raise ValueError('No milepost exists at the given start milep')
+            raise ValueError('No milepost exists at the given start milepost')
 
         # Simulation 
         self.running = False
@@ -142,7 +140,7 @@ class SimLoco(Loco):
             cmd_msg = None
             try:
                 cmd_msg = self.msg_client.fetch_next_msg(self.loco_emp)
-            except Empty:
+            except Queue.Empty:
                 logger.debug(self.disp_str + ' No msg available to fetch.')
             except Exception as e:
                 logger.error(self.disp_str + ' Fetch failed due to ' + str(e))
@@ -226,12 +224,6 @@ class SimLoco(Loco):
 
 
 if __name__ == '__main__':
-    # TODO: Check cmd line args
-    # opts = OptionParser()
-    # opts.add_option('-b', action='store_true', dest='bos',
-    #                 help='Accept commands via msging system (vs. command line)')
-    # (options, args) = opts.parse_args()
-
     # Start the locomotive simulation in terminal mode
     loco = SimLoco()
     loco.start(terminal=True)

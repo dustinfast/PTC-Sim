@@ -8,7 +8,6 @@
 
 import time
 import multiprocessing
-from Queue import Empty
 
 
 class _process(multiprocessing.Process):
@@ -42,7 +41,7 @@ class _process(multiprocessing.Process):
                 self.signal_queue.get(timeout=1)
                 self.obj.stop()
                 break
-            except Empty:
+            except:
                 pass
 
 

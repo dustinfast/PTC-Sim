@@ -20,7 +20,7 @@ import socket
 from time import sleep
 from threading import Thread
 from ConfigParser import RawConfigParser
-from sim_lib import Message, MsgQueue, REPL, logger  # Also sets socket timeout
+from sim_lib import Queue, Message, REPL, logger  # Also sets socket timeout
 
 # Init conf
 config = RawConfigParser()
@@ -40,7 +40,7 @@ class Broker(object):
     def __init__(self):
         """ Instantiates a message broker object.
         """
-        # Dict of outgoing msg queues, by dest address: { ADDRESS: MsgQueue }
+        # Dict of outgoing msg queues, by dest address: { ADDRESS: Queue }
         self.outgoing_queues = {}
 
         # On/Off flags
@@ -122,8 +122,8 @@ class Broker(object):
 
             # Add msg to outgoing queue dict, keyed by dest_addr
             if not self.outgoing_queues.get(msg.dest_addr):
-                self.outgoing_queues[msg.dest_addr] = MsgQueue()
-            self.outgoing_queues[msg.dest_addr].push(msg)
+                self.outgoing_queues[msg.dest_addr] = Queue.Queue()
+            self.outgoing_queues[msg.dest_addr].put(msg)
             log_str = 'Msg received from ' + msg.sender_addr + ' '
             log_str += 'for ' + msg.dest_addr
             logger.info(log_str)
@@ -156,7 +156,7 @@ class Broker(object):
 
                 msg = None
                 try:
-                    msg = self.outgoing_queues[queue_name].pop()
+                    msg = self.outgoing_queues[queue_name].get(timeout=.5)
                 except:
                     log_str += 'Queue empty.'
                     conn.send('EMPTY'.encode())

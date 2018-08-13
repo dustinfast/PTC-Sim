@@ -98,6 +98,9 @@ This application takes several liberties for the sake of simplicity in demonstra
 ## # TODO
 
 Class D/Qpid?
+Web input
+bos loco cmds
+Command line args
 Shebang permissions
 Contextual repl (for demo)
 Move prompt below console output
@@ -108,7 +111,6 @@ Standardize file headers
 check all docstrings for PEP8
 Privatize necessary members and do validation on public members
 Symbolic constants
-Empty to lib (class.Empty)
 readme screenshots
 TrackCircuits
 Flask

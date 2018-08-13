@@ -20,10 +20,10 @@ TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
 
 # Messaging lib imports and conf data
-import struct
+import Queue
+from struct import pack, unpack
 import socket
-import binascii
-from Queue import Empty
+from binascii import crc32
 
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
@@ -289,47 +289,8 @@ class Base:
     variable-length header messages adhering to the Edge Message Protocol(EMP)
     over TCP/IP. See README.md for implementation specific information.
 """
-# Set the timeout for all socket connections
+# Set default timeout for all sockets, including importers of this library
 socket.setdefaulttimeout(NET_TIMEOUT)
-# TODO: Ensure this is set in each init where it's necessary for proper operation
-
-class MsgQueue:
-    """ A message queue with push, pop, trim, is_empty, and item_count methods. 
-    """
-    # TODO: class Empty(Empty):
-    #     """ A MsgQueue.Empty Exception. Inherits from Queue.Empty
-    #     """
-    #     def __init__(self):
-    #         Exception.__init__(self)
-
-    def __init__(self):
-        self._items = []            # Container
-        self.lock = False           # TODO: Threadsafe lock, or use python.Queue
-        # TODO: Empty exception member
-
-    def push(self, item):
-        """ Adds an item to the back of queue.
-        """
-        self._items.append(item)
-
-    def pop(self):
-        """ Pops front item from queue and returns it.
-            Raises Queue.Empty if is_empty on pop.
-        """
-        if self.is_empty():
-            raise Empty
-        d = self._items[0]
-        self._items = self._items[1:]
-        return d
-
-    def is_empty(self):
-        """ Returns true iff queue empty.
-        """
-        return self.item_count() == 0
-
-    def item_count(self):
-        return len(self._items)
-
 
 class Message(object):
     """ A representation of a message, including it's raw EMP form. Contains
@@ -376,24 +337,24 @@ class Message(object):
         # i.e. len(source and destination strings) + null terminators.
         var_headsize = len(sender_addr) + len(dest_addr) + 2
 
-        # Build the raw msg (#TODO: big-endian?) using struct.pack, noting:
+        # Build the raw msg  using struct.pack, noting:
         #   B = unsigned char, 8 bits
         #   H = unsigned short, 16 bits
         #   I = unsigned int, 32 bits
         #   i = signed int, 32 bits
         try:
             # Pack EMP "Common Header"
-            raw_msg = struct.pack(">B", 4)  # 8 bit EMP header version
-            raw_msg += struct.pack(">H", msg_type)  # 16 bit message type/ID
-            raw_msg += struct.pack(">B", 1)  # 8 bit message version
-            raw_msg += struct.pack(">B", 0)  # 8 bit flag, all zeroes here.
-            raw_msg += struct.pack(">I", body_size)[1:]  # 24 bit msg body size
+            raw_msg = pack(">B", 4)  # 8 bit EMP header version
+            raw_msg += pack(">H", msg_type)  # 16 bit message type/ID
+            raw_msg += pack(">B", 1)  # 8 bit message version
+            raw_msg += pack(">B", 0)  # 8 bit flag, all zeroes here.
+            raw_msg += pack(">I", body_size)[1:]  # 24 bit msg body size
 
             # Pack EMP "Variable Header"
             # 8 bit variable header size
-            raw_msg += struct.pack(">B", var_headsize)
-            raw_msg += struct.pack(">H", 120)  # 16 bit network TTL (seconds)
-            raw_msg += struct.pack(">H", 0)  # 16 bit QoS, 0 = no preference
+            raw_msg += pack(">B", var_headsize)
+            raw_msg += pack(">H", 120)  # 16 bit network TTL (seconds)
+            raw_msg += pack(">H", 0)  # 16 bit QoS, 0 = no preference
             raw_msg += sender_addr  # 64 byte (max) msg source addr string
             raw_msg += '\x00'  # null terminate msg source address
             raw_msg += dest_addr  # 64 byte (max) msg dest addr string
@@ -401,7 +362,7 @@ class Message(object):
 
             # Pack msg body
             raw_msg += payload_str  # Variable size
-            raw_msg += struct.pack(">i", binascii.crc32(raw_msg))  # 32 bit CRC
+            raw_msg += pack(">i", crc32(raw_msg))  # 32 bit CRC
         except:
             raise Exception("Msg format is invalid")
 
@@ -416,15 +377,15 @@ class Message(object):
             raise Exception("Invalid message format")
 
         # Ensure good CRC
-        msg_crc = struct.unpack(">i", raw_msg[-4::])[0]  # last 4 bytes
-        raw_crc = binascii.crc32(raw_msg[:-4])
+        msg_crc = unpack(">i", raw_msg[-4::])[0]  # last 4 bytes
+        raw_crc = crc32(raw_msg[:-4])
 
         if msg_crc != raw_crc:
             raise Exception("CRC Mismatch - message may be corrupt.")
 
         # Unpack msg fields, noting that unpack returns results as a tuple
-        msg_type = struct.unpack('>H', raw_msg[1:3])[0]  # bytes 1-2
-        vhead_size = struct.unpack('>B', raw_msg[8:9])[0]  # byte 8
+        msg_type = unpack('>H', raw_msg[1:3])[0]  # bytes 1-2
+        vhead_size = unpack('>B', raw_msg[8:9])[0]  # byte 8
 
         # Extract sender, destination, and playload based on var header size
         vhead_end = 13 + vhead_size
@@ -500,7 +461,7 @@ class Client(object):
 
         msg = None
         if resp == 'EMPTY':
-            raise Empty  # No msg available to fetch
+            raise Queue.Empty  # No msg available to fetch
         else:
             msg = Message(resp.decode('hex'))  # Response is the msg
 
@@ -517,7 +478,7 @@ class Client(object):
 """
 
 class REPL(object):
-# TODO: Pass object ref into command dict and do away with self.context
+    # TODO: Pass object ref into command dict and do away with self.context
     """ A dynamic Read-Eval-Print-Loop. I.e. A command line interface.
         Contains two predefined commands: help, and exit. Additional cmds may
         be added with add_cmd(). These additional cmds all operate on the object
@@ -587,7 +548,6 @@ class REPL(object):
 
 
 class Logger(object):  
-    # TODO: Inherit from logging.logger?
     """ A wrapper for Python's logging module. Implements a log with console
         output and rotating log files.
         Example usage: RotatingLog.error('Invalid Value!')

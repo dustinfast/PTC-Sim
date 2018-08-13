@@ -8,10 +8,9 @@
 """
 
 from time import sleep
-from Queue import Empty
 from threading import Thread
 from ConfigParser import RawConfigParser
-from sim_lib import Loco, Client, REPL, logger
+from sim_lib import Loco, Client, Queue, REPL, logger
 
 # Init conf
 config = RawConfigParser()
@@ -77,7 +76,7 @@ class BOS(object):
             msg = None
             try:
                 msg = self.msg_client.fetch_next_msg(BOS_EMP)
-            except Empty:
+            except Queue.Empty:
                 logger.debug('Status msg queue empty.')
             except Exception as e:
                 logger.error('Msg fetch failed due to: ' + str(e))
