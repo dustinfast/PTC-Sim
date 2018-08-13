@@ -48,11 +48,11 @@ class BOS(object):
             self.running = True
             self.status_watcher_thread.start()
 
-        if terminal and not self.repl_started:
-            self.repl_started = True
-            self._repl()
-        else:
-            logger.info('BOS running.')
+            if terminal and not self.repl_started:
+                self.repl_started = True
+                self._repl()
+            else:
+                logger.info('BOS running.')
 
     def stop(self):
         """ Stops the BOS.

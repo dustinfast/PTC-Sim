@@ -91,11 +91,11 @@ class SimLoco(Loco):
             self.movement_thread.start()
             self.messaging_thread.start()
 
-        if terminal and not self.repl_started:
-            self.repl_started = True
-            self._repl()
-        else:
-            logger.info(self.disp_str + ' Simulation started.')
+            if terminal and not self.repl_started:
+                self.repl_started = True
+                self._repl()
+            else:
+                logger.info(self.disp_str + ' Simulation started.')
 
     def stop(self):
         """ Stops the simulator threads.

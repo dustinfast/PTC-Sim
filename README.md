@@ -103,12 +103,11 @@ Although typically implemented, this application makes the following concessions
 
 ## # TODO
 
+Contextual repl (for demo)
 Move prompt below console output
-Fix stopped/running msg on already stopped/starting
 Consolidate lib sections under one class each?
 Ensure normalized app name
 Better output on connection error
-Add sender_addr to log statments
 Standardize file headers
 check all docstrings for PEP8
 Base station module?

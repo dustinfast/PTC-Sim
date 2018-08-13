@@ -45,7 +45,7 @@ class _process(multiprocessing.Process):
 
 
 def start():
-# TODO: No log output to console for demo
+    # TODO: No log output to console for demo
     """ Start the LocoSim application, with each component existing in a 
         seperate process.
     """

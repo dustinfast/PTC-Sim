@@ -72,11 +72,11 @@ class Broker(object):
             self.fetch_watcher_thread.start()
             self.queue_parser_thread.start()
 
-        if terminal and not self.repl_started:
-            self.repl_started = True
-            self._repl()
-        else:
-            logger.info('Broker running.')
+            if terminal and not self.repl_started:
+                self.repl_started = True
+                self._repl()
+            else:
+                logger.info('Broker running.')
 
     def stop(self):
         """ Stops the msg brokeri.e., the msg receiver, fetch watcher and
