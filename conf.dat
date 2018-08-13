@@ -3,7 +3,8 @@
 ; Author: Dustin Fast, 2018
 
 [logging]
-log_name = logfile                  ; The logfile name
+filename = logfile                  ; The logfile name
+level = 10                          ; 10 = DEBUG, 20 = INFO, 30 = WARN
 num_logfiles = 1                    ; Max number of rotating logfiles
 max_logfile_size = 1000000          ; Max log size, in bytes, before rotation
 

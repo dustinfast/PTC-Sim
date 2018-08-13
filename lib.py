@@ -13,9 +13,10 @@ config = RawConfigParser()
 config.read('conf.dat')
 
 # Import conf data
-LOG_NAME = config.get('logging', 'log_name')
+LOG_NAME = config.get('logging', 'filename')
+LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_FILES = config.get('logging', 'num_logfiles')
-LOG_SIZE = config.get('logging', 'max_logfile_size')
+LOG_SIZE = int(config.get('logging', 'max_logfile_size'))
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
 
@@ -201,13 +202,20 @@ class Loco(object):
         # except KeyError:
         #     raise Exception('Attempted loco update from a malformed message')
 
-    def __str__(self):
-        """ Returns a string representation of the locomotive.
+    def get_status(self):
+        """ Returns a string representation of the locos current status.
         """
+        if not self.bases_inrange:
+            bases = 'no bases.'
+        else:
+            bases = 'bases ' + ', '.join(self.bases_inrange)
+            bases += ' and connected to base ' + str(self.current_base) + '.'
+
         ret_str = 'Loco ' + self.ID
         ret_str += ' at mp ' + str(self.milepost)
         ret_str += ' traveling in a(n) ' + str(self.direction)
         ret_str += ' going ' + str(self.speed) + 'mph'
+        ret_str += ' is in range of ' + bases
         return ret_str
 
 
@@ -246,7 +254,7 @@ class Base:
         """ Given a milepost, returns True if this base station provides 
             coverage at that milepost, else returns False.
         """
-        return milepost.mp >= self.cov_start and milepost <= self.cov_end
+        return milepost.mp >= self.cov_start and milepost.mp <= self.cov_end
 
 
 #############################################################
@@ -323,13 +331,18 @@ class REPL(object):
         exit()
 
 
-class RotatingLog(object):  # TODO: Test needs write access and test inherit from logging
+class Logger(object):  
+    # TODO: Test write access req. Test inherit from logging.logger.
     """ A wrapper for Python's logging module. Implements a log with console
         output and rotating log files.
         Example usage: RotatingLog.error('Invalid Value!')
                        RotatingLog.info('Started Succesfully.')
     """
-    def __init__(self, name=LOG_NAME, files=LOG_FILES, max_size=LOG_SIZE):
+    def __init__(self, 
+                 name=LOG_NAME,
+                 level=LOG_LEVEL,
+                 files=LOG_FILES,
+                 max_size=LOG_SIZE):
         """
         """
         self.logger = logging.getLogger()
@@ -341,21 +354,21 @@ class RotatingLog(object):  # TODO: Test needs write access and test inherit fro
 
         # Init Console handler (stmnts go to console in addition to logfile)
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
+        console_handler.setLevel(level)
         console_handler.setFormatter(console_fmt)
 
         # Init log file rotation
         rotate_handler = RFHandler(name.lower() + ".log", 
                                    max_size * 1000000,
                                    files)  
-        rotate_handler.setLevel(logging.INFO)
+        rotate_handler.setLevel(level)
         rotate_handler.setFormatter(log_fmt)
 
         # Init the logger itself
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(level)
         self.logger.addHandler(rotate_handler)
         self.logger.addHandler(console_handler)
 
 
 # Init global logger
-logger = RotatingLog().logger
+logger = Logger().logger

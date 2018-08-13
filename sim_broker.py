@@ -28,7 +28,7 @@ from ConfigParser import RawConfigParser
 from time import sleep
 from threading import Thread
 from msg_lib import Message, MsgQueue
-from lib import REPL
+from lib import REPL, logger
 from Queue import Empty
 
 # Init conf
@@ -81,7 +81,7 @@ class Broker(object):  # TODO: test mp?
             self.repl_running = True
             self._repl()
         else:
-            print('Broker: Running.')
+            logger.info('Broker running.')
 
     def stop(self):
         """ Stops the msg brokeri.e., the msg receiver, fetch watcher and
@@ -98,7 +98,7 @@ class Broker(object):  # TODO: test mp?
             self.fetch_watcher = Thread(target=self._fetchwatcher)
             self.queue_parser = Thread(target=self._queueparser)
 
-        print('Broker: Stopped.')
+        logger.info('Broker stopped.')
 
     def _msgreceiver(self):
         """ Watches for incoming messages over TCP/IP on the interface and port 
@@ -117,16 +117,17 @@ class Broker(object):  # TODO: test mp?
                 conn, client = sock.accept()
             except:
                 continue
-            print ('Broker: Incoming msg from ' + str(client[0]))
 
             # Receive the msg from sender, responding with either OK or FAIL
+            log_str = 'Incoming msg from ' + str(client[0]) + '. Result='
             try:
                 raw_msg = conn.recv(MAX_MSG_SIZE).decode()
                 msg = Message(raw_msg.decode('hex'))
                 conn.send('OK'.encode())
                 conn.close()
             except Exception as e:
-                print('Broker: Msg recv failed due to ' + str(e))
+                log_str += 'Msg recv failed due to ' + str(e)
+                logger.error(log_str)
                 try:
                     conn.send('FAIL'.encode())
                 except:
@@ -138,9 +139,9 @@ class Broker(object):  # TODO: test mp?
             if not self.outgoing_queues.get(msg.dest_addr):
                 self.outgoing_queues[msg.dest_addr] = MsgQueue()
             self.outgoing_queues[msg.dest_addr].push(msg)
-            logstr = 'Broker: Received msg from ' + msg.sender_addr + ' '
-            logstr += 'for ' + msg.dest_addr
-            print(logstr)
+            log_str = 'Msg received from ' + msg.sender_addr + ' '
+            log_str += 'for ' + msg.dest_addr
+            logger.info(log_str)
 
         # Do cleanup
         sock.close()
@@ -161,21 +162,25 @@ class Broker(object):  # TODO: test mp?
                 conn, client = sock.accept()
             except:
                 continue
-
+            
             # Process the request
+            log_str = 'Fetch request from ' + str(client[0]) + ' '
             try:
                 queue_name = conn.recv(MAX_MSG_SIZE).decode()
-                print('Broker: ' + queue_name +
-                      ' fetch requested from ' + str(client[0]))
+                log_str += 'for ' + queue_name + '. Result='
 
                 msg = None
                 try:
                     msg = self.outgoing_queues[queue_name].pop()
                 except:
+                    log_str += 'Queue empty.'
                     conn.send('EMPTY'.encode())
                 
                 if msg:
                     conn.send(msg.raw_msg.encode('hex'))  # Send msg
+                    log_str += 'Msg served.'
+
+                logger.info(log_str)
                 conn.close()
             except:
                 continue

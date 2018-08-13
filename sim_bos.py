@@ -60,7 +60,7 @@ class BOS(object):
             self.repl_running = True
             self._repl()
         else:
-            logger.info('BOS Running.')
+            logger.info('BOS running.')
 
     def stop(self):
         """ Stops the BOS.
@@ -73,7 +73,7 @@ class BOS(object):
             # Redefine threads, to allow starting after stopping
             self.status_watcher = Thread(target=self._statuswatcher)
 
-        logger.info('BOS Stopped.')
+        logger.info('BOS stopped.')
 
     def _statuswatcher(self):
         """ The status message watcher thread - watches the broker for msgs
@@ -85,17 +85,18 @@ class BOS(object):
             try:
                 msg = self.msg_client.fetch_next_msg(BOS_EMP)
             except Empty:
-                logger.info('Status msg queue empty.')
+                logger.debug('Status msg queue empty.')
             except Exception as e:
                 logger.error('Msg fetch failed due to: ' + str(e))
 
             # TODO: Process loco status msg
-            # if msg:
-            #     try:
-            #         loco = Loco(msg.payload['loco'], msg)
-            #         logger.info(str(loco))
-            #     except KeyError as e:
-            #         logger.error('Malformed status msg received: ' + str(e))
+            if msg:
+                try:
+                    # loco = Loco(msg.payload['loco'], msg)
+                    # logger.info(str(loco))
+                    logger.debug('Recvd status msg.')
+                except KeyError as e:
+                    logger.error('Malformed status msg received: ' + str(e))
 
             sleep(MSG_INTERVAL)
 
@@ -105,7 +106,7 @@ class BOS(object):
         # Init the Read-Eval-Print-Loop and start it
         welcome = '-- Loco Sim Back Office Server  --\n'
         welcome += "Try 'help' for a list of commands."
-        repl = REPL(self, 'BOS>> ',)
+        repl = REPL(self, 'BOS >> ', welcome)
         repl.add_cmd('start', 'start()')
         repl.add_cmd('stop', 'stop()')
         repl.set_exitcmd('stop')
