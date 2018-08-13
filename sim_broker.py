@@ -47,7 +47,7 @@ class Broker(object):
     def __init__(self):
         """ Instantiates a message broker object.
         """
-        # Dict of outgoing msg queues, by address: { dest_addr: MsgQueue }
+        # Dict of outgoing msg queues, by dest address: { ADDRESS: MsgQueue }
         self.outgoing_queues = {}
 
         # On/Off flags
@@ -60,6 +60,7 @@ class Broker(object):
         self.queue_parser_thread = Thread(target=self._queueparser)
 
         # Flag denoting status of REPL
+        self.repl_started = False
 
     def start(self, terminal=False):
         """ Start the message broker, i.e., the msg receiver, fetch watcher and

@@ -520,6 +520,7 @@ class Client(object):
 """
 
 class REPL(object):
+# TODO: Pass object ref into command dict and do away with self.context
     """ A dynamic Read-Eval-Print-Loop. I.e. A command line interface.
         Contains two predefined commands: help, and exit. Additional cmds may
         be added with add_cmd(). These additional cmds all operate on the object
