@@ -23,13 +23,11 @@
 
     Author: Dustin Fast, 2018
 """
-import socket  # Also sets socket timeout based on conf.dat
+import socket  
 from ConfigParser import RawConfigParser
 from time import sleep
 from threading import Thread
-from msg_lib import Message, MsgQueue
-from lib import REPL, logger
-from Queue import Empty
+from lib import Message, MsgQueue, REPL, logger  # Also sets socket timeout from conf.dat
 
 # Init conf
 config = RawConfigParser()
@@ -37,13 +35,13 @@ config.read('conf.dat')
 
 # Import conf data
 BROKER = config.get('messaging', 'broker')
-MAX_TRIES = config.get('misc', 'max_retries')
-BROKER_RECV_PORT = int(config.get('messaging', 'send_port'))
-BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
+SEND_PORT = int(config.get('messaging', 'send_port'))
+FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
-REFRESH_TIME = float(config.get('misc', 'refresh_sleep_time'))
+REFRESH_TIME = float(config.get('application', 'sleep_time'))
 
-class Broker(object):  # TODO: test mp?
+
+class Broker(object):
     """ The message broker.
     """
     def __init__(self):
@@ -108,7 +106,7 @@ class Broker(object):  # TODO: test mp?
         # TOOD: Move to lib
         sock = socket.socket()
         # sock.settimeout(REFRESH_TIME)
-        sock.bind((BROKER, BROKER_RECV_PORT))
+        sock.bind((BROKER, SEND_PORT))
         sock.listen(1)
 
         while self.running:
@@ -153,7 +151,7 @@ class Broker(object):  # TODO: test mp?
         # Init listener
         sock = socket.socket()
         # sock.settimeout(REFRESH_TIME)
-        sock.bind((BROKER, BROKER_FETCH_PORT))
+        sock.bind((BROKER, FETCH_PORT))
         sock.listen(1)
 
         while self.running:

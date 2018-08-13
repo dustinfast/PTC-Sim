@@ -6,13 +6,11 @@
     Author: Dustin Fast, 2018
 """
 
-from lib import Loco, REPL, logger
+from lib import Loco, Client, REPL, logger
 from time import sleep
 from Queue import Empty
 from threading import Thread
 from ConfigParser import RawConfigParser
-
-from msg_lib import Client
 
 # Init conf
 config = RawConfigParser()
@@ -20,14 +18,10 @@ config.read('conf.dat')
 
 # Import conf data
 BROKER = config.get('messaging', 'broker')
-MAX_TRIES = config.get('misc', 'max_retries')
 BROKER_SEND_PORT = int(config.get('messaging', 'send_port'))
 BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
-MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
-REFRESH_TIME = float(config.get('misc', 'refresh_sleep_time'))
-MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
+REFRESH_TIME = float(config.get('application', 'sleep_time'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
-LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
 
 class BOS(object):
@@ -98,7 +92,7 @@ class BOS(object):
                 except KeyError as e:
                     logger.error('Malformed status msg received: ' + str(e))
 
-            sleep(MSG_INTERVAL)
+            sleep(REFRESH_TIME)
 
     def _repl(self):
         """ Blocks while watching for terminal input, then processes it.

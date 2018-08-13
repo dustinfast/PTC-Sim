@@ -3,34 +3,31 @@
 ; Author: Dustin Fast, 2018
 
 [logging]
-filename = logfile                  ; The logfile name
+filename = logfile.log              ; The logfile name
 level = 10                          ; 10 = DEBUG, 20 = INFO, 30 = WARN
 num_logfiles = 1                    ; Max number of rotating logfiles
-max_logfile_size = 1000000          ; Max log size, in bytes, before rotation
+max_logfile_size = 500000           ; Max log size before rotation, in bytes
 
 [track]
-track_rails = track_rail.json       ; Track model file
+track_rails = track_rail.json       ; Track model file # TODO: rename?
 track_bases = track_bases.json      ; Base stations file
 
 [messaging]
-broker = localhost                  ; Message broker IP address/hostname
-send_port = 18181                   ; Broker-side "receive" listener port
+broker = localhost                  ; Message Broker IP address/hostname
+send_port = 18181                   ; Broker-side "msg receive" listener port
 fetch_port = 18182                  ; Broker-side "fetch" listener port
 bos_emp_addr = sim.bos              ; The Back Office Server's EMP address
 loco_emp_prefix = sim.l.            ; Locomotive EMP address prefix
-msg_expire_time = 30                ; Time msgs sit in queue before expiring
-max_msg_size = 1024                 ; Max allowed EMP message max_msg_size
-msg_interval = 5                    ; Seconds between msg sending/fetching
+msg_expire_time = 30                ; Seconds msgs sit in broker queue before expiring
+max_msg_size = 1024                 ; Max allowed EMP message size, in bytes
+msg_interval = 5                    ; Loco status msg interval, in seconds
+network_timeout = 2                 ; Socket timeout, in seconds
 
-[loco]
+[locomotive]
 start_direction = increasing        ; Either 'increasing' or 'decreasing'
 start_milepost = 2.0                ; Initial loco milepost
 start_speed = 10.0                  ; Initial speed of loco
 
-[misc]
-refresh_sleep_time = 5              ; Thread & loop sleep seconds per iteration
-network_timeout = 2                 ; Socket timeout (seconds)
-max_retries = 2                     ; Max number of transfer tries.
-                                    ; Ex: When a client attempt s to send a msg 
-                                    ; to the broker but it fails, it will be
-                                    ; retried up to max_retries times
+[application]
+sleep_time = 5                      ; Thread & loop sleep before next iteration.
+                                    

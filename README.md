@@ -88,9 +88,9 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 For a demonstration of all packages, enter `./demo.py` at the terminal, then navigate to http://localhost/loco_sim
 
 **Command Line**
-The loco sim, broker, and BOS may all be run independently from the command line. Each contains a command line interface. Run each with `loco.py`, `/broker.py` and `bos.py` (type `help` at the prompt for assistance).
+The loco sim, message broker, and BOS each contain a command line interface and may run from the command line. Start each with `loco.py`, `/broker.py` and `bos.py`, respectively.
 
-**Modularity**
+**Dev**
 The application as a whole has little practical purpose beyond demonstration. However, each module is well documented and was developed with re-usability and educational value in mind. It is free for use under the MIT Software License.
 
 ## Caveats
@@ -99,18 +99,21 @@ Although typically implemented, this application makes the following concessions
 
 **High Availability**
 **TCP.IP Session mgmt**
+**Cmd msgs**
 
 ## # TODO
 
+Fix stopped/running msg on already stopped/starting
+Consolidate lib sections under one class each?
 Ensure normalized app name
-Seperate log files?
 Better output on connection error
-Debug level logging (status msg send output, queue empty, etc)
 Add sender_addr to log statments
 Standardize file headers
 check all docstrings for PEP8
-Base station module
+Base station module?
 Privatize necessary members and do validation on public members
 Symbolic constants
-Combine msg_lib and lib and put all conf data in lib
+All conf data in lib?
+Empty to lib (class.Empty)
+readme screenshts
 Flask
