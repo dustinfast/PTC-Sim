@@ -520,26 +520,25 @@ class Client(object):
 """
 
 class REPL(object):
-# TODO: Pass object ref into command dict and do away with self.context
-    """ A dynamic Read-Eval-Print-Loop. I.e. A command line interface.
+    # TODO: Pass object ref into command dict and do away with self.context
+    """ A dynamic Read-Eval-Print-Loop. Blocks while waiting for a command.
         Contains two predefined commands: help, and exit. Additional cmds may
-        be added with add_cmd(). These additional cmds all operate on the object
-        given as the context. 
+        be added with add_cmd().
         Note: Assumes all expressions provided are well-formed. 
     """
 
-    def __init__(self, context, prompt='>>', welcome_msg=None):
+    def __init__(self, prompt='>>', welcome_msg=None):
         """ Instantiates an REPL object.
-            context: The object all commands operate on.
-            prompt: The REPL prompt.
-            welcome: String to display on REPL start.
+            prompt: The REPL prompt string.
+            welcome: String to display on REPL.start.
         """
-        self.context = context
         self.prompt = prompt
         self.welcome_msg = welcome_msg
-        self.exit_command = None
-        self.commands = {'help': 'self._help()',
-                         'exit': 'self._exit()'}
+        self.exit_commands = []
+        self.commands = {'help': '_help()',
+                         'exit': '_exit()'}
+        self.contexts = {'help': self,
+                         'exit': self}
 
     def start(self):
         """ Starts the REPL.
@@ -549,31 +548,51 @@ class REPL(object):
         while True:
             # TODO: readline
             uinput = raw_input(self.prompt)
-            cmd = self.commands.get(uinput)
 
             # Process user input
             if not uinput:
-                continue  # if null input
-            if not cmd:
-                print('Invalid command. Try "help".')
+                continue  # handle empty input
             else:
-                eval(cmd)
+                self.do_cmd(uinput)
 
-    def add_cmd(self, cmd_txt, expression):
+    def add_cmd(self, cmd_txt, expression, context=None):
         """ Makes a command available via the REPL
-                cmd_txt: Txt cmd entered by the user
-                expression: A well-formed python expression string.
-                            ex: 'print('Hello World)'
+            cmd_txt = Command text. Ex: "start"
+            expression = A well-formed python expression string.
+                            Ex: "print('Hello World)"
+            context = Optional, specifies the instance for the expression.
+                        Ex: if expression is "myobject.start()", then context
+                        must be a reference to myobject.
         """
+        # Disallow default command override
         if cmd_txt == 'help' or cmd_txt == 'exit':
             raise ValueError('An internal cmd override was attempted.')
-        self.commands[cmd_txt] = 'self.context.' + expression
+        
+        if context:
+            self.contexts[cmd_txt] = context
+            cmd_str = 'self.contexts["' + cmd_txt + '"].' + expression
+        else:
+            cmd_str = expression
 
-    def set_exitcmd(self, cmd):
-        """ Specifies a command to run on exit. Example: 'stop', if a stop
-            command is defined and performs cleanup, etc.
+        self.commands[cmd_txt] = cmd_str
+
+    def add_exitcmd(self, cmd):
+        """ Adds a command to the list of cmds run on exit. Useful if cleanup
+            is required before exit.
         """
-        self.exit_command = cmd
+        self.exit_commands.append(cmd)
+
+    def do_cmd(self, cmd_txt):
+        """ Executes the given command.
+        """
+        cmd = self.commands.get(cmd_txt)
+
+        if not cmd:
+            print('Invalid command. Try "help".')
+        try:
+            eval(cmd)
+        except:
+            print("'" + cmd_txt + "' is defined but malformed")
 
     def _help(self):
         """ Outputs all available commands to the console, excluding 'help'.
@@ -582,10 +601,10 @@ class REPL(object):
         print('\n'.join(cmds))
 
     def _exit(self):
-        """ Calls exit() after doing self.exit_command (if defined).
+        """ Calls exit() after doing self.exit_command (if any).
         """
-        if self.exit_command:
-            eval(self.commands[self.exit_command])
+        for cmd in self.exit_commands:
+            eval(self.commands[cmd])
         exit()
 
 
