@@ -92,9 +92,10 @@ class BOS(object):
             # Process msg
             if raw_msg:
                 try:
-                    content = raw_msg.payload
+                    sender = raw_msg.sender_addr
+                    print('BOS: Status received for loco ' + str(sender))
                     # TODO: process status msg
-                    print('BOS: Status msg fetched for loco ' + str(content.sender_addr))
+                    # content = raw_msg.payload
                 except:
                     print('BOS: Malformed status msg recevied.')
 
@@ -106,7 +107,7 @@ class BOS(object):
         # Init the Read-Eval-Print-Loop and start it
         welcome = '-- Loco Sim Back Office Server  --\n'
         welcome += "Try 'help' for a list of commands."
-        repl = REPL(self, 'BOS>> ', welcome)
+        repl = REPL(self, 'BOS>> ',)
         repl.add_cmd('start', 'start()')
         repl.add_cmd('stop', 'stop()')
         repl.set_exitcmd('stop')
@@ -117,5 +118,3 @@ if __name__ == '__main__':
     # Start the bos in terminal mode
     bos = BOS()
     bos.start(terminal=True)
-
-    

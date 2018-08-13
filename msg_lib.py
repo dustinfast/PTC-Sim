@@ -277,17 +277,14 @@ class Client(object):
 
             # Send queue name and wait for response
             sock.send(queue_name.encode())
-            response = sock.recv(MAX_MSG_SIZE).decode()
-            print('got response: ' + str(response))
+            resp = sock.recv(MAX_MSG_SIZE)
 
             msg = None
-            if response == 'EMPTY':
+            if resp == 'EMPTY':
                 raise Empty('Queue empty.')  # No msg available to fetch
             else:
-                # The response is the msg
-                raw_msg = sock.recv(MAX_MSG_SIZE).decode()
                 try:
-                    msg = Message(raw_msg.decode('hex'))
+                    msg = Message(resp.decode('hex'))  # Response is the msg
                 except Exception as e:
                         raise Exception('Msg fetched but was invalid: ' + str(e))
     

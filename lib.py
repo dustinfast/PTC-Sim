@@ -3,16 +3,24 @@
     Author: Dustin Fast, 2018
 """
 
+import logging
 from json import loads
 from ConfigParser import RawConfigParser
+from logging.handlers import RotatingFileHandler as RFHandler
 
 # Init conf
 config = RawConfigParser()
 config.read('conf.dat')
 
 # Import conf data
+LOG_NAME = config.get('logging', 'name')
+LOG_FILES = config.get('logging', 'num_logfiles')
+LOG_SIZE = config.get('logging', 'max_logfile_size')
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
+
+# Decalare global logger (defined at eof)
+logger = None
 
 #############################################################
 # Railroad/Locomotive Component Classes                     #
@@ -38,6 +46,8 @@ class Track(object):
         self.mp_linear = []
         self.mp_linear_rev = []
 
+        logger.info('Initializing Track...')
+
         # Populate self.bases from TRACK_BASES json
         try:
             with open(bases_file) as base_data:
@@ -51,12 +61,10 @@ class Track(object):
                 coverage_start = float(b['coverage'][0])
                 coverage_end = float(b['coverage'][1])
             except ValueError:
-                print('WARNING: Discarding base "' +
-                      baseID + '": Conversion Error')
+                logger.warning('Discarding base "' + baseID + '": Conversion Error')
                 continue
             except KeyError:
-                raise Exception(
-                    'Improperly formatted JSON encountered in get_mileposts()')
+                raise Exception('Invalid data in ' + bases_file + '.')
 
             self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
 
@@ -74,12 +82,10 @@ class Track(object):
                 lat = float(m['lat'])
                 lng = float(m['long'])
             except ValueError:
-                print('WARNING: Discarding mp "' +
-                      str(mp) + '": Conversion Error')
+                logger.warning("Discarding mp '" + str(mp) + "': Conversion Error")
                 continue
             except KeyError:
-                raise Exception(
-                    'Improperly formatted JSON encountered in get_mileposts()')
+                raise Exception('Invalid data in ' + track_file + '.')
 
             self.mp_objects[mp] = Milepost(mp, lat, lng)
 
@@ -139,14 +145,16 @@ class Track(object):
         next_mp_obj = self.get_milepost_at(next_mp)
         if not next_mp_obj:
             # Print debug info
-            print(str(mps))
-            print('cur_mp: ' + str(mp))
-            print('moved : ' + str(distance))
-            print('tgt_mp: ' + str(target_mp))
-            print('mp_idx: ' + str(i))
-            print('nxt_mp: ' + str(next_mp))
-            print('disdif: ' + str(dist_diff))
-            raise Exception('Could not find next mp for loco.')
+            log_str = '_get_next_mp failed to find a next milepost from: '
+            log_str += str(mps) + ', '
+            log_str += 'cur_mp: ' + str(mp) + ', '
+            log_str += 'moved : ' + str(distance) + ', '
+            log_str += 'tgt_mp: ' + str(target_mp) + ', '
+            log_str += 'mp_idx: ' + str(i) + ', '
+            log_str += 'nxt_mp: ' + str(next_mp) + ', '
+            log_str += 'disdif: ' + str(dist_diff) + '.'
+            logger.error(log_str) 
+            raise Exception(log_str)
 
         return next_mp_obj, dist_diff
 
@@ -216,6 +224,10 @@ class Base:
         """
         return milepost.mp >= self.cov_start and milepost <= self.cov_end
 
+
+#############################################################
+# Input Classes (REPL, Logger, and Web)                     #
+#############################################################
 
 class REPL(object):
     """ A dynamic Read-Eval-Print-Loop. I.e. A command line interface.
@@ -290,14 +302,37 @@ class REPL(object):
         exit()
 
 
-#############
-# Functions #
-#############
-
-def print_err(errstr, trystr=None):
-    """ Prints a formatted error string. 
-        Ex: errstr = 'No action given', trystr = '( add | rm )'
+class RotatingLog(object):  # TODO: Test needs write access if nofile exists
+    """ A wrapper for Python's logging module. Implements a log with console
+        output and rotating log files.
+        Example usage: RotatingLog.error('Invalid Value!')
+                       RotatingLog.info('Started Succesfully.')
     """
-    print('ERROR: ' + errstr + '.')
-    if trystr:
-        print('Try: ' + trystr)
+    def __init__(self, name=LOG_NAME, files=LOG_FILES, max_size=LOG_SIZE):
+        """
+        """
+        self.logger = logging.getLogger()
+
+        # Formatter
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s: %(message)s')
+
+        # Console handler (log stmts go to console in addition to log file)
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.DEBUG)
+        console_handler.setFormatter(formatter)
+
+        # Log file rotation handler (specifies how to rotate log files)
+        rotate_handler = RFHandler(name.lower() + ".log", 
+                                   max_size * 1000000,
+                                   files)  
+        rotate_handler.setLevel(logging.INFO)
+        rotate_handler.setFormatter(formatter)
+
+        # Init logger
+        self.logger.setLevel(logging.INFO)
+        self.logger.addHandler(rotate_handler)
+        self.logger.addHandler(console_handler)
+
+
+# Init global logger
+logger = RotatingLog().logger

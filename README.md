@@ -90,9 +90,15 @@ For a demonstration of all packages, enter `./demo.py` at the terminal, then nav
 **Command Line**
 The loco sim, broker, and BOS may all be run independently from the command line. Each contains a command line interface. Run each with `loco.py`, `/broker.py` and `bos.py` (type `help` at the prompt for assistance).
 
+**Modularity**
+The application as a whole has little practical purpose beyond demonstration. However, each module is well documented and was developed with re-usability and educational value in mind. It is free for use under the MIT Software License.
+
 ## Caveats
 
-Although typically implemented, this demonstration/simulation makes the following concessions for simplicity:
+Although typically implemented, this application makes the following concessions for simplicity and demonstrations purposes:
+
+**High Availability**
+**TCP.IP Session mgmt**
 
 ## # TODO
 
