@@ -13,7 +13,7 @@ config = RawConfigParser()
 config.read('conf.dat')
 
 # Import conf data
-LOG_NAME = config.get('logging', 'name')
+LOG_NAME = config.get('logging', 'log_name')
 LOG_FILES = config.get('logging', 'num_logfiles')
 LOG_SIZE = config.get('logging', 'max_logfile_size')
 TRACK_RAILS = config.get('track', 'track_rails')
@@ -302,7 +302,7 @@ class REPL(object):
         exit()
 
 
-class RotatingLog(object):  # TODO: Test needs write access if nofile exists
+class RotatingLog(object):  # TODO: Test needs write access and test inherit from logging
     """ A wrapper for Python's logging module. Implements a log with console
         output and rotating log files.
         Example usage: RotatingLog.error('Invalid Value!')
@@ -313,22 +313,24 @@ class RotatingLog(object):  # TODO: Test needs write access if nofile exists
         """
         self.logger = logging.getLogger()
 
-        # Formatter
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s: %(message)s')
+        # Define log output format
+        fmt_string = '%(asctime)s - %(levelname)s: %(message)s'
+        console_fmt = logging.Formatter(fmt_string)
+        log_fmt = logging.Formatter('%(module)s @ ' + fmt_string)
 
-        # Console handler (log stmts go to console in addition to log file)
+        # Init Console handler (stmnts go to console in addition to logfile)
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
-        console_handler.setFormatter(formatter)
+        console_handler.setFormatter(console_fmt)
 
-        # Log file rotation handler (specifies how to rotate log files)
+        # Init log file rotation
         rotate_handler = RFHandler(name.lower() + ".log", 
                                    max_size * 1000000,
                                    files)  
         rotate_handler.setLevel(logging.INFO)
-        rotate_handler.setFormatter(formatter)
+        rotate_handler.setFormatter(log_fmt)
 
-        # Init logger
+        # Init the logger itself
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(rotate_handler)
         self.logger.addHandler(console_handler)
