@@ -34,11 +34,11 @@ config = RawConfigParser()
 config.read('conf.dat')
 
 # Import conf data
+REFRESH_TIME = float(config.get('application', 'sleep_time'))
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
-REFRESH_TIME = float(config.get('application', 'sleep_time'))
 
 
 class Broker(object):

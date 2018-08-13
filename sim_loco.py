@@ -4,12 +4,12 @@
 Author: Dustin Fast, 2018
 """
 
-from time import time, sleep
+from Queue import Empty
 from random import randint
+from time import time, sleep
 from threading import Thread
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
-from Queue import Empty  # TODO: Empty to lib
 from lib import Track, Loco, Client, Message, REPL, logger
 
 # Init conf

@@ -297,6 +297,12 @@ class MsgQueue:
     """ A threadsafe message queue with push, pop, front, remove, is_empty, 
         and item_count methods. 
     """
+    # TODO: class Empty(Empty):
+    #     """ A MsgQueue.Empty Exception. Inherits from Queue.Empty
+    #     """
+    #     def __init__(self):
+    #         Exception.__init__(self)
+
     def __init__(self):
         self._items = []            # Container
         self.lock = False   # TODO: Threadsafe lock

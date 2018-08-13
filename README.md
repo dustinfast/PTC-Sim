@@ -113,7 +113,6 @@ check all docstrings for PEP8
 Base station module?
 Privatize necessary members and do validation on public members
 Symbolic constants
-All conf data in lib?
 Empty to lib (class.Empty)
-readme screenshts
+readme screenshots
 Flask
