@@ -93,24 +93,20 @@ Each module is well documented and was developed with re-usability and education
 
 ## Caveats
 
-This application takes several liberties for the sake of simplicity in demonstration. For example, no high availability, redundancy, or persistent data is implmented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched).
+This application takes several liberties for the sake of simplicity in demonstration. For example, no high availability, redundancy, or persistent data is implmented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched). In a typical PTC scenario, these features are likely to be mandatory.
 
 ## # TODO
 
 Class D/Qpid?
 Web input
-bos loco cmds
-Command line args
+bos loco cmds - need contextual repl first
 Shebang permissions
-Contextual repl (for demo)
 Move prompt below console output
 Consolidate lib sections under one class each?
 Ensure normalized app name
 Better output on connection error
-Standardize file headers
-check all docstrings for PEP8
+Standardize file headers and docstrings (PEP8)
 Privatize necessary members and do validation on public members
-Symbolic constants
 readme screenshots
 TrackCircuits
 Flask
