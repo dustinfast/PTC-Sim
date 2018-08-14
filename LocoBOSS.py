@@ -44,15 +44,14 @@ class _process(multiprocessing.Process):
             except:
                 pass
 
-
-def start():
-    # TODO: No log output to console for demo
-    # TODO: Instantiate three random locos with random start/direction/speed
-    """ Start the LocoBOSS application, with each component existing in a 
-        seperate process.
+if __name__ == '__main__':
+    # TODO: No log output to console - web disp only
+    # TODO: Instantiate demo locos with random start/direction/speed
+    """ Start the LocoBOSS application and web service, with each component
+        existing in a seperate process.
     """
     print('-- LocoBOSS --')
-    print('Navigate to https://localhost/LocoBOSS for web interface.')
+    print('Navigate to https://localhost:5000/LocoBOSS for web interface.')
     print("To shutdown, type 'exit' here or quit from web.")
 
     # Multiprocssing queues, for signaling kill to each process
@@ -79,28 +78,9 @@ def start():
             loco_signal.put_nowait(None)
             broker_signal.put_nowait(None)
             bos_signal.put_nowait(None)
-            exit()            
+            exit()
         else:
             try:
                 eval(uinput)
             except Exception as e:
                 print('Invalid Command ' + str(e))
-    
-
-if __name__ == '__main__':
-    start()
-
-    # # Start msg broker
-    # broker = sim_broker.Broker()
-    # logger.error('Broker started')
-
-    # # Define test msg
-    # msg_type = 6000
-    # msg_source = 'sim.l.7357'
-    # msg_dest = 'sim.b'
-    # payload = {'sent': 0, 'loco': 1111, 'speed': 22,
-    #            'lat': 333, 'long': 444, 'base': 555}
-    # sndmsg = msg_lib.Message((msg_type,
-    #                           msg_source,
-    #                           msg_dest,
-    #                           payload))
