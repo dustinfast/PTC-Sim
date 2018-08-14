@@ -85,7 +85,6 @@ class Broker(object):
             specified.
         """
         # Init TCP/IP listener
-        # TODO: Move to lib
         sock = socket.socket()
         sock.bind((BROKER, SEND_PORT))
         sock.listen(1)
@@ -132,7 +131,6 @@ class Broker(object):
             checking its msg queue) and serves messages as appropriate.
         """
         # Init listener
-        # TODO: Move to lib
         sock = socket.socket()
         sock.bind((BROKER, FETCH_PORT))
         sock.listen(1)

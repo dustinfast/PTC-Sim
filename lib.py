@@ -65,7 +65,7 @@ class Track(object):
         """ track_file: Filename of track JSON
             bases_file: Filename of base station JSON
         """
-        self.locos = {}  # TODO: Locos from json?    
+        self.locos = {}
         self.bases = {}
         self.mp_objects = {}
         self.mp_linear = []
