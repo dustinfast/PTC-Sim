@@ -11,9 +11,15 @@
 from time import sleep
 from threading import Thread
 from ConfigParser import RawConfigParser
-from flask import Flask, render_template
 
-from sim_lib import Client, Queue, REPL, logger
+# Flask web interface
+try:
+    from flask import Flask, render_template
+except:
+    print('Flask is required - use "pip install flask" to install it.')
+    exit()
+
+from sim_lib import Client, Queue, logger
 
 # Init conf
 config = RawConfigParser()
@@ -26,7 +32,7 @@ BROKER_SEND_PORT = int(config.get('messaging', 'send_port'))
 BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 
-# Flask web interface
+
 bos_web = Flask(__name__)
 
 @bos_web.route('/LocoSim')
@@ -40,44 +46,27 @@ class BOS(object):
     def __init__(self):
         """
         """
-        # On/Off flags.
+        # Thread on/off flag
         self.running = False
-        self.interface_started = False
-
         # Messaging client
         self.msg_client = Client(BROKER, BROKER_SEND_PORT, BROKER_FETCH_PORT)
 
         # Message watcher thread
         self.status_watcher_thread = Thread(target=self._statuswatcher)
 
-    def start(self, terminal=False, debug=False):
-        """ Start the BOS. I.e., the status watcher thread. If terminal, also
-            starts the repl.
+    def start(self, debug=False):
+        """ Start the BOS. I.e., the status watcher thread and web interface.
         """
-        if not self.running:
-            self.running = True
-            self.status_watcher_thread.start()
+        self.running = True
+        self.status_watcher_thread.start()
+        logger.info('BOS Started.')
 
-            logger.info('BOS Started.')
+        # Start serving web interface. Blocks until killed by console.
+        bos_web.run(debug=debug)
             
-            if not self.interface_started:
-                self.interface_started = True
-                bos_web.run(debug=True)  # Start web interface
-                
-                if terminal:
-                    self._repl()  # Start terminal repl
-                
-    def stop(self):
-        """ Stops the BOS.
-        """
-        if self.running:
-            # Signal stop to threads and join
-            self.running = False
-            self.status_watcher_thread.join(timeout=REFRESH_TIME)
-
-            # Redefine threads, to allow starting after stopping
-            self.status_watcher_thread = Thread(target=self._statuswatcher)
-
+        # Do shutdown
+        self.running = False
+        self.status_watcher_thread.join(timeout=REFRESH_TIME)
         logger.info('BOS stopped.')
 
     def _statuswatcher(self):
@@ -92,7 +81,7 @@ class BOS(object):
             except Queue.Empty:
                 logger.debug('Status msg queue empty.')
             except Exception as e:
-                logger.error('Msg fetch failed due to: ' + str(e))
+                logger.error('Msg fetch failed - No response from broker.')
 
             # TODO: Process loco status msg
             if msg:
@@ -105,21 +94,8 @@ class BOS(object):
 
             sleep(REFRESH_TIME)
 
-    def _repl(self):
-        """ Blocks while watching for terminal input, then processes it.
-        """
-        # Init the Read-Eval-Print-Loop and start it
-        welcome = '-- Loco Sim Back Office Server  --\n'
-        welcome += "Try 'help' for a list of commands."
-        repl = REPL(self, 'BOS >> ', welcome)
-        repl.add_cmd('start', 'start()')
-        repl.add_cmd('stop', 'stop()')
-        # TODO: Loco cmd msg
-        repl.set_exitcmd('stop')
-        repl.start()
-
 
 if __name__ == '__main__':
-    # Start the bos in terminal mode
-    bos = BOS()
-    bos.start(terminal=True)
+    # Start the Back Office Server
+    print('-- LocoBOS: Back Office Server --')
+    bos = BOS().start(debug=True)

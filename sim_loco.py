@@ -200,9 +200,9 @@ class SimLoco(Loco):
         """ Blocks while watching for terminal input, then processes it.
         """
         # Init the Read-Eval-Print-Loop and start it
-        welcome = '-- Message broker  --\n'
+        welcome = '-- LocoBOSS: Locomotive Simulator  --\n'
         welcome += "Try 'help' for a list of commands."
-        repl = REPL(self, 'Loco >> ')
+        repl = REPL(self, '')
         repl.add_cmd('start', 'start()')
         repl.add_cmd('status', 'status()')
         repl.add_cmd('stop', 'stop()')
@@ -212,5 +212,4 @@ class SimLoco(Loco):
 
 if __name__ == '__main__':
     # Start the locomotive simulation in terminal mode
-    loco = SimLoco()
-    loco.start(terminal=True)
+    SimLoco().start(terminal=True)

@@ -137,7 +137,6 @@ class Broker(object):
         """
         # Init listener
         sock = socket.socket()
-        # sock.settimeout(REFRESH_TIME)
         sock.bind((BROKER, FETCH_PORT))
         sock.listen(1)
 
@@ -177,9 +176,9 @@ class Broker(object):
         """ Blocks while watching for terminal input, then processes it.
         """
         # Init the Read-Eval-Print-Loop and start it
-        welcome = '-- Loco Sim Message broker  --\n'
+        welcome = '-- LocoBOSS: Message Broker  --\n'
         welcome += "Try 'help' for a list of commands."
-        repl = REPL(self, 'Broker >> ', welcome)
+        repl = REPL(self, '', welcome)
         repl.add_cmd('start', 'start()')
         repl.add_cmd('stop', 'stop()')
         repl.set_exitcmd('stop')
@@ -188,5 +187,4 @@ class Broker(object):
 
 if __name__ == '__main__':
     # Start the broker in terminal mode
-    broker = Broker()
-    broker.start(terminal=True)
+    Broker().start(terminal=True)

@@ -47,6 +47,7 @@ class _process(multiprocessing.Process):
 
 def start():
     # TODO: No log output to console for demo
+    # TODO: Instantiate three random locos with random start/direction/speed
     """ Start the LocoSim application, with each component existing in a 
         seperate process.
     """

@@ -1,6 +1,8 @@
-# loco_sim
+# LocoBOS
 
-This application is based on my experience in Postive Train Control (PTC). It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using an Edge Message Protocol (EMP) compliant messaging subsystem. It consists of three top-level components:
+This application is based on my experience in Postive Train Control (PTC). It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS). Messaging is accomplished using the Edge Message Protocol (EMP), and the application contains a web interface.
+
+LocoBos consists of the following top-level components:
 
 **Back Office Server and Web Interface**  
 The BOS monitors each locomotive and displays status graphically via its web interface (including Google Earth mapping). Additionally, the BOS may send commands to the locomotive.
@@ -91,7 +93,7 @@ Waysides...
 ## Usage
   
 **Demonstration**
-For a demonstration of all packages, enter `./LocoSim` at the terminal, then navigate to http://localhost/loco_sim
+For a demonstration of all packages, enter `./LocoBOSS` at the terminal, then navigate to http://localhost/loco_sim
 
 **Command Line**
 The loco sim, message broker, and BOS each provide a command line interface when run independently from the terminal. Start each with `./sim_loco`, `/sim_broker` and `./sim_bos`, respectively.
@@ -101,24 +103,25 @@ Each module is well documented and was developed with reusability and educationa
 
 ## Dependencies
 
-The web interface requires flask. Install with `pip install flask`
+The web interface requires flask. Install with `pip install flask`.
+
+Other technologies used include AJAX, JavaScript, ...
 
 ## # TODO
 
-Change demo to loco_sim - it will start all necessary services.
+Change demo to locoBoss shell script - it will start all necessary services.
+Seperate logs and display each on Logs webpage w/logtail
 Class D/Qpid?
-Web
 Change 'Running' log output to 'Started' (see sim_bos.start)
-bos loco cmds - need contextual repl first?
-Shebang permissions
-Move prompt below console output
+bos loco cmds
 Consolidate lib sections under one class each?
-Ensure normalized app name - LocoSim is web app, loco_sim is python?
+Ensure normalized app name - LocoSim is web app, loco_sim is python? LocoBOSS?
 Better output on connection error
 PEP8 file headers, imports, and docstrings
 Privatize necessary members and do validation on public members
 readme screenshots and high-level images
 TrackCircuits
-Locos json
-Flask
+Ensure all URLs OK
 EMP spec file?
+Queue expire time
+Remove prompts from REPLs
