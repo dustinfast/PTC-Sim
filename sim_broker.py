@@ -1,26 +1,19 @@
 #!/usr/bin/env python
-""" broker.py - A message broker for Edge Message Protocol (EMP) messages.
-    Msgs received are enqued for receipt and dequed/served on request.
-
-    The broker consists of 3 seperate threads:
-        Msg Receiver    - Watchers for incoming messages over TCP/IP.
-        Fetch Watcher   - Watches for incoming TCP/IP msg fetch requests (ex: A
-                            loco checking its msgqueue), serving msgs as 
-                            appropriate. Runs as a Thread.
-        Queue Parser    - Parses each msg queue and discards expires msgs.
+""" A message broker for Edge Message Protocol (EMP) messages.
+    Msgs are received and enqued for receipt and dequed for recipient on
+    request.
 
     Message Specification:
-        EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
-        containing a variable-length header section.
+        EMP V4 (specified in msg_spec/S-9354.pdf) fixed-format messages 
+        with variable-length header sections.
         See README.md for implementation specific information.
 
     Author: Dustin Fast, 2018
 """
 import socket  
-from time import sleep
 from threading import Thread
 from ConfigParser import RawConfigParser
-from lib import Queue, Message, REPL, logger  # Also sets socket timeout
+from lib import Queue, Message, REPL, Logger  # Also sets socket timeout
 
 # Init conf
 config = RawConfigParser()
@@ -33,41 +26,43 @@ SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 
-
 class Broker(object):
-    """ The message broker.
+    """ The message broker. Consists of three seperate threads:
+        Msg Receiver  - Watchers for incoming messages over TCP/IP.
+        Fetch Watcher - Watches for incoming fetch requests over TCP/IP and
+                        serves msgs as appropriate.
     """
     def __init__(self):
-        """ Instantiates a message broker object.
-        """
         # Dict of outgoing msg queues, by dest address: { ADDRESS: Queue }
         self.outgoing_queues = {}
 
-        # On/Off flags
+        # State flags
         self.running = False
-        self.repl_started = False
+        self.terminal_started = False
+
+        # Logger (defined on self.start)
+        self.log = None
 
         # Threads
         self.msg_recvr_thread = Thread(target=self._msgreceiver)
         self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
 
-        # Flag denoting status of REPL
-        self.repl_started = False
-
     def start(self, terminal=False):
-        """ Start the message broker, i.e., the msg receiver and fetch watche
-            threads. If terminal, also starts the REPL
+        """ Start the message broker threads. If terminal, also starts the
+            REPL and enables log output to console.
         """
         if not self.running:
+            if not self.log:
+                self.log = Logger('log_broker', terminal)
+            self.log.info('Broker Started.')
+            
             self.running = True
             self.msg_recvr_thread.start()
             self.fetch_watcher_thread.start()
 
-            logger.info('Broker Started.')
-
-            if terminal and not self.repl_started:
-                self.repl_started = True
-                self._repl()
+            if terminal and not self.terminal_started:
+                self.terminal_started = True
+                self._repl()  # Blocks
             
     def stop(self):
         """ Stops the msg broker. I.e., the msg receiver and fetch watcher 
@@ -83,14 +78,14 @@ class Broker(object):
             self.msg_recvr_thread = Thread(target=self._msgreceiver)
             self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
 
-            logger.info('Broker stopped.')
+            self.log.info('Broker stopped.')
 
     def _msgreceiver(self):
         """ Watches for incoming messages over TCP/IP on the interface and port 
             specified.
         """
         # Init TCP/IP listener
-        # TOOD: Move to lib
+        # TODO: Move to lib
         sock = socket.socket()
         sock.bind((BROKER, SEND_PORT))
         sock.listen(1)
@@ -111,7 +106,7 @@ class Broker(object):
                 conn.close()
             except Exception as e:
                 log_str += 'Msg recv failed due to ' + str(e)
-                logger.error(log_str)
+                self.log.error(log_str)
 
                 try:
                     conn.send('FAIL'.encode())
@@ -127,7 +122,7 @@ class Broker(object):
             self.outgoing_queues[msg.dest_addr].put(msg)
             log_str = 'Success - ' + msg.sender_addr + ' '
             log_str += 'to ' + msg.dest_addr
-            logger.info(log_str)
+            self.log.info(log_str)
 
         # Do cleanup
         sock.close()
@@ -137,6 +132,7 @@ class Broker(object):
             checking its msg queue) and serves messages as appropriate.
         """
         # Init listener
+        # TODO: Move to lib
         sock = socket.socket()
         sock.bind((BROKER, FETCH_PORT))
         sock.listen(1)
@@ -165,7 +161,7 @@ class Broker(object):
                     conn.send(msg.raw_msg.encode('hex'))  # Send msg
                     log_str += 'Msg served.'
 
-                logger.info(log_str)
+                self.log.info(log_str)
                 conn.close()
             except:
                 continue
@@ -186,6 +182,5 @@ class Broker(object):
 
 if __name__ == '__main__':
     # Start the broker in terminal mode
-    print('-- LocoBOSS: Message Broker')
-    print("-- Type 'exit' to quit")
+    print("-- LocoBOSS: Message Broker - Type 'exit' to quit --\n")
     Broker().start(terminal=True)

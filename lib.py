@@ -5,26 +5,27 @@
     Author: Dustin Fast, 2018
 """
 
-#############################################################
-# Applicable Imports and Conf Data                          #
-#############################################################
-# TODO: Add lib section classes and move conf vars into each
-# Init conf
+import Queue
+import socket
+import logging
+import logging.handlers
+
+from json import loads
+from binascii import crc32
+from struct import pack, unpack
 from ConfigParser import RawConfigParser
+
+# Init conf
+# TODO: Add lib section classes and move conf vars into each
 config = RawConfigParser()
 config.read('config.dat')
 
 # Railroad lib imports and conf data
-from json import loads
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
 
 # Messaging lib imports and conf data
-import Queue
-import socket
-from binascii import crc32
-from struct import pack, unpack
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
@@ -32,15 +33,9 @@ MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 NET_TIMEOUT = float(config.get('messaging', 'network_timeout'))
 
 # Input/Output lib imports and conf data
-import logging
-import logging.handlers
-LOG_NAME = config.get('logging', 'name')
 LOG_LEVEL = int(config.get('logging', 'level'))
-LOG_FILES = config.get('logging', 'num_logfiles')
-LOG_SIZE = int(config.get('logging', 'max_logfile_size'))
-
-# Decalare global logger (defined at eof)
-logger = None
+LOG_FILES = config.get('logging', 'num_files')
+LOG_SIZE = int(config.get('logging', 'max_file_size'))
 
 
 #############################################################
@@ -76,8 +71,6 @@ class Track(object):
         self.mp_linear = []
         self.mp_linear_rev = []
 
-        logger.info('Initializing Track...')
-
         # Populate bases station (self.bases) from base_file json
         try:
             with open(bases_file) as base_data:
@@ -91,10 +84,9 @@ class Track(object):
                 coverage_start = float(b['coverage'][0])
                 coverage_end = float(b['coverage'][1])
             except ValueError:
-                logger.warning('Discarded base "' + baseID + '": Conversion Error')
-                continue
+                raise ValueError('Conversion error in ' + bases_file + '.')
             except KeyError:
-                raise Exception('Invalid data in ' + bases_file + '.')
+                raise Exception('Missing key in ' + bases_file + '.')
 
             self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
 
@@ -112,10 +104,9 @@ class Track(object):
                 lat = float(m['lat'])
                 lng = float(m['long'])
             except ValueError:
-                logger.warning("Discarding mp '" + str(mp) + "': Conversion Error")
-                continue
+                raise ValueError('Conversion error in ' + track_file + '.')
             except KeyError:
-                raise Exception('Invalid data in ' + track_file + '.')
+                raise Exception('Missing key in ' + track_file + '.')
 
             self.mp_objects[mp] = Milepost(mp, lat, lng)
 
@@ -174,17 +165,15 @@ class Track(object):
         # Get mp object associated with next_mp
         next_mp_obj = self.get_milepost_at(next_mp)
         if not next_mp_obj:
-            # Print debug info
-            log_str = '_get_next_mp failed to find a next milepost from: '
-            log_str += str(mps) + ', '
-            log_str += 'cur_mp: ' + str(mp) + ', '
-            log_str += 'moved : ' + str(distance) + ', '
-            log_str += 'tgt_mp: ' + str(target_mp) + ', '
-            log_str += 'mp_idx: ' + str(i) + ', '
-            log_str += 'nxt_mp: ' + str(next_mp) + ', '
-            log_str += 'disdif: ' + str(dist_diff) + '.'
-            logger.error(log_str) 
-            raise Exception(log_str)
+            debug_str = '_get_next_mp failed to find a next milepost from: '
+            debug_str += str(mps) + '\n'
+            debug_str += 'cur_mp: ' + str(mp) + '\n'
+            debug_str += 'moved : ' + str(distance) + '\n'
+            debug_str += 'tgt_mp: ' + str(target_mp) + '\n'
+            debug_str += 'mp_idx: ' + str(i) + '\n'
+            debug_str += 'nxt_mp: ' + str(next_mp) + '\n'
+            debug_str += 'disdif: ' + str(dist_diff) + '\n'
+            raise Exception(debug_str)
 
         return next_mp_obj, dist_diff
 
@@ -512,10 +501,7 @@ class REPL(object):
             if not cmd:
                 print('Invalid command. Try "help".')
             else:
-                try:
-                    eval(cmd)
-                except:
-                    print(uinput + ' exists but is malformed.')
+                eval(cmd)
 
     def add_cmd(self, cmd_txt, expression):
         """ Makes a command available via the REPL. Accepts:
@@ -547,32 +533,22 @@ class REPL(object):
         exit()
 
 
-class Logger(object):  
-    """ A wrapper for Python's logging module. Implements a log with console
-        output and rotating log files.
-        Example usage: RotatingLog.error('Invalid Value!')
-                       RotatingLog.info('Started Succesfully.')
+class Logger(logging.Logger):  
+    """ An extension of Python's logging.Logger. Implements log file rotation
+        and optional console output.
     """
     def __init__(self, 
-                 name=LOG_NAME,
+                 name,
+                 console_output=False,
                  level=LOG_LEVEL,
                  num_files=LOG_FILES,
-                 max_filesize=LOG_SIZE,
-                 console_output=False):
-        """
-        """
-        self.logger = logging.getLogger(name)
+                 max_filesize=LOG_SIZE):
 
-        # Define log output format
+        logging.Logger.__init__(self, name, level)
+
+        # Define output formats
         log_fmt = '%(asctime)s - %(levelname)s @ %(module)s: %(message)s'
-        console_fmt = '%(asctime)s - %(levelname)s @ %(module)s:\n%(message)s'
         log_fmt = logging.Formatter(log_fmt + '')
-        console_fmt = logging.Formatter(console_fmt)
-
-        # Init Console handler (stmnts go to console in addition to logfile)
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(level)
-        console_handler.setFormatter(console_fmt)
 
         # Init log file rotation
         rotate_handler = logging.handlers.RotatingFileHandler(name + '.log', 
@@ -580,14 +556,14 @@ class Logger(object):
                                                               num_files)  
         rotate_handler.setLevel(level)
         rotate_handler.setFormatter(log_fmt)
-
-        # Init the logger itself
-        self.logger.setLevel(0)
-        self.logger.addHandler(rotate_handler)
+        self.addHandler(rotate_handler)
         
         if console_output:
-            self.logger.addHandler(console_handler)
-
-
-# Init global logger
-logger = Logger().logger
+            console_fmt = '%(asctime)s - %(levelname)s @ %(module)s:'
+            console_fmt += '\n%(message)s'
+            console_fmt = logging.Formatter(console_fmt)
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(level + 10)
+            console_handler.setFormatter(console_fmt)
+            self.addHandler(console_handler)
+        
