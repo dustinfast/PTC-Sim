@@ -1,7 +1,7 @@
 # loco_sim
 
-This application is  based on my experience in Postive Train Control (PTC). It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using an Edge Message Protocol (EMP) messaging subsystem. It consists of three top-level components:
-  
+This application is based on my experience in Postive Train Control (PTC). It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using an Edge Message Protocol (EMP) messaging subsystem. It consists of a web interface for it's three top-level components:
+
 **Locomotive Simulator (sim_loco.py)**  
 A simulated locomotive (loco) traveling on a track and connecting to track-section specific radio base stations for the purpose of communicating its status (location, speed, etc.) to the BOS at regular intervals. Additionally, locos fetch messages addressed to them in order to receive speed and direction of travel adjustments from the BOS.  
 
@@ -11,7 +11,7 @@ Note: Multiple instances of the locomotive simulator may instantiated. However, 
 Brokers messages between the BOS and locomotives, allowing bi-directional communication. Loco-to-BOS msgs are sent to the broker to be fetched by the BOS, and BOS-to-loco msgs are sent to the broker to be fetched by the loco.
 
 **Back Office Server (sim_bos.py)**  
-The BOS monitors each locomotive and displays status graphically via its website and Google Earth mapping. Additionally, the BOS may send the locomotive commands.
+The BOS monitors each locomotive and displays status graphically via its web interface (including Google Earth mapping). Additionally, the BOS may send commands to the locomotive
 
 ## File Description
 
@@ -83,10 +83,10 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 ## Usage
   
 **Demonstration**
-For a demonstration of all packages, enter `./demo.py` at the terminal, then navigate to http://localhost/loco_sim
+For a demonstration of all packages, enter `./LocoSim` at the terminal, then navigate to http://localhost/loco_sim
 
 **Command Line**
-The loco sim, message broker, and BOS each provide a command line interface when run independently from the terminal. Start each with `./sim_loco.py`, `/sim_broker.py` and `./sim_bos.py`, respectively.
+The loco sim, message broker, and BOS each provide a command line interface when run independently from the terminal. Start each with `./sim_loco`, `/sim_broker` and `./sim_bos`, respectively.
 
 **Dev**
 Each module is well documented and was developed with reusability and educational value in mind. It is free for use under the MIT Software License.
@@ -95,15 +95,19 @@ Each module is well documented and was developed with reusability and educationa
 
 Some features typical in a PTC deployment are not implemented for the sake of demonstration simplicity. For example, no authentication, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched).
 
+Loco cmds - here they are speed/direction, but could be software updates, etc.
+
 ## # TODO
 
+Change demo to loco_sim - it will start all necessary services.
 Class D/Qpid?
 Web
-bos loco cmds - need contextual repl first
+Change 'Running' log output to 'Started' (see sim_bos.start)
+bos loco cmds - need contextual repl first?
 Shebang permissions
 Move prompt below console output
 Consolidate lib sections under one class each?
-Ensure normalized app name
+Ensure normalized app name - LocoSim is web app, loco_sim is python?
 Better output on connection error
 PEP8 file headers, imports, and docstrings
 Privatize necessary members and do validation on public members

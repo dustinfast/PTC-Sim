@@ -1,16 +1,19 @@
 #!/usr/bin/env python
-""" sim_bos.py - The Back Office Server (BOS). Watches for locomotive status
-    msgs addressed to it at the broker and updates itself based on thier
-    content. Also accepts user commands from either the terminal or its web
-    interface to control each locomotive.
+""" The Back Office Server (BOS). Publishes the LocoSim website
+    via Flask and watches for locomotive status msgs addressed to it at the 
+    broker. The web display is updated to reflect loco status, including Google
+    Earth location mapping. Speed/direction commands may also be issued to
+    each loco.
 
     Author: Dustin Fast, 2018
 """
 
 from time import sleep
+from flask import Flask
 from threading import Thread
 from ConfigParser import RawConfigParser
-from sim_lib import Loco, Client, Queue, REPL, logger
+
+from sim_lib import Client, Queue, REPL, logger
 
 # Init conf
 config = RawConfigParser()
@@ -23,6 +26,13 @@ BROKER_SEND_PORT = int(config.get('messaging', 'send_port'))
 BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 
+# Init flask web interface
+bos_web = Flask(__name__)
+
+@bos_web.route('/LocoSim')
+def test():
+    return "Test!" 
+
 
 class BOS(object):
     """ A Back Office Server.
@@ -32,7 +42,7 @@ class BOS(object):
         """
         # On/Off flags.
         self.running = False
-        self.repl_started = False
+        self.interface_started = False
 
         # Messaging client
         self.msg_client = Client(BROKER, BROKER_SEND_PORT, BROKER_FETCH_PORT)
@@ -40,7 +50,7 @@ class BOS(object):
         # Message watcher thread
         self.status_watcher_thread = Thread(target=self._statuswatcher)
 
-    def start(self, terminal=False):
+    def start(self, terminal=False, debug=False):
         """ Start the BOS. I.e., the status watcher thread. If terminal, also
             starts the repl.
         """
@@ -48,11 +58,15 @@ class BOS(object):
             self.running = True
             self.status_watcher_thread.start()
 
-            if terminal and not self.repl_started:
-                self.repl_started = True
-                self._repl()
-            else:
-                logger.info('BOS running.')
+            logger.info('BOS Started.')
+            
+            if not self.interface_started:
+                self.interface_started = True
+                # bos_web.run(debug=debug)  # Start web interface
+                
+                if terminal:
+                    self._repl()  # Start terminal repl
+                
 
     def stop(self):
         """ Stops the BOS.
