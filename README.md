@@ -1,6 +1,6 @@
 # loco_sim
 
-This application is  based on my experience in Postive Train Control. It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using the Edge Message Protocol (EMP) and consists of three top-level parts:
+This application is  based on my experience in Postive Train Control (PTC). It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS) using an Edge Message Protocol (EMP) messaging subsystem. It consists of three top-level components:
   
 **Locomotive Simulator (sim_loco.py)**  
 A simulated locomotive (loco) traveling on a track and connecting to track-section specific radio base stations for the purpose of communicating its status (location, speed, etc.) to the BOS at regular intervals. Additionally, locos fetch messages addressed to them in order to receive speed and direction of travel adjustments from the BOS.  
@@ -89,24 +89,24 @@ For a demonstration of all packages, enter `./demo.py` at the terminal, then nav
 The loco sim, message broker, and BOS each provide a command line interface when run independently from the terminal. Start each with `./sim_loco.py`, `/sim_broker.py` and `./sim_bos.py`, respectively.
 
 **Dev**
-Each module is well documented and was developed with re-usability and educational value in mind. It is free for use under the MIT Software License.
+Each module is well documented and was developed with reusability and educational value in mind. It is free for use under the MIT Software License.
 
-## Caveats
+## Concessions
 
-This application takes several liberties for the sake of simplicity in demonstration. For example, no high availability, redundancy, or persistent data is implmented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched). In a typical PTC scenario, these features are likely to be mandatory.
+Some features typical in a PTC deployment are not implemented for the sake of demonstration simplicity. For example, no authentication, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched).
 
 ## # TODO
 
 Class D/Qpid?
-Web input
+Web
 bos loco cmds - need contextual repl first
 Shebang permissions
 Move prompt below console output
 Consolidate lib sections under one class each?
 Ensure normalized app name
 Better output on connection error
-Standardize file headers and docstrings (PEP8)
+PEP8 file headers, imports, and docstrings
 Privatize necessary members and do validation on public members
-readme screenshots
+readme screenshots and high-level images
 TrackCircuits
 Flask
