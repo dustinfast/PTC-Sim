@@ -43,12 +43,11 @@ BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 
 
-bos_web = Flask(__name__)
+web = Flask(__name__)
 
-@bos_web.route('/LocoBOSS')
+@web.route('/LocoBOSS')
 def home():
     return render_template('home.html')
-
 
 class BOS(object):
     """ A Back Office Server.
@@ -59,15 +58,14 @@ class BOS(object):
         # Thread on/off flag
         self.running = False
 
+        # Track object instance
+        self.track = Track()
+
         # Messaging client
         self.msg_client = Client(BROKER, BROKER_SEND_PORT, BROKER_FETCH_PORT)
 
         # Message watcher thread
         self.status_watcher_thread = Thread(target=self._statuswatcher)
-
-        # Dict of track, by ID: { loco.ID: loco }. Populated in 
-        # _statuswatcher.
-        self.track = Track()
 
     def start(self, debug=False):
         """ Start the BOS. I.e., the status watcher thread and web interface.
@@ -78,7 +76,7 @@ class BOS(object):
         self.status_watcher_thread.start()
 
         # Start serving web interface. Blocks until killed by console.
-        bos_web.run(debug=debug)
+        web.run(debug=debug)
         print('\n** STOPPING - Please wait. **\n')
         # Do shutdown
         self.running = False
