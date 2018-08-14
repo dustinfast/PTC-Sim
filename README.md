@@ -1,11 +1,11 @@
-# LocoBOS
+# LocoBOSS - Locomotive Back Office Server Simulation
 
 This application is based on my experience in Postive Train Control (PTC). It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS). Messaging is accomplished using the Edge Message Protocol (EMP), and the application contains a web interface.
 
-LocoBos consists of the following top-level components:
+LocoBOSS consists of the following top-level components:
 
 **Back Office Server and Web Interface**  
-The BOS monitors each locomotive and displays status graphically via its web interface (including Google Earth mapping). Additionally, the BOS may send commands to the locomotive.
+The BOS monitors each locomotive and displays status graphically via its web interface, including real-time location via Google Earth. Additionally, the BOS may send commands to the locomotive.
 
 **Locomotive Simulator**  
 A simulated locomotive (loco) traveling on a track and connecting to track-section specific radio base stations for the purpose of communicating its status (location, speed, etc.) to the BOS at regular intervals. Additionally, locos fetch messages addressed to them in order to receive speed and direction of travel adjustments from the BOS.  

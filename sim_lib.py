@@ -566,10 +566,10 @@ class Logger(object):
         self.logger = logging.getLogger()
 
         # Define log output format
-        console_fmt = '%(asctime)s - %(levelname)s: %(message)s'
         log_fmt = '%(asctime)s - %(levelname)s @ %(module)s: %(message)s'
-        console_fmt = logging.Formatter(console_fmt)
+        console_fmt = '%(asctime)s - %(levelname)s @ %(module)s:\n%(message)s'
         log_fmt = logging.Formatter(log_fmt + '')
+        console_fmt = logging.Formatter(console_fmt)
 
         # Init Console handler (stmnts go to console in addition to logfile)
         console_handler = logging.StreamHandler()

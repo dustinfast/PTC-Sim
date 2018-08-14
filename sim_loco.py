@@ -130,7 +130,7 @@ class SimLoco(Loco):
             except Queue.Empty:
                 logger.debug(self.disp_str + ' No msg available to fetch.')
             except Exception as e:
-                logger.error(self.disp_str + ' Fetch failed due to ' + str(e))
+                logger.error(self.disp_str + ' fetch failed - connection error.')
             
             # Process msg, ensuring that its actually for this loco
             if cmd_msg and cmd_msg.payload.get('loco') == self.ID:

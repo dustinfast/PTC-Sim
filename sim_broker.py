@@ -104,7 +104,7 @@ class Broker(object):
                 continue
 
             # Receive the msg from sender, responding with either OK or FAIL
-            log_str = 'Incoming msg from ' + str(client[0]) + '. Result='
+            log_str = 'Incoming msg from ' + str(client[0]) + ' gave: '
             try:
                 raw_msg = conn.recv(MAX_MSG_SIZE).decode()
                 msg = Message(raw_msg.decode('hex'))
@@ -124,8 +124,8 @@ class Broker(object):
             if not self.outgoing_queues.get(msg.dest_addr):
                 self.outgoing_queues[msg.dest_addr] = Queue.Queue()
             self.outgoing_queues[msg.dest_addr].put(msg)
-            log_str = 'Msg received from ' + msg.sender_addr + ' '
-            log_str += 'for ' + msg.dest_addr
+            log_str = 'Success - ' + msg.sender_addr + ' '
+            log_str += 'to ' + msg.dest_addr
             logger.info(log_str)
 
         # Do cleanup
@@ -151,7 +151,7 @@ class Broker(object):
             log_str = 'Fetch request from ' + str(client[0]) + ' '
             try:
                 queue_name = conn.recv(MAX_MSG_SIZE).decode()
-                log_str += 'for ' + queue_name + '. Result='
+                log_str += 'for ' + queue_name + ' gave: '
 
                 msg = None
                 try:
