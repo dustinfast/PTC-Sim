@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-""" demo.py - Starts the necessary services and processes for the LocoSim.
-    The Locomotive, Message Broker, and Back Office Server each exist in
-     seperate processes.
+""" Starts the necessary services and processes for LocoBOSS with 3 random
+    locomotives. The locomotives, message broker, and back office server are
+    each started as seperate processes with Python's Multiprocessing lib.
 
     Author: Dustin Fast, 2018
 """
@@ -11,8 +11,8 @@ import multiprocessing
 
 
 class _process(multiprocessing.Process):
-    """ Starts the given component of loco_sim, either "loco", "broker", 
-        or "bos", as a multiprocessing.Process.
+    """ Starts the given component of LocoBOSS, either "loco", "broker", 
+        or "bos" as a seperate process.
     """
     def __init__(self, module_name, signal_queue):
         multiprocessing.Process.__init__(self)
@@ -48,11 +48,11 @@ class _process(multiprocessing.Process):
 def start():
     # TODO: No log output to console for demo
     # TODO: Instantiate three random locos with random start/direction/speed
-    """ Start the LocoSim application, with each component existing in a 
+    """ Start the LocoBOSS application, with each component existing in a 
         seperate process.
     """
-    print('-- LocoSim --')
-    print('Navigate to https://localhost/LocoSim for web interface.')
+    print('-- LocoBOSS --')
+    print('Navigate to https://localhost/LocoBOSS for web interface.')
     print("To shutdown, type 'exit' here or quit from web.")
 
     # Multiprocssing queues, for signaling kill to each process

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" The Back Office Server (BOS). Publishes the LocoSim website
+""" The Back Office Server (BOS). Publishes the LocoBOSS website
     via Flask and watches for locomotive status msgs addressed to it at the 
     broker. The web display is updated to reflect loco status, including Google
     Earth location mapping. Speed/direction commands may also be issued to
@@ -35,7 +35,7 @@ BOS_EMP = config.get('messaging', 'bos_emp_addr')
 
 bos_web = Flask(__name__)
 
-@bos_web.route('/LocoSim')
+@bos_web.route('/LocoBOSS')
 def home():
     return render_template('home.html')
 
@@ -86,7 +86,7 @@ class BOS(object):
             # TODO: Process loco status msg
             if msg:
                 try:
-                    # loco = Loco(msg.payload['loco'], msg)
+                    loco = Loco(msg.payload['loco'], msg)
                     # logger.info(str(loco))
                     logger.debug('Recvd status msg.')
                 except KeyError as e:

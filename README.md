@@ -93,7 +93,7 @@ Waysides...
 ## Usage
   
 **Demonstration**
-For a demonstration of all packages, enter `./LocoBOSS` at the terminal, then navigate to http://localhost/loco_sim
+For a demonstration of all packages, enter `./LocoBOSS` at the terminal, then navigate to http://localhost/LocoBOSS
 
 **Command Line**
 The loco sim, message broker, and BOS each provide a command line interface when run independently from the terminal. Start each with `./sim_loco`, `/sim_broker` and `./sim_bos`, respectively.
@@ -115,7 +115,7 @@ Class D/Qpid?
 Change 'Running' log output to 'Started' (see sim_bos.start)
 bos loco cmds
 Consolidate lib sections under one class each?
-Ensure normalized app name - LocoSim is web app, loco_sim is python? LocoBOSS?
+Ensure normalized app name - LocoBOSS is web app, LocoBOSS is python? LocoBOSS?
 Better output on connection error
 PEP8 file headers, imports, and docstrings
 Privatize necessary members and do validation on public members

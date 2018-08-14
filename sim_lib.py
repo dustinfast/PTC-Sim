@@ -1,4 +1,4 @@
-""" lib.py - A collection of shared classes for loco_sim.
+""" lib.py - A collection of shared classes for LocoBOSS.
     Contains railroad components, input/output handlers, & messaging subsystem.
     See each section's docstring for more info, as well as README.md.
 
@@ -46,7 +46,7 @@ logger = None
 #############################################################
 # Railroad/Locomotive Component Classes                     #
 #############################################################
-""" LocoSim's collection of railroad related classes, includes 
+""" LocoBOSS's collection of railroad related classes, includes 
     the track, mileposts, locomotives, and base stations.
 """
 
@@ -288,7 +288,7 @@ class Base:
 #############################################################
 # Messaging Subsystem                                       #
 #############################################################
-""" LocoSim's messaging library for sending and receiving fixed-format, 
+""" LocoBOSS's messaging library for sending and receiving fixed-format, 
     variable-length header messages adhering to the Edge Message Protocol(EMP)
     over TCP/IP. See README.md for implementation specific information.
 """
@@ -476,7 +476,7 @@ class Client(object):
 #############################################################
 # Input/Output Handlers (REPL, Logger, and Web)             #
 #############################################################
-""" LocoSim's input and output library - I.e., the read-eval-print-loop,
+""" LocoBOSS's input and output library - I.e., the read-eval-print-loop,
     log file writer, and web command handlers.
 """
 
