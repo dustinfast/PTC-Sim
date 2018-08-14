@@ -77,8 +77,9 @@ class BOS(object):
 
         # Start serving web interface. Blocks until killed by console.
         web.run(debug=debug)
-        print('\n** STOPPING - Please wait. **\n')
+        
         # Do shutdown
+        print('\nQuitting... Please wait.')
         self.running = False
         self.status_watcher_thread.join(timeout=REFRESH_TIME)
         logger.info('BOS stopped.')
@@ -108,6 +109,7 @@ class BOS(object):
                     baseIDs = eval(msg.payload['bases'])
                     bases = [self.track.bases.get(b) for b in baseIDs]
 
+                    # Update the loco object
                     loco = self.track.locos.get(locoID)
                     if not loco:
                         loco = Loco(locoID)
@@ -126,8 +128,13 @@ class BOS(object):
 
             sleep(REFRESH_TIME)
 
+        # TODO: def _contentbuilder(self):
+        #     """ Updates the web datatables.
+        #     """
+
 
 if __name__ == '__main__':
     # Start the Back Office Server
     print('-- LocoBOSS: Back Office Server --')
+    sleep(.2)  # Allow print statment to occur before flask output
     bos = BOS().start(debug=True)

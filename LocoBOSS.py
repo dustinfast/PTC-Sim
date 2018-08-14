@@ -35,32 +35,31 @@ class _process(multiprocessing.Process):
             raise ValueError('Invalid module: ', self.module_name)
 
 
-
-
 if __name__ == '__main__':
     # TODO: No log output to console - web disp only
     # TODO: Instantiate demo locos with random start/direction/speed
-    """ Start the LocoBOSS application and web service, with each component
-        existing in a seperate process.
+    """ Start the LocoBOSS application, with each component existing in a
+        seperate process.
     """
+    # Start the application componenets
+    bos_proc = _process('sim_bos', 'BOS')
+    broker_proc = _process('sim_broker', 'Broker')
+    loco_proc = _process('sim_loco', 'SimLoco')
+
+    bos_proc.start()
+    broker_proc.start()
+    loco_proc.start()
+
+    sleep(.5)  # Allow enough time for all to start
 
     print('-- Locomotive Back Office Server Simulation --')
     print('Navigate to https://localhost:5000/LocoBOSS for web interface.')
-    print("Use 'exit' to shutdown.")
-
-
-    # Start the componenets
-    loco_proc = _process('sim_loco', 'SimLoco')
-    broker_proc = _process('sim_broker', 'Broker')
-    bos_proc = _process('sim_bos', 'BOS')
-    loco_proc.start()
-    broker_proc.start()
-    bos_proc.start()
+    print("Type 'quit' to shutdown.")
 
     while True:
         uinput = raw_input('>> ')
         
-        if uinput == 'exit':
+        if uinput == 'quit':
             loco_proc.terminate()
             broker_proc.terminate()
             bos_proc.terminate()

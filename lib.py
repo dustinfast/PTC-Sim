@@ -34,7 +34,7 @@ NET_TIMEOUT = float(config.get('messaging', 'network_timeout'))
 # Input/Output lib imports and conf data
 import logging
 import logging.handlers
-LOG_NAME = config.get('logging', 'filename')
+LOG_NAME = config.get('logging', 'name')
 LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_FILES = config.get('logging', 'num_logfiles')
 LOG_SIZE = int(config.get('logging', 'max_logfile_size'))
@@ -504,31 +504,30 @@ class REPL(object):
         if self.welcome_msg:
             print(self.welcome_msg)
         while True:
-            # TODO: readline
             uinput = raw_input(self.prompt)
             cmd = self.commands.get(uinput)
 
-            # Process user input
             if not uinput:
                 continue  # if null input
             if not cmd:
                 print('Invalid command. Try "help".')
             else:
-                eval(cmd)  # TODO: DoCmd func
+                try:
+                    eval(cmd)
+                except:
+                    print(uinput + ' exists but is malformed.')
 
     def add_cmd(self, cmd_txt, expression):
-        """ Makes a command available via the REPL
-                cmd_txt: Txt cmd entered by the user
-                expression: A well-formed python expression string.
-                            ex: 'print('Hello World)'
+        """ Makes a command available via the REPL. Accepts:
+                cmd_txt: Txt cmd entered by the user.
+                expression: A well-formed python statment. Ex: 'print('Hello)'
         """
         if cmd_txt == 'help' or cmd_txt == 'exit':
             raise ValueError('An internal cmd override was attempted.')
         self.commands[cmd_txt] = 'self.context.' + expression
 
     def set_exitcmd(self, cmd):
-        """ Specifies a command to run on exit. Example: 'stop', if a stop
-            command is defined and performs cleanup, etc.
+        """ Specifies a command to run on exit. 
         """
         self.exit_command = cmd
 
@@ -555,13 +554,14 @@ class Logger(object):
                        RotatingLog.info('Started Succesfully.')
     """
     def __init__(self, 
-                 filename=LOG_NAME,
+                 name=LOG_NAME,
                  level=LOG_LEVEL,
                  num_files=LOG_FILES,
-                 max_filesize=LOG_SIZE):
+                 max_filesize=LOG_SIZE,
+                 console_output=False):
         """
         """
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger(name)
 
         # Define log output format
         log_fmt = '%(asctime)s - %(levelname)s @ %(module)s: %(message)s'
@@ -575,7 +575,7 @@ class Logger(object):
         console_handler.setFormatter(console_fmt)
 
         # Init log file rotation
-        rotate_handler = logging.handlers.RotatingFileHandler(filename, 
+        rotate_handler = logging.handlers.RotatingFileHandler(name + '.log', 
                                                               max_filesize,
                                                               num_files)  
         rotate_handler.setLevel(level)
@@ -584,7 +584,9 @@ class Logger(object):
         # Init the logger itself
         self.logger.setLevel(0)
         self.logger.addHandler(rotate_handler)
-        self.logger.addHandler(console_handler)
+        
+        if console_output:
+            self.logger.addHandler(console_handler)
 
 
 # Init global logger

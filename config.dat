@@ -27,7 +27,7 @@ start_milepost = 2.0                ; Initial loco milepost
 start_speed = 10.0                  ; Initial speed of loco
 
 [logging]
-filename = logfile.log              ; The logfile name
+name = logfile.log                  ; The log name. Log file will be NAME.log
 level = 10                          ; 10 = DEBUG, 20 = INFO, 30 = WARN
 num_logfiles = 1                    ; Max number of rotating logfiles
 max_logfile_size = 500000           ; Max log size before rotation, in bytes
