@@ -80,6 +80,12 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 |               |    }                                  |
 |-------------------------------------------------------|
 
+## Concessions
+
+Some features typical in a PTC deployment are not implemented for the sake of demonstration simplicity. For example, no authentication, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched).
+
+The BOS issues speed and direction commands to each loco. This is to demonstrate bi-directional communication. However, because a loco may not always have connectivity, this would not be practical in a real-world scenario.
+
 ## Usage
   
 **Demonstration**
@@ -91,11 +97,9 @@ The loco sim, message broker, and BOS each provide a command line interface when
 **Dev**
 Each module is well documented and was developed with reusability and educational value in mind. It is free for use under the MIT Software License.
 
-## Concessions
+## Dependencies
 
-Some features typical in a PTC deployment are not implemented for the sake of demonstration simplicity. For example, no authentication, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched).
-
-Loco cmds - here they are speed/direction, but could be software updates, etc.
+The web interface requires flask. Install with `pip install flask`
 
 ## # TODO
 
