@@ -54,17 +54,23 @@ class Track(object):
     """ A representation of the track, including its mileposts and radio base 
         stations.
     
+        self.locos = A dict of locootives.
+            Format: { LOCOID: LOCO_OBJECT }
         self.bases = A dict of radio base stations, used by locos  to send msgs. 
             Format: { BASEID: BASE_OBJECT }
         self.mp_objects = Used to associate BRANCH/MP with MPOBJ.
-            Format: { MP: MPOBJ }
+            Format: { MP: MP_OBJECT }
         self.mp_linear = A representation of the track in order of mps.
-            Format: [ MP1, ... , MPn ], where MP1 < MPn
+            Format: [ MP_1, ... , MP_n ], where MP1 < MPn
         self.mp_linear_rev = A represention the track in reverse order of mps.
-            Format: [ MPn, ... , MP1], where MP1 < MPn
-        Note: BASEID = string, MP/lat/long = floats, MPOBJs = Milepost objects.
+            Format: [ MP_n, ... , MP_1], where MP1 < MPn
+        Note: BASEID/LOCOD = strings, MP = Floats
     """
     def __init__(self, track_file=TRACK_RAILS, bases_file=TRACK_BASES):
+        """ track_file: Filename of track JSON
+            bases_file: Filename of base station JSON
+        """
+        self.locos = {}  # TODO: Locos from json?    
         self.bases = {}
         self.mp_objects = {}
         self.mp_linear = []
@@ -191,7 +197,7 @@ class Track(object):
 class Loco(object):
     """ An abstration of a locomotive.
     """
-    def __init__(self, locoID, status_msg=None):
+    def __init__(self, locoID):
         """
         """
         self.ID = str(locoID)
@@ -199,52 +205,50 @@ class Loco(object):
         self.heading = None
         self.direction = None
         self.milepost = None
-        self.current_baseID = None
+        self.baseID = None
         self.bases_inrange = []
 
-        if status_msg:
-            self.update_from_msg(status_msg)
-
-    def update_from_msg(self, msg):
-        """ Updates the loco with parameters from the given Message object.
-            Assumes msg.payload is well-formed 6001 msg data.
+    def update(self,
+               speed=None,
+               heading=None,
+               direction=None,
+               milepost=None,
+               baseID=None,
+               bases_inrange=None):
+        """ Updates the loco with the given parameters.
+            Accepts:
+                speed: A float
+                heading: A float
+                direction: Either 'increasing', or 'decreasing'
+                milepost: A Milepost object instance
+                baseID: An int
+                bases_inrange: A list of Base object instances
         """
-        content = msg.payload
-        # print(type(content['loco']))
+        if speed is not None:
+            self.speed = speed
+        if heading is not None:
+            self.heading = heading
+        if direction is not None:
+            self.direction = direction
+        if milepost is not None:
+            self.milepost = milepost
+        if baseID is not None:
+            self.baseID = baseID
+        if self.bases_inrange is not None:
+            self.bases_inrange = bases_inrange
 
-        # try:
-        #     msg_locoID = content['loco']
-        #     if content['loco'] != self.ID:
-        #         warn_str = 'Updated loco ' + self.ID
-        #         warn_str += ' from a msg for loco ' + msg_locoID
-        #         logger.warning(warn_str)
-        #     self.speed = content['speed']
-        #     self.heading = content['heading']
-        #     self.direction = content['direction']
-        #     self.current_baseID = content['base']
-        # except KeyError:
-        #     raise Exception('Attempted loco update from a malformed message')
-
-    def get_status(self):
-        """ Returns a newline delimited string representing the loco's 
-            current status.
+    def get_status_dict(self):
+        """ Returns the loco's current status as a dict of strings and nums.
         """
-        if not self.bases_inrange:
-            in_range = 'None'
-        else:
-            in_range = ', '.join(b.ID for b in self.bases_inrange)
-
-        ret_str = 'Loco: ' + self.ID + '\n'
-        ret_str += 'Speed: ' + str(self.speed) + ' ' + SPEED_UNITS + '\n'
-        ret_str += 'Direction of Travel: ' + str(self.direction) + '\n'
-        ret_str += 'Milepost: ' + str(self.milepost) + '\n'
-        ret_str += 'Lat: ' + str(self.milepost.lat) + '\n'
-        ret_str += 'Long: ' + str(self.milepost.long) + '\n'
-        ret_str += 'Heading: ' + str(self.heading) + '\n'
-        ret_str += 'Current Base: ' + str(self.current_baseID) + '\n'
-        ret_str += 'Base(s) in Range: ' + in_range
-        
-        return ret_str
+        return {'loco': self.ID,
+                'speed': self.speed,
+                'heading': self.heading,
+                'direction': self.direction,
+                'milepost': self.milepost.mp,
+                'lat': self.milepost.lat,
+                'long': self.milepost.long,
+                'base': self.baseID,
+                'bases': str([b.ID for b in self.bases_inrange])}
 
 
 class Milepost:
@@ -428,39 +432,33 @@ class Client(object):
             Returns True if msg sent succesfully, else raises an issue-
             specific exception.
         """
-        try:
-            # Init socket and connect to broker
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((self.broker, self.send_port))
+        # Init socket and connect to broker
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self.broker, self.send_port))
 
-            # Send message and wait for a response
-            sock.send(message.raw_msg.encode('hex'))
-            response = sock.recv(MAX_MSG_SIZE).decode()
-            sock.close()
-            if response == 'OK':
-                return True
-            elif response == 'FAIL':
-                raise Exception('Msg send failed: Broker responded with FAIL.')
-            else:
-                raise Exception(
-                    'Unhandled response received from broker - Send aborted.')
-        except Exception as e:
-            raise Exception('Msg send failed: ' + str(e))
+        # Send message and wait for a response
+        sock.send(message.raw_msg.encode('hex'))
+        response = sock.recv(MAX_MSG_SIZE).decode()
+        sock.close()
+        if response == 'OK':
+            return True
+        elif response == 'FAIL':
+            raise Exception('Broker responded with FAIL.')
+        else:
+            raise Exception(
+                'Unhandled response received from broker - Send aborted.')
 
     def fetch_next_msg(self, queue_name):
         """ Fetches the next msg from queue_name from the broker and returns it,
             Raises Queue.Empty if specified queue is empty.
         """
-        try:
-            # Establish socket connection
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((self.broker, self.fetch_port))
+        # Establish socket connection
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self.broker, self.fetch_port))
 
-            # Send queue name and wait for response
-            sock.send(queue_name.encode())
-            resp = sock.recv(MAX_MSG_SIZE)
-        except Exception as e:
-            raise Exception(e)
+        # Send queue name and wait for response
+        sock.send(queue_name.encode())
+        resp = sock.recv(MAX_MSG_SIZE)
 
         msg = None
         if resp == 'EMPTY':
@@ -481,12 +479,10 @@ class Client(object):
 """
 
 class REPL(object):
-    # TODO: Pass object ref into command dict and do away with self.context
-    """ A dynamic Read-Eval-Print-Loop. I.e. A command line interface.
+    """ A dynamic Read-Eval-Print-Loop. I.e., a command line interface.
         Contains two predefined commands: help, and exit. Additional cmds may
-        be added with add_cmd(). These additional cmds all operate on the object
-        given as the context. 
-        Note: Assumes all expressions provided are well-formed. 
+        be added with add_cmd(). These additional cmds all operate on the 
+        object instance given as the context.
     """
 
     def __init__(self, context, prompt='>>', welcome_msg=None):
@@ -518,7 +514,7 @@ class REPL(object):
             if not cmd:
                 print('Invalid command. Try "help".')
             else:
-                eval(cmd)
+                eval(cmd)  # TODO: DoCmd func
 
     def add_cmd(self, cmd_txt, expression):
         """ Makes a command available via the REPL
@@ -540,6 +536,8 @@ class REPL(object):
         """ Outputs all available commands to the console, excluding 'help'.
         """
         cmds = [c for c in sorted(self.commands.keys()) if c != 'help']
+
+        print('Available commands:')
         print('\n'.join(cmds))
 
     def _exit(self):

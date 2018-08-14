@@ -1,33 +1,42 @@
 # LocoBOSS - Locomotive Back Office Server Simulation
 
-This application is based on my experience in Postive Train Control (PTC). It demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS). Messaging is accomplished using the Edge Message Protocol (EMP), and the application contains a web interface.
+This application is based on my experience in Postive Train Control (PTC) and demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS). Messaging is accomplished using the Edge Message Protocol (EMP), and user interaction occurs via web interface.
 
 LocoBOSS consists of the following top-level components:
 
-**Back Office Server and Web Interface**  
-The BOS monitors each locomotive and displays status graphically via its web interface, including real-time location via Google Earth. Additionally, the BOS may send commands to the locomotive.
+**Back Office Server with Web Interface**  
+The BOS monitors each locomotive and displays the status of each graphically, including real-time locations via Google Earth. Additionally, the BOS may send commands to locomotives.
 
 **Locomotive Simulator**  
-A simulated locomotive (loco) traveling on a track and connecting to track-section specific radio base stations for the purpose of communicating its status (location, speed, etc.) to the BOS at regular intervals. Additionally, locos fetch messages addressed to them in order to receive speed and direction of travel adjustments from the BOS.  
-
-Note: Multiple instances of the locomotive simulator may instantiated. However, tracks exist seperately for each instance. I.e. Virtual locos may occupy identical track sections simultaneously without collision.
+Simulated locomotives (loco) traveling on the given track and connecting to radio base stations along the way for the purpose of communicating their status (location, speed, etc.) to the BOS at regular intervals. Additionally, locomos may fetch messages enqueued at the broker from the BOS containing speed and direction of travel adjustments.  
+  
+Note: Multiple instances of the locomotive simulator may instantiated. However tracks exist seperately across each instance. I.e., Virtual locos may occupy identical track sections simultaneously without collision.
 
 **Message Broker**  
-Brokers messages between the BOS and locomotives, allowing bi-directional communication. Loco-to-BOS msgs are sent to the broker to be fetched by the BOS, and BOS-to-loco msgs are sent to the broker to be fetched by the loco.
+The backbone of the messaging subsystem, the broker allows bi-directional communication between locos and the BOS.
+
+## Usage
+
+Start the application with `./LocoBOSS` at the terminal, then navigate to http://localhost:5000/LocoBOSS.
+  
+Alternatively, the sim_loco, sim_broker, and sim_bos modules may be started from the terminal independently with `./sim_loco`, `./sim_broker` and `./sim_bos`, respectively. The latter serves the web interface.
+
+**Dev Note:** Each module was developed with reusability and educational value in mind. The code base is well documented and free for use under the MIT Software License. Please credit the author accordingly.
 
 ## File Description
 
-**conf.dat** - Configuration information. For example, the message broker hostname/IP address.  
-**lib.py** - Shared classes and helper functions.  
-**sim_bos.py** - The Back Office Server, or "BOS" (pronounced like "boss").  
-**sim_broker.py** - The QPID message broker.  
+**config.dat** - Configuration information. For example, the message broker hostname/IP address.
+**LocoBOSS.py** - Starts the necessary application processes
+**sim_lib.py** - Shared classes and helper functions.  
+**sim_bos.py** - The back office server, (AKA "BOS", pronounced like "boss").  
+**sim_broker.py** - The message broker.  
 **sim_loco.py** - The locomotive simulator.
-**track_bases.json** - JSON representation of the base stations providing radio communication to on-track locos. Each base station consists of a unique ID and the on-track mileposts it provides coverage for. Gaps in coverage area allowed, as are areas of overlapping coverage.  
-**track_rail.json** - JSON representation of a railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees) of each. In this particular instance, the track is a model of the Alaska Railroad's main branch.
+**track_bases.json** - JSON representation of the radio base stations facilitating locomotive communications. Each base station consists of a unique ID and the track mileposts it covers. Gaps in coverage area allowed, as are areas of overlapping coverage.  
+**track_rail.json** - A JSON representation of a railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees). In this particular instance, the track is a model of the Alaska Railroad's main branch.
 
 ## Message Specification
 
-Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages having a variable header section. This messaging implementation is defined as the following:
+Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with variable-length header sections. The application-specific messaging implementation is defined as follows:
 
 **EMP Fields Values**
 |---------------------------------------------------|
@@ -36,7 +45,7 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 | Common   | EMP Header Version    : 4              |
 | Header   | Message Type/ID       : DYNAMIC        |
 |          | Message Version       : 1              |
-|          | Flags                 : 0              |
+|          | Flags                 : 0000 0000      |
 |          | Body Size             : DYNAMIC        |
 |---------------------------------------------------|
 | Optional | Unused                                 |
@@ -52,76 +61,51 @@ Adheres to EMP V4 (specified in msg_spec/S-9354.pdf) with fixed-format messages 
 |          | CRC                   : DYNAMIC        |
 |---------------------------------------------------|
 
-**Fixed-Format Messages, by ID**
+**Fixed-Format Messages**
 |-------------------------------------------------------|
-| ID / Desc     | Data Element, by index                |
+| ID / Desc     | Data Element                          |
 |-------------------------------------------------------|
-| 6000:         | 0: A key/value string of the form     |
+| 6000:         | A key/value string of the form     |
 | Loco status   |    {sent          : Unix Time,         |
 | message       |     loco          : 4 digit integer,   |
 |               |     speed        : integer,   |
-|               |     direction    : string,   |
-|               |     heading        : integer,   |
-|               |     lat     : Integer,           |
-|               |     long    : Integer,           |
+|               |     heading        : Float,   |
+|               |     direction    : 'increasing' or 'decreasing'
+|               |     milepost    : Float,   |
+|               |     lat     : Float,           |
+|               |     long    : Float,           |
 |               |     base : Integer            |
+|               |     bases : List           |
 |               |    }                                  |
-                    {'sent': time.now(),
-                       'loco': self.ID,
-                       'speed': self.speed,
-                       'heading': self.heading,
-                       'lat': self.loco.milepost.lat,
-                       'long': self.loco.milepost.long,
-                       'base': self.loco.current_base}
 |-------------------------------------------------------|
-| 6001:         | 0: A key/value string of the form     |
+| 6001:         | A key/value string of the form     |
 | BOS to loco   |    {sent    : Unix Time,         |
 | command msg   |     loco : 4 digit integer,   |
 |               |     speed:      integer,      |
-|               |     dir:    'incresing' or 'decreasing'   |
+|               |     direction:    'increasing' or 'decreasing'   |
 |               |    }                                  |
 |-------------------------------------------------------|
 
 ## Concessions
 
-Some features typical in a PTC deployment are not implemented for the sake of demonstration simplicity. For example, no authentication, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed (connections are created and torn down each time a msg is sent or fetched).
-
-The BOS issues speed and direction commands to each loco. This is to demonstrate bi-directional communication. However, because a loco may not always have connectivity, this would not be practical in a real-world scenario.
-
-Waysides...
-
-## Usage
-  
-**Demonstration**
-For a demonstration of all packages, enter `./LocoBOSS` at the terminal, then navigate to http://localhost/LocoBOSS
-
-**Command Line**
-The loco sim, message broker, and BOS each provide a command line interface when run independently from the terminal. Start each with `./sim_loco`, `/sim_broker` and `./sim_bos`, respectively.
-
-**Dev**
-Each module is well documented and was developed with reusability and educational value in mind. It is free for use under the MIT Software License.
-
-## Dependencies
-
-The web interface requires flask. Install with `pip install flask`.
-
-Other technologies used include AJAX, JavaScript, ...
+Some features typical in a PTC deployment are left unimplemented for the sake of demonstration simplicity. For example, no authentication, encryption, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed.
 
 ## # TODO
 
-Change demo to locoBoss shell script - it will start all necessary services.
+Change demo to locoBoss shell script? Or keep using multiprocessing?
 Seperate logs and display each on Logs webpage w/logtail
+Broker queue sizes in web output
 Class D/Qpid?
-Change 'Running' log output to 'Started' (see sim_bos.start)
 bos loco cmds
 Consolidate lib sections under one class each?
-Ensure normalized app name - LocoBOSS is web app, LocoBOSS is python? LocoBOSS?
+Ensure normalized app name - LocoBOSS is web app, loco_boss is py
 Better output on connection error
-PEP8 file headers, imports, and docstrings
+PEP8 file headers, imports, and docstrings (model after Track?)
 Privatize necessary members and do validation on public members
 readme screenshots and high-level images
 TrackCircuits
 Ensure all URLs OK
 EMP spec file?
-Queue expire time
-Remove prompts from REPLs
+Catch specific socket conn errors w/ except socket.error as e:
+py3
+Wayside/Base modules and web output

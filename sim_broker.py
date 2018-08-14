@@ -63,12 +63,12 @@ class Broker(object):
             self.msg_recvr_thread.start()
             self.fetch_watcher_thread.start()
 
+            logger.info('Broker Started.')
+
             if terminal and not self.repl_started:
                 self.repl_started = True
                 self._repl()
-            else:
-                logger.info('Broker running.')
-
+            
     def stop(self):
         """ Stops the msg broker. I.e., the msg receiver and fetch watcher 
             threads. 
@@ -83,7 +83,7 @@ class Broker(object):
             self.msg_recvr_thread = Thread(target=self._msgreceiver)
             self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
 
-        logger.info('Broker stopped.')
+            logger.info('Broker stopped.')
 
     def _msgreceiver(self):
         """ Watches for incoming messages over TCP/IP on the interface and port 
@@ -92,7 +92,6 @@ class Broker(object):
         # Init TCP/IP listener
         # TOOD: Move to lib
         sock = socket.socket()
-        # sock.settimeout(REFRESH_TIME)
         sock.bind((BROKER, SEND_PORT))
         sock.listen(1)
 
@@ -113,10 +112,12 @@ class Broker(object):
             except Exception as e:
                 log_str += 'Msg recv failed due to ' + str(e)
                 logger.error(log_str)
+
                 try:
                     conn.send('FAIL'.encode())
                 except:
                     pass
+
                 conn.close()
                 continue
 
@@ -176,9 +177,7 @@ class Broker(object):
         """ Blocks while watching for terminal input, then processes it.
         """
         # Init the Read-Eval-Print-Loop and start it
-        welcome = '-- LocoBOSS: Message Broker  --\n'
-        welcome += "Try 'help' for a list of commands."
-        repl = REPL(self, '', welcome)
+        repl = REPL(self, '')
         repl.add_cmd('start', 'start()')
         repl.add_cmd('stop', 'stop()')
         repl.set_exitcmd('stop')
@@ -187,4 +186,5 @@ class Broker(object):
 
 if __name__ == '__main__':
     # Start the broker in terminal mode
+    print('-- LocoBOSS: Message Broker --')
     Broker().start(terminal=True)

@@ -7,19 +7,29 @@
 
     Author: Dustin Fast, 2018
 """
-
 from time import sleep
 from threading import Thread
+from subprocess import check_output
 from ConfigParser import RawConfigParser
 
-# Flask web interface
-try:
-    from flask import Flask, render_template
-except:
-    print('Flask is required - use "pip install flask" to install it.')
-    exit()
+from sim_lib import Track, Loco, Milepost, Client, Queue, logger
 
-from sim_lib import Loco, Client, Queue, logger
+# Attempt to import flask and prompt for install on fail
+while True:
+    try:
+        from flask import Flask, render_template
+        break
+    except:
+        prompt = 'Flask is required, install it? (Y/n): '
+        install_pip = raw_input(prompt)
+
+        if install_pip == 'Y':
+            print('Installing... Please wait.')
+            result = check_output('pip install flask')
+            print('Success!')
+        else:
+            print('Exiting.')
+            exit()
 
 # Init conf
 config = RawConfigParser()
@@ -48,22 +58,28 @@ class BOS(object):
         """
         # Thread on/off flag
         self.running = False
+
         # Messaging client
         self.msg_client = Client(BROKER, BROKER_SEND_PORT, BROKER_FETCH_PORT)
 
         # Message watcher thread
         self.status_watcher_thread = Thread(target=self._statuswatcher)
 
+        # Dict of track, by ID: { loco.ID: loco }. Populated in 
+        # _statuswatcher.
+        self.track = Track()
+
     def start(self, debug=False):
         """ Start the BOS. I.e., the status watcher thread and web interface.
         """
+        logger.info('BOS Started.')
+        
         self.running = True
         self.status_watcher_thread.start()
-        logger.info('BOS Started.')
 
         # Start serving web interface. Blocks until killed by console.
         bos_web.run(debug=debug)
-            
+        print('\n** STOPPING - Please wait. **\n')
         # Do shutdown
         self.running = False
         self.status_watcher_thread.join(timeout=REFRESH_TIME)
@@ -83,14 +99,32 @@ class BOS(object):
             except Exception as e:
                 logger.error('Fetch failed - connection error.')
 
-            # TODO: Process loco status msg
+            # Process loco status msg
             if msg:
                 try:
-                    loco = Loco(msg.payload['loco'], msg)
-                    # self.locos[loco.ID].speed =
-                    logger.debug('Processed status msg for loco ' + loco.ID)
+                    locoID = msg.payload['loco']
+                    milepost = Milepost(msg.payload['milepost'],
+                                        msg.payload['lat'],
+                                        msg.payload['long'])
+
+                    baseIDs = eval(msg.payload['bases'])
+                    bases = [self.track.bases.get(b) for b in baseIDs]
+
+                    loco = self.track.locos.get(locoID)
+                    if not loco:
+                        loco = Loco(locoID)
+
+                    loco.update(msg.payload['speed'],
+                                msg.payload['heading'],
+                                msg.payload['direction'],
+                                milepost,
+                                msg.payload['base'],
+                                bases)
+
+                    logger.info('Processed status msg for loco ' + loco.ID)
                 except KeyError as e:
-                    logger.error('Malformed status msg received: ' + str(e))
+                    logger.error('Malformed status msg received: ' +
+                                 str(msg.payload))
 
             sleep(REFRESH_TIME)
 

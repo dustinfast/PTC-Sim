@@ -5,11 +5,12 @@
     Author: Dustin Fast, 2018
 """
 
+from time import sleep
 from random import randint
-from time import time, sleep
 from threading import Thread
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
+
 from sim_lib import Track, Loco, Client, Queue, Message, REPL, logger
 
 # Init conf
@@ -61,6 +62,8 @@ class SimLoco(Loco):
         """ Starts the simulator threads. 
         """
         if not self.running:
+            logger.info(self.disp_str + ' Simulation started.')
+            
             self.running = True
             self.movement_thread.start()
             self.messaging_thread.start()
@@ -68,8 +71,6 @@ class SimLoco(Loco):
             if terminal and not self.repl_started:
                 self.repl_started = True
                 self._repl()
-            else:
-                logger.info(self.disp_str + ' Simulation started.')
 
     def stop(self):
         """ Stops the simulator threads.
@@ -88,10 +89,10 @@ class SimLoco(Loco):
     def status(self):
         """ Prints the locomotive and simulator status to the console.
         """
-        status = self.get_status() + '\n'
-        status += 'Sim: ' + {True: 'running', False: 'off'}.get(self.running)
+        status = self.get_status_dict()
+        status['Sim'] = {True: 'running', False: 'off'}.get(self.running)
 
-        print(status)
+        print('\n'.join(status))
 
     def _messaging(self):
         """ The loco messaging simulator thread. Sends status msgs and 
@@ -102,14 +103,7 @@ class SimLoco(Loco):
             msg_type = 6000
             msg_source = self.loco_emp
             msg_dest = self.broker_emp
-
-            payload = {'sent': time(),
-                       'loco': self.ID,
-                       'speed': self.speed,
-                       'heading': self.heading,
-                       'lat': self.milepost.lat,
-                       'long': self.milepost.long,
-                       'base': self.current_baseID}
+            payload = str(self.get_status_dict())
 
             status_msg = Message((msg_type,
                                   msg_source,
@@ -130,7 +124,7 @@ class SimLoco(Loco):
             except Queue.Empty:
                 logger.debug(self.disp_str + ' No msg available to fetch.')
             except Exception as e:
-                logger.error(self.disp_str + ' fetch failed - connection error.')
+                logger.error(self.disp_str + ' Fetch failed - connection error.')
             
             # Process msg, ensuring that its actually for this loco
             if cmd_msg and cmd_msg.payload.get('loco') == self.ID:
@@ -175,9 +169,9 @@ class SimLoco(Loco):
                     # Determine base stations in range of current position
                     self.bases_inrange = [b for b in self.track.bases.values()
                                           if b.covers_milepost(self.milepost)]
-                    self.current_baseID = None
+                    self.baseID = None
                     if self.bases_inrange:
-                        self.current_baseID = self.bases_inrange[0].ID
+                        self.baseID = self.bases_inrange[0].ID
                     
             sleep(MSG_INTERVAL)
 
@@ -199,9 +193,6 @@ class SimLoco(Loco):
     def _repl(self):
         """ Blocks while watching for terminal input, then processes it.
         """
-        # Init the Read-Eval-Print-Loop and start it
-        welcome = '-- LocoBOSS: Locomotive Simulator  --\n'
-        welcome += "Try 'help' for a list of commands."
         repl = REPL(self, '')
         repl.add_cmd('start', 'start()')
         repl.add_cmd('status', 'status()')
@@ -212,4 +203,5 @@ class SimLoco(Loco):
 
 if __name__ == '__main__':
     # Start the locomotive simulation in terminal mode
+    print('-- LocoBOSS: Locomotive Simulator --')
     SimLoco().start(terminal=True)
