@@ -11,11 +11,11 @@ from threading import Thread
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
-from sim_lib import Track, Loco, Client, Queue, Message, REPL, logger
+from lib import Track, Loco, Client, Queue, Message, REPL, logger
 
 # Init conf
 config = RawConfigParser()
-config.read('conf.dat')
+config.read('config.dat')
 
 # Import conf data
 REFRESH_TIME = float(config.get('application', 'refresh_time'))

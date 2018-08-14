@@ -12,7 +12,7 @@ from threading import Thread
 from subprocess import check_output
 from ConfigParser import RawConfigParser
 
-from sim_lib import Track, Loco, Milepost, Client, Queue, logger
+from lib import Track, Loco, Milepost, Client, Queue, logger
 
 # Attempt to import flask and prompt for install on fail
 while True:
@@ -33,7 +33,7 @@ while True:
 
 # Init conf
 config = RawConfigParser()
-config.read('conf.dat')
+config.read('config.dat')
 
 # Import conf data
 REFRESH_TIME = float(config.get('application', 'refresh_time'))

@@ -12,7 +12,7 @@
 # Init conf
 from ConfigParser import RawConfigParser
 config = RawConfigParser()
-config.read('conf.dat')
+config.read('config.dat')
 
 # Railroad lib imports and conf data
 from json import loads

@@ -50,7 +50,7 @@ if __name__ == '__main__':
     """ Start the LocoBOSS application and web service, with each component
         existing in a seperate process.
     """
-    print('-- LocoBOSS --')
+    print('-- Locomotive Back Office Server Simulation --')
     print('Navigate to https://localhost:5000/LocoBOSS for web interface.')
     print("To shutdown, type 'exit' here or quit from web.")
 

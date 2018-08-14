@@ -26,8 +26,8 @@ Alternatively, the sim_loco, sim_broker, and sim_bos modules may be started from
 ## File Description
 
 **config.dat** - Configuration information. For example, the message broker hostname/IP address.
+**lib.py** - Shared classes and helper functions.  
 **LocoBOSS.py** - Starts the necessary application processes
-**sim_lib.py** - Shared classes and helper functions.  
 **sim_bos.py** - The back office server, (AKA "BOS", pronounced like "boss").  
 **sim_broker.py** - The message broker.  
 **sim_loco.py** - The locomotive simulator.

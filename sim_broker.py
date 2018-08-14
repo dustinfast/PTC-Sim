@@ -20,11 +20,11 @@ import socket
 from time import sleep
 from threading import Thread
 from ConfigParser import RawConfigParser
-from sim_lib import Queue, Message, REPL, logger  # Also sets socket timeout
+from lib import Queue, Message, REPL, logger  # Also sets socket timeout
 
 # Init conf
 config = RawConfigParser()
-config.read('conf.dat')
+config.read('config.dat')
 
 # Import conf data
 REFRESH_TIME = float(config.get('application', 'refresh_time'))
