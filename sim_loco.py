@@ -203,5 +203,6 @@ class SimLoco(Loco):
 
 if __name__ == '__main__':
     # Start the locomotive simulation in terminal mode
-    print('-- LocoBOSS: Locomotive Simulator --')
+    print('-- LocoBOSS: Locomotive Simulator')
+    print("-- Type 'exit' to quit")
     SimLoco().start(terminal=True)

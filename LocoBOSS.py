@@ -52,14 +52,14 @@ if __name__ == '__main__':
 
     sleep(.5)  # Allow enough time for all to start
 
-    print('-- Locomotive Back Office Server Simulation --')
-    print('Navigate to https://localhost:5000/LocoBOSS for web interface.')
-    print("Type 'quit' to shutdown.")
+    print('-- Locomotive Back Office Server Simulation')
+    print('-- Navigate to https://localhost:5000/LocoBOSS')
+    print("-- Type 'exit' to quit")
 
     while True:
         uinput = raw_input('>> ')
         
-        if uinput == 'quit':
+        if uinput == 'exit':
             loco_proc.terminate()
             broker_proc.terminate()
             bos_proc.terminate()

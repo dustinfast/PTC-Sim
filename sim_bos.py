@@ -135,6 +135,7 @@ class BOS(object):
 
 if __name__ == '__main__':
     # Start the Back Office Server
-    print('-- LocoBOSS: Back Office Server --')
+    print('-- LocoBOSS: Back Office Server')
+    print('-- Press CTRL + C to quit')
     sleep(.2)  # Allow print statment to occur before flask output
     bos = BOS().start(debug=True)

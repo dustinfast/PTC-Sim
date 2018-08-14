@@ -186,5 +186,6 @@ class Broker(object):
 
 if __name__ == '__main__':
     # Start the broker in terminal mode
-    print('-- LocoBOSS: Message Broker --')
+    print('-- LocoBOSS: Message Broker')
+    print("-- Type 'exit' to quit")
     Broker().start(terminal=True)
