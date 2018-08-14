@@ -9,9 +9,9 @@
 """
 
 from time import sleep
-from flask import Flask
 from threading import Thread
 from ConfigParser import RawConfigParser
+from flask import Flask, render_template
 
 from sim_lib import Client, Queue, REPL, logger
 
@@ -26,12 +26,12 @@ BROKER_SEND_PORT = int(config.get('messaging', 'send_port'))
 BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 
-# Init flask web interface
+# Flask web interface
 bos_web = Flask(__name__)
 
 @bos_web.route('/LocoSim')
-def test():
-    return "Test!" 
+def home():
+    return render_template('home.html')
 
 
 class BOS(object):
@@ -62,12 +62,11 @@ class BOS(object):
             
             if not self.interface_started:
                 self.interface_started = True
-                # bos_web.run(debug=debug)  # Start web interface
+                bos_web.run(debug=True)  # Start web interface
                 
                 if terminal:
                     self._repl()  # Start terminal repl
                 
-
     def stop(self):
         """ Stops the BOS.
         """
