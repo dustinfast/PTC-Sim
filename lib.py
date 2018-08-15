@@ -24,6 +24,7 @@ config.read('config.dat')
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
+CONN_TIMEOUT = config.get('track', 'connection_timeout')
 
 # Messaging lib imports and conf data
 BROKER = config.get('messaging', 'broker')
@@ -182,8 +183,67 @@ class Track(object):
         """
         return self.mp_objects.get(mile, None)
 
+class Connection(object):
+    """ An abstraction of a communication interface. Ex: A 220 MHz base station.
+        Starts a thread on instantiation that watches for timeout.
+    """
+    def __init__(self, ID, enabled=False, active=False, timeout=0):
+        """ self.ID     : (str) The interfaces unique identifier.
+            self.enabled: (bool) Device enabled/disabled
+            self.active : (bool) Device is "connected"
+            self.timeout: (int) Seconds of inactivity before active=False
+            self.last_ka: (datetime) Time of last keep_alive activity
 
-class Loco(object):
+            self.keep_alive(): Sets self.active
+            self._timeout_watcher(): A thread. Unsets self.active on timeout
+        """
+        # Connection
+        self.ID = ID
+        self.enabled = enabled
+        self.active = active
+        self._timeout = 0
+
+        # Timeout watcher
+        self.timeout_watcher = Thread(target=self._timeoutwatcher)
+        self.set_timeout(timeout)
+
+    def keep_alive(self):
+        """ Call to update the last activity time for the interface.
+        """
+        self.active = True
+
+    def self._timeoutwatcher(self):
+        """
+        """
+
+    def set_timeout(self, timeout):
+        """ Sets the timeout value and starts/stops the timeout watcher thread
+            as needed. 0 = No timeout.
+        """
+        self.set_timeout(timeout)
+        if self.timeout:
+            self.timeout_watcher = Thread(target=self._timeoutwatcher)
+        else:
+            if self.timeout_watcher.is_alive():
+                self.timeout_watcher.terminate()
+                self.timeout_watcher.join()  # To prevent temporary offline
+
+
+
+
+
+class TrackComponent(object):
+    """ The templatee class for on-track communication-enabled devices. I.e., 
+        Locos, Bases, and Waysides.
+    """
+    def __init__(self, ID, connections = []):
+        """ self.ID     : (str) The Device's unique identifier.
+            self.conns  : (list) Comm interface objects, of type Connection.
+        """
+        self.ID = None
+        self.conns = connections
+
+class Loco(TrackComponent):
     """ An abstration of a locomotive.
     """
     def __init__(self, locoID):
@@ -240,23 +300,26 @@ class Loco(object):
                 'bases': str([b.ID for b in self.bases_inrange])}
 
 
-class Milepost:
-    """ An abstraction of a milepost.
-        self.mp = (Float) The numeric milepost
-        self.lat = (Float) Latitude of milepost
-        self.long = (Float) Longitude of milepost
+class Base(TrackComponent):
+    """ An abstraction of a base station, including it's coverage area.
     """
-    def __init__(self, mp, latitude, longitude):
-        self.mp = mp
-        self.lat = latitude
-        self.long = longitude
+    def __init__(self, baseID, coverage_start, coverage_end):
+        TrackComponent.__init__()
+        self.ID = baseID
+        self.cov_start = coverage_start
+        self.cov_end = coverage_end
 
     def __str__(self):
-        """ Returns a string representation of the milepost """
-        return str(self.mp)
+        """ Returns a string representation of the base station """
+        return self.ID
 
+    def covers_milepost(self, milepost):
+        """ Given a milepost, returns True if this base station provides 
+            coverage at that milepost, else returns False.
+        """
+        return milepost.mp >= self.cov_start and milepost.mp <= self.cov_end
 
-class Base:
+class Base(TrackComponent:
     """ An abstraction of a base station, including it's coverage area
         self.ID = (String) The base station's unique identifier
         self.coverage_start = (Float) Coverage start milepost
@@ -276,6 +339,24 @@ class Base:
             coverage at that milepost, else returns False.
         """
         return milepost.mp >= self.cov_start and milepost.mp <= self.cov_end
+
+
+class Milepost:
+    """ An abstraction of a milepost.
+        self.mp = (Float) The numeric milepost
+        self.lat = (Float) Latitude of milepost
+        self.long = (Float) Longitude of milepost
+    """
+    def __init__(self, mp, latitude, longitude):
+        self.mp = mp
+        self.lat = latitude
+        self.long = longitude
+
+    def __str__(self):
+        """ Returns a string representation of the milepost """
+        return str(self.mp)
+
+
 
 
 #############################################################

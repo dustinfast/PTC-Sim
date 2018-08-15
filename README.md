@@ -1,19 +1,32 @@
-# PTC_SIM - Locomotive Back Office Server Simulation
+# PTC_SIM - Positive Train Control Simulator
 
-This application is based on my experience in Postive Train Control (PTC) and demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS). Messaging is accomplished using the Edge Message Protocol (EMP), and user interaction occurs via web interface.
+This application is a demonstration of a Positive Train Control (PTC) implementation. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's Locomotive Tracking Solution. 
 
-PTC_SIM consists of the following top-level components:
+PTC_SIM implements broker-assisted communication between simulated locomotives and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP), Class C, Class D, and . User interaction is facilitated by a web interface dislaying current locomotive status and location via Google Earth display.
+for the puroses of (PTC mandates)
 
-**Back Office Server with Web Interface**  
-The BOS monitors each locomotive and displays the status of each graphically, including real-time locations via Google Earth. Additionally, the BOS may send commands to locomotives.
+The Rail Safety Improvment Act of 2008 was enacted by congress and required an estimated 100,000 miles of track to be equiped with PTC. As of 2018, no railroads  .. challenges - cost, existing infrastructure, 
 
-**Locomotive Simulator**  
-Simulated locomotives (loco) traveling on the given track and connecting to radio base stations along the way for the purpose of communicating their status (location, speed, etc.) to the BOS at regular intervals. Additionally, locomos may fetch messages enqueued at the broker from the BOS containing speed and direction of travel adjustments.  
-  
-Note: Multiple instances of the locomotive simulator may instantiated. However tracks exist seperately across each instance. I.e., Virtual locos may occupy identical track sections simultaneously without collision.
+Although this application is in the context of PTC, it's operation can be generalized.
 
-**Message Broker**  
-The backbone of the messaging subsystem, the broker allows bi-directional communication between locos and the BOS.
+## Applicaton Structure
+PTC is large and complex - there is no off-the-shelf solution... mandates # TODO: prevention of train on train collisions, # TODO: over-speed derailments, # TODO: incursions into work zone limits, and # TODO: movement through misaligned track-switches with. Interoperability between different railroad is defined by Interoperable Train Control Messaging (ITCM)
+
+PTC_SIM demonstrates a PTC implementation 
+
+* **Back Office Server** Monitors each locomtive and displays real-time status, including location (via Google Earth) to it's web interface. Also provides a web-based computer-aided-dispatch (CAD) system for controlling track restrictions and  Additionally, has the ability to send commands to locomotives. - ATCS Message Addressing? I-ETMS msg encapsulation? 
+
+* **Message Broker** An intermediary message translation and queueing system allowing reliable bi-directional communication between locomotives and the BOS over the physical messaging subsystem (i.e. 220 MHz base stations and waysides). # TODO: Protocol img
+
+* **Track Simulator** Simulates a railroad and it's component rails, 220 MHz radio base stations, and waysides. Also includes simulated locomotives traveling on a track and broadcasting class C (specification/S-9356 Class D Spec.pdf) status messages to 220 MHz radio base-stations along the way.
+Universal onboard  platform
+Interoperable
+
+TODO: Adaptive Braking Algorithm  Reliable, dependent braking
+
+Challenges:
+Reliable commo
+
 
 ## Usage
 
@@ -80,15 +93,25 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 |-------------------------------------------------------|
 | 6001:         | A key/value string of the form     |
 | BOS to loco   |    {sent    : Unix Time,         |
-| command msg   |     loco : 4 digit integer,   |
+|           msg   |     loco : 4 digit integer,   |
 |               |     speed:      integer,      |
+|               |     # TODO: restrictions: { ... }      |
 |               |     direction:    'increasing' or 'decreasing'   |
 |               |    }                                  |
 |-------------------------------------------------------|
 
 ## Concessions
 
-Some features typical in a PTC deployment are left unimplemented for the sake of demonstration simplicity. For example, no authentication, encryption, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed.
+Some features typical in a PTC deployment are left unimplemented for the sake of demonstration simplicity. For example, no authentication, encryption, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed.  
+
+Additionally, industry interoperability objectives dictate the use of Class C (
+Class D messages are also typically implemented in PTC, to conform to industry interoperability objects.
+
+EMP (Edge Message Protocol) as an upper layer message wrapper
+– Class C is an IP based multicast protocol
+– Class D is an IP based point to point protocol
+– ITP (Interoperability Transport Protocol) as a lower layer routable transport protocol
+• ITP is being tested for proof of concept using FRA funding
 
 ## # TODO
 
@@ -99,11 +122,13 @@ Class D/Qpid?
 bos loco cmds
 Consolidate lib sections under one class each?
 Ensure normalized app name - PTC_SIM
-PEP8 file headers, imports, and docstrings (model after Track?)
+PEP8 file headers, imports, and docstrings (model after Track and connection?)
 Privatize necessary members and do validation on public members
 readme screenshots and high-level images
-TrackCircuits
 EMP spec file?
 Catch specific socket conn errors w/ except socket.error as e:
 py3
 Wayside/Base modules and web output
+One radio, one cell.
+TrackCircuits - does not allow switch change when track occupied. Aids coll avoidance.
+Switches (static, or random from static data) - 
