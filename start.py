@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # Start the application componenets
     bos_proc = _process('sim_bos', 'BOS')
     broker_proc = _process('sim_broker', 'Broker')
-    loco_proc = _process('sim_loco', 'SimLoco')
+    loco_proc = _process('sim_track', 'SimLoco')
 
     bos_proc.start()
     broker_proc.start()
