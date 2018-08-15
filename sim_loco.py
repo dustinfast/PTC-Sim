@@ -71,7 +71,8 @@ class SimLoco(Loco):
             
             self.running = True
             self.movement_thread.start()
-            self.messaging_thread.start()
+            t = self.messaging_thread.start()
+            t.stop()
 
             if terminal and not self.terminal_started:
                 self.terminal_started = True

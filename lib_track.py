@@ -10,8 +10,10 @@ from time import sleep
 from json import loads
 from threading import Thread
 from ConfigParser import RawConfigParser
+from math import degrees, radians, sin, cos, atan2
 
-from lib_msging import Client, Receiver
+from lib_app import Logger
+from lib_msging import Client, Receiver, Queue, Message
 
 # Init conf
 config = RawConfigParser()
@@ -19,10 +21,22 @@ config.read('config.dat')
 
 # Import conf data
 REFRESH_TIME = int(config.get('application', 'refresh_time'))
+
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
-CONN_TIMEOUT = config.get('track', 'component_timeout')
+TRACK_TIMEOUT = int(config.get('track', 'component_timeout'))
+
+START_DIR = config.get('locomotive', 'start_direction')
+START_MP = float(config.get('locomotive', 'start_milepost'))
+START_SPEED = float(config.get('locomotive', 'start_speed'))
+
+MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
+BOS_EMP = config.get('messaging', 'bos_emp_addr')
+LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
+
+# Module level logger
+g_logger = Logger('lib_track', True)
 
 
 class Track(object):
@@ -170,44 +184,49 @@ class Connection(object):
         that unsets self.active on timeout.
     """
 
-    def __init__(self, ID, enabled=True, timeout=0):
+    def __init__(self, ID, timeout=0):
         """ self.ID             : (str) The interfaces unique ID/address.
-            self.enabled        : (bool) Denotes connection is enabled
-            self.active         : (bool) Denotes connection is active
             self.last_activity  : (datetime) Time of last activity
             self.client         : (Client) The interfaces messaging client
             self.Receiver       : (Receiver) Incoming TCP/IP connection watcher
+            self.connected_to   : (TrackDevice)            
 
             self._timeout_seconds: (int) Seconds of inactivity before timeout
             self._timeout_watcher: A thread. Updates self.active on timeout
         """
         # Properties
         self.ID = ID
-        self.enabled = enabled
-        self.active = None
         self.last_activity = None
+        # self.transport_class = None
 
         # Interface
         self.client = Client()
         self.receiver = Receiver()
 
         # Timeout
-        self.set_timeout(timeout)
+        self._timeout = timeout
         self.timeout_watcher = Thread(target=self._timeoutwatcher)
+        self.timeout_watcher.start()
 
     def __str__(self):
         """ Returns a string representation of the base station """
         ret_str = 'Connection' + self.ID + ': '
-        ret_str += {True: 'Enabled', False: 'Disabled'}.get(self.enabled)
         ret_str += {True: 'Active', False: 'Inactive'}.get(self.active)
 
         return ret_str
 
-    def send(self, payload):
-        """ Sends the given payload over the connection's interface. Also
+    def send(self, message):
+        """ Sends the given message over the connection's interface. Also
             updates keep alive.
         """
-        # TODO: send payload over client
+        self.client.send_msg(message)
+        self.keep_alive()
+
+    def fetch(self, queue_name):
+        """ Fetches the next message from the given queue at the broker and
+            returns it. Also updates keep alive.
+        """
+        self.client.fetch_next_msg(queue_name)
         self.keep_alive()
 
     def keep_alive(self):
@@ -221,72 +240,69 @@ class Connection(object):
             Intended to run as a thread.
         """
         while True:
-            delta = datetime.timedelta(seconds=self._timeout_seconds)
-            if delta < datetime.datetime.now() - self.last_activity:
-                self.active = False
+            if not self.last_activity:
+                self.connected_to = None
+            elif self._timeout != 0:
+                delta = datetime.timedelta(seconds=self._timeout)
+                if delta < datetime.datetime.now() - self.last_activity:
+                    self.connected_to = None
 
             sleep(REFRESH_TIME)
 
-    def set_timeout(self, timeout):
-        """ Sets the timeout value and starts/stops the timeout watcher thread
-            as needed. 0 = No timeout.
+
+class TrackSim(object):
+    """ Represents a device simulation.
+    """
+    def __init__(self, label, targets=[]):
+        self.running = False  # Thread kill signal
+        self._thread_targets = targets
+        self._threads = []
+        self.label = label
+        
+    def start(self):
+        """ Starts the simulation threads. 
         """
-        self._timeout_seconds = timeout
-        if self._timeout_seconds:
-            if not self.timeout_watcher.is_alive():
-                self.timeout_watcher = Thread(target=self._timeoutwatcher)
-                self.timeout_watcher.start()
-        else:
-            if self.timeout_watcher.is_alive():
-                self.timeout_watcher.terminate()
-                self.timeout_watcher.join()  # To prevent temporary offline
+        if not self.running:
+            self.running = True
+            self._threads = [Thread(target=t) for t in self._thread_targets]
+            [t.start() for t in self._threads]
+
+    def stop(self):
+        """ Stops the simulation threads.
+        """
+        if self.running:
+            self.running = False  # Signal kill to threads
+            [t.join(timeout=REFRESH_TIME) for t in self._threads.values()]
 
 
-class TrackComponent(object):
+class TrackDevice(object):
     """ The template class for on-track, communication-enabled devices. I.e., 
-        Locos, Bases, and Waysides. Each component contains a type-specific,
+        Locos, Bases, and Waysides. Each devices contains a type-specific,
         real-time activity and communications simulation for testing and
         demonstration purposes.
     """
 
-    def __init__(self, ID, milepost=None, enabled=True, connections={}):
-        """ self.ID         : (str) The Device's unique identifier.
+    def __init__(self, ID, milepost=None, track=None):
+        """ self.ID         : (str) The Device's unique identifier
+            self.track      : (Track) Track object reference
             self.milepost   : (Milepost) The devices location, as a Milepost
-            self.conns      : (list) Connection objects: { ID_STR: Connection }
-            self.sim        : The component simulation. Start w/self.sim.start()
+            self.conns      : (list) Connection objects
+            self.sim        : The device's simulation. Start w/self.sim.start()
         """
         self.ID = ID
+        self.track = track
         self.milepost = milepost
-        self.enabled = enabled
-        self.conns = connections
-
-        self._sim_running = False
+        self.conns = None
+        self.sim = None
 
     def __str__(self):
-        """ Returns a string representation of the component """
+        """ Returns a string representation of the device """
         return __name__ + ' ' + self.ID
 
     def add_connection(self, connection):
-        """ Adds the given Connection instance to the component's connections.
+        """ Adds the given Connection instance to the devices's connections.
         """
         self.conns[connection.ID] = connection
-
-    def startsim(self):
-        """ Starts a simulation of the component, if defined.
-        """
-        if not self._sim_running:
-            self._sim_running = True
-            self.sim = Thread(target=self._sim)
-            self.sim.start()
-            # TODO: Logger
-
-    def stopsim(self):
-        """
-        """
-        if self._sim_running:
-            self._sim_running = False
-            self.sim.join()
-            # TODO: Logger
 
     def is_online(self):
         """ Returns True iff at least one of the device's connections is active.
@@ -295,17 +311,16 @@ class TrackComponent(object):
             return True
 
     def _sim(self):
-        """
+        """ Virtual function.
         """
         raise NotImplementedError
 
 
-class Loco(TrackComponent):
+class Loco(TrackDevice):
     """ An abstration of a locomotive. Includes a realtime simulation of its 
         activity/communications.
     """
-
-    def __init__(self, ID):
+    def __init__(self, ID, track):
         """ self.ID         : (str) The Locomotives's unique identifier
             self.speed      : (float)
             self.heading    : (float)
@@ -315,14 +330,21 @@ class Loco(TrackComponent):
             self.baseID     : (int)
             self.bases_inrange: (list) Base objects within communication range
         """
-        TrackComponent.__init__(self, str(ID))
+        TrackDevice.__init__(self, str(ID))
         self.speed = None
         self.heading = None
         self.direction = None
         self.milepost = None
         self.bpp = None
+
         self.baseID = None
         self.bases_inrange = []
+        self.emp_addr = LOCO_EMP_PREFIX + self.ID
+
+        self.conns = {'Radio1': Connection('Radio1', timeout=TRACK_TIMEOUT),
+                      'Radio2': Connection('Radio2', timeout=TRACK_TIMEOUT)}
+
+        self.sim = TrackSim(str(self), self._sim)
 
     def update(self,
                speed=None,
@@ -368,31 +390,132 @@ class Loco(TrackComponent):
                 'base': self.baseID,
                 'bases': str([b.ID for b in self.bases_inrange])}
 
-    def _brake(self):
-        """ # TODO Apply the adaptive braking algorithm.
-        """
-        raise NotImplementedError
-
     def _sim(self):
+        """ Simulates the locomotive messaging systems and its movement along
+            the track.
         """
-        """
-        raise NotImplementedError
+        def _brake(self):
+            """ Apply the adaptive braking algorithm.
+            """
+            raise NotImplementedError
+
+        def _set_heading(prev_mp, curr_mp):
+                """ Sets loco heading based on current and prev lat/long
+                """
+                lat1 = radians(prev_mp.lat)
+                lat2 = radians(curr_mp.lat)
+
+                long_diff = radians(prev_mp.long - curr_mp.long)
+
+                a = cos(lat1) * sin(lat2)
+                b = (sin(lat1) * cos(lat2) * cos(long_diff))
+                x = sin(long_diff) * cos(lat2)
+                y = a - b
+                deg = degrees(atan2(x, y))
+                compass_bearing = (deg + 360) % 360
+
+                self.heading = compass_bearing 
+
+        # Set location and movement params as needed
+        self.makeup_dist = 0
+        self.milepost = self.track.get_milepost_at(START_MP)
+        if not self.milepost:
+            raise ValueError('No milepost exists at the given start milepost')
+        
+        if not self.speed:
+            self.speed = START_SPEED
+        if not self.direction:
+            self.direction = START_DIR
+        
+        while sim.running:
+            # Move, if at speed
+            if self.speed > 0:
+                # Determine dist traveled since last iteration, including
+                # makeup distance, if any.
+                hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
+                dist = self.speed * hours * 1.0  # distance = speed * time
+                dist += self.makeup_dist
+
+                # Set sign of dist based on dir of travel
+                if self.direction == 'decreasing':
+                    dist *= -1
+
+                # Get next milepost and any makeup distance
+                new_mp, dist = self.track._get_next_mp(self.milepost, dist)
+                if not new_mp:
+                    g_logger.info(' End of track reached - Changing direction.')
+                    self.direction *= -1
+                else:
+                    _set_heading(self.milepost, new_mp)
+                    self.milepost = new_mp
+                    self.makeup_dist = dist
+
+                    # Determine base stations in range of current position
+                    self.bases_inrange = [b for b in self.track.bases.values()
+                                          if b.covers_milepost(self.milepost)]
+                    
+                    # Reset existing radio connections
+                    for c in self.conns:
+                        c.connected_to = None
+
+                    # Assign in-range bases to loco radios, one base per radio
+                    num_matches = max(len(self.bases_inrange), len(self.conns))
+                    for i in range(num_matches):
+                        self.conns[i].connected_to = self.bases_inrange[i]
+
+            # Build status msg to send to BOS
+            msg_type = 6000
+            msg_source = self.emp_addr
+            msg_dest = BOS_EMP
+            payload = str(self.get_status_dict())
+
+            status_msg = Message((msg_type,
+                                  msg_source,
+                                  msg_dest,
+                                  payload))
+
+            # Send status message over each active connection
+            conns = [c for c in self.conns if c.connected_to]
+            for conn in conns:
+                try:
+                    conn.send(status_msg)
+                    g_logger.info(str(self) + '-  Sent status msg.')
+                except Exception as e:
+                    g_logger.error(str(self) + ' - Msg send failed: ' + str(e))
+
+            # Receive and process all incoming CAD message, if any
+            while True:
+                cad_msg = None
+                try:
+                    cad_msg = conn.fetch_next_msg(self.emp_addr)
+                except Queue.Empty:
+                    break  # Queue empty / all msgs fetched
+                except Exception as e:
+                    g_logger.error(str(self) + ' - Fetch connection error.')
+
+                # Process cad msg, ensuring that its actually for this loco
+                if cad_msg.payload.get('ID') == self.ID:
+                    try:
+                        # TODO: content = cad_msg.payload
+                        g_logger.info(str(self) + ' - CAD msg processed.')
+                    except:
+                        g_logger.error(str(self) + ' - Received invalid CAD msg.')
+
+                sleep(MSG_INTERVAL)
 
 
-class Base(TrackComponent):
+class Base(TrackDevice):
     """ An abstraction of a 220 MHz base station, including it's coverage area.
         Includes a realtime simulation of its activity/communications.
     """
-
     def __init__(self, ID, coverage_start, coverage_end):
         """ self.ID = (String) The base station's unique identifier
             self.coverage_start = (float) Coverage start milepost
             self.coverage_end = (float) Coverage end milepost
         """
-        TrackComponent.__init__(self, ID)
+        TrackDevice.__init__(self, ID)
         self.cov_start = coverage_start
         self.cov_end = coverage_end
-        self.sim = None
 
     def covers_milepost(self, milepost):
         """ Given a milepost, returns True if this base provides 
@@ -400,13 +523,8 @@ class Base(TrackComponent):
         """
         return milepost.mp >= self.cov_start and milepost.mp <= self.cov_end
 
-    def _sim(self):
-        """
-        """
-        raise NotImplementedError
 
-
-class Wayside(TrackComponent):
+class Wayside(TrackDevice):
     """ An abstraction of a wayside. Includes a realtime simulation of its 
         activity/communications.
     """
@@ -416,9 +534,8 @@ class Wayside(TrackComponent):
             self.milepost: (Milepost) The waysides location as a Milepost
             self.children: (dict) Child devices { CHILD_ID: CHILD_OBJECT }
         """
-        TrackComponent.__init__(self, ID)
+        TrackDevice.__init__(self, ID)
         self.children = {}
-        self.sim = None
 
     def add_child(self, child_object):
         """ Given a child object (i.e. a switch), adds it to the wayside as a 
@@ -426,13 +543,8 @@ class Wayside(TrackComponent):
         """
         self.children[child_object.ID] = child_object
 
-    def _sim(self):
-        """
-        """
-        raise NotImplementedError
 
-
-class WayChild(TrackComponent):
+class WayChild(TrackDevice):
     """ An abstraction of a wayside child device. Ex: A Switch.
         Includes a realtime simulation of its activity/communications.
     """
@@ -445,11 +557,6 @@ class WayChild(TrackComponent):
 
     def get_position(self):
         """ Returns a string represenation of the devices status.
-        """
-        raise NotImplementedError
-
-    def _sim(self):
-        """
         """
         raise NotImplementedError
 
@@ -470,8 +577,7 @@ class Milepost:
         """ Returns a string representation of the milepost.
          """
         return str(self.mp)
-
-
-class Simulator(object):
-    """ A templace Simulation class.
-    """
+    
+if __name__ == '__main__':
+    l = Loco('t', None)
+    l.sim.start()

@@ -2,7 +2,7 @@
 
 This application is a demonstration of a Positive Train Control (PTC) implementation. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's Locomotive Tracking Solution.
 
-PTC Sim implements broker-assisted communication between simulated locomotives and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current locomotive status and location is also displayed. # TODO: Web Screenshot
+PTC Sim implements broker-assisted communication between simulated locomotives and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current locomotive status and location is also displayed.
 
 ## Applicaton Structure
 
@@ -99,27 +99,18 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
       Children  : (str) Key/value string of the form { ID: Status }
     }
 ```
+
 ## Unimplemented
 
-Some features typical in a PTC deployment are left unimplemented for the sake of demonstration simplicity. For example, no authentication, encryption, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed.  
-Currently, the railroad simulated is restricted to a single branch.
+Some features typical in a PTC deployment are left unimplemented for the sake of demonstration simplicity. For example, no authentication, encryption, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed. Also, the railroad simulation is currently restricted to a single branch.
 
 ## # TODO
 
-Fix readme tables
-Web: logtail/console output
-Broker queue sizes in web output
-Class D/Qpid?
-bos loco cmds
-Consolidate lib sections under one class each?
-Ensure normalized app name - PTC Sim
+Web: logtail/console output, broker queue sizes
 PEP8 file headers, imports, and docstrings (model after Track and connection?)
 Privatize necessary members and do validation on public members
 readme screenshots and high-level images
-EMP spec file?
 Catch specific socket conn errors w/ except socket.error as e:
 py3
-Wayside/Base modules and web output
-One radio, one cell.
 TrackCircuits - does not allow switch change when track occupied. Aids coll avoidance.
 Switches (static, or random from static data) - 

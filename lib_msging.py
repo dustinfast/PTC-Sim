@@ -176,7 +176,7 @@ class Client(object):
             raise Exception(
                 'Unhandled response received from broker - Send aborted.')
 
-    def fetch_next_msg(self, queue_name):  # TODO: Change to fetcher thread
+    def fetch_next_msg(self, queue_name):
         """ Fetches the next msg from queue_name from the broker and returns it,
             Raises Queue.Empty if specified queue is empty.
         """
@@ -198,10 +198,8 @@ class Client(object):
 
         return msg
 
-class Fetcher(object):
-    # TODO: Fetcher
-    pass
 
 class Receiver(object):
-    # TODO: Receiver (from broker)
-    pass
+    def __init__(self):
+        pass
+

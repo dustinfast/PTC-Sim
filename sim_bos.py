@@ -129,10 +129,6 @@ class BOS(object):
 
             sleep(REFRESH_TIME)
 
-        # TODO: def _contentbuilder(self):
-        #   """ Updates the web datatables.
-        #   """
-
 
 if __name__ == '__main__':
     # Start the Back Office Server

@@ -52,8 +52,8 @@ if __name__ == '__main__':
     sleep(.5)  # Allow enough time for all to start
 
     print('-- PTC Sim: A Positive Train Control Demonstration')
-    print('-- Navigate to https://localhost:5000/ptc_sim')
-    print("-- Type 'exit' to quit")
+    print('-- Navigate to https://localhost:5000/ptc_sim for web interface.')
+    print("-- Type 'exit' to quit.")
 
     while True:
         uinput = raw_input('>> ')

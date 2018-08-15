@@ -29,5 +29,5 @@ start_speed = 10.0                  ; Initial speed of loco
 
 [logging]
 level = 10                          ; 10 = DEBUG, 20 = INFO, 30 = WARN
-num_files = 1                    ; Max number of rotating logfiles
-max_file_size = 1000000          ; Max log size before rotation, in bytes
+num_files = 1                       ; Max number of rotating logfiles
+max_file_size = 1000000             ; Max log size before rotation, in bytes
