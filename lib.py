@@ -15,6 +15,7 @@ import datetime
 from json import loads
 from binascii import crc32
 from struct import pack, unpack
+from threading import Thread
 from ConfigParser import RawConfigParser
 
 # Init conf
@@ -25,20 +26,20 @@ config.read('config.dat')
 # Application level conf data
 REFRESH_TIME = int(config.get('application', 'refresh_time'))
 
-# Track lib conf data
+# Track lib conf data # TODO: lib_track
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
 CONN_TIMEOUT = config.get('track', 'component_timeout')
 
-# Messaging lib conf data
+# Messaging lib conf data # TODO: lib_msg
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 NET_TIMEOUT = float(config.get('messaging', 'network_timeout'))
 
-# Input/Output lib conf data
+# Input/Output lib conf data # TODO: lib_sim
 LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_FILES = config.get('logging', 'num_files')
 LOG_SIZE = int(config.get('logging', 'max_file_size'))
@@ -65,7 +66,7 @@ class Track(object):
             Format: [ MP_1, ... , MP_n ], where MP1 < MPn
         self.mp_linear_rev = A represention the track in reverse order of mps.
             Format: [ MP_n, ... , MP_1], where MP1 < MPn
-        Note: BASEID/LOCOD = strings, MP = Floats
+        Note: BASEID/LOCOD = strings, MP = floats
     """
     def __init__(self, track_file=TRACK_RAILS, bases_file=TRACK_BASES):
         """ track_file: Filename of track JSON
@@ -244,8 +245,8 @@ class Connection(object):
             Intended to run as a thread.
         """
         while True:
-            delta = datetime.timedelta(seconds=self._timout_seconds)
-            if delta < datetime.now() - self.last_activity:
+            delta = datetime.timedelta(seconds=self._timeout_seconds)
+            if delta < datetime.datetime.now() - self.last_activity:
                 self.active = False
 
             time.sleep(REFRESH_TIME)
@@ -255,7 +256,7 @@ class Connection(object):
             as needed. 0 = No timeout.
         """
         self._timeout_seconds = timeout
-        if self.timeout_seconds:
+        if self._timeout_seconds:
             if not self.timeout_watcher.is_alive():
                 self.timeout_watcher = Thread(target=self._timeoutwatcher)
                 self.timeout_watcher.start()
@@ -267,19 +268,28 @@ class Connection(object):
 
 class TrackComponent(object):
     """ The template class for on-track, communication-enabled devices. I.e., 
-        Locos, Bases, and Waysides.
+        Locos, Bases, and Waysides. Each component contains a type-specific,
+        real-time activity and communications simulation for testing and
+        demonstration purposes.
     """
     def __init__(self, ID, milepost=None, enabled=True, connections={}):
         """ self.ID         : (str) The Device's unique identifier.
             self.milepost   : (Milepost) The devices location, as a Milepost
             self.conns      : (list) Connection objects: { ID_STR: Connection }
+            self.sim        : The component simulation. Start w/self.sim.start()
         """
         self.ID = ID
         self.milepost = milepost
         self.enabled = enabled
         self.conns = connections
 
-    def add_connection(connection):
+        self._sim_running = False
+
+    def __str__(self):
+        """ Returns a string representation of the component """
+        return __name__ + ' ' + self.ID
+
+    def add_connection(self, connection):
         """ Adds the given Connection instance to the component's connections.
         """
         self.conns[connection.ID] = connection
@@ -287,7 +297,19 @@ class TrackComponent(object):
     def startsim(self):
         """ Starts a simulation of the component, if defined.
         """
-        raise NotImplemented('Simulation not implemented for this object')
+        if not self._sim_running:
+            self._sim_running = True
+            self.sim = Thread(target=self._sim)
+            self.sim.start()
+            # TODO: Logger
+    
+    def stopsim(self):
+        """
+        """
+        if self._sim_running:
+            self._sim_running = False
+            self.sim.join()
+            # TODO: Logger
 
     def is_online(self):
         """ Returns True iff at least one of the device's connections is active.
@@ -295,10 +317,10 @@ class TrackComponent(object):
         if [c for c in self.conns if c.active]:
             return True
 
-    def __str__(self):
-        """ Returns a string representation of the component """
-        return self.__name__ + ' ' + self.ID
-
+    def _sim(self):
+        """
+        """
+        raise NotImplementedError
 
 class Loco(TrackComponent):
     """ An abstration of a locomotive. Includes a realtime simulation of its 
@@ -307,48 +329,48 @@ class Loco(TrackComponent):
     def __init__(self, ID):
         """ self.ID         : (str) The Locomotives's unique identifier
             self.speed      : (float)
-            self.bpp        : (float) Brake pipe pressure. Affects braking.
             self.heading    : (float)
             self.direction  : (str) Either 'increasing' or 'decreasing'
             self.milepost   : (Milepost) Current location, as a Milepost
+            self.bpp        : (float) Brake pipe pressure. Affects braking.
             self.baseID     : (int)
             self.bases_inrange: (list) Base objects within communication range
         """
         TrackComponent.__init__(self, str(ID))
         self.speed = None
-        self.bpp = None
         self.heading = None
         self.direction = None
         self.milepost = None
+        self.bpp = None
         self.baseID = None
         self.bases_inrange = []
 
     def update(self,
                speed=None,
-               bpp=None,
                heading=None,
                direction=None,
                milepost=None,
+               bpp=None,
                baseID=None,
                bases_inrange=None):
         """ speed: A float
-            bpp: A float
             heading: A float
             direction: Either 'increasing', or 'decreasing'
             milepost: A Milepost object instance
+            bpp: A float
             baseID: An int
             bases_inrange: A list of Base object instances
         """
         if speed is not None:
             self.speed = speed
-        if bpp is not None:
-            self.bpp = bpp
         if heading is not None:
             self.heading = heading
         if direction is not None:
             self.direction = direction
         if milepost is not None:
             self.milepost = milepost
+        if bpp is not None:
+            self.bpp = bpp
         if baseID is not None:
             self.baseID = baseID
         if self.bases_inrange is not None:
@@ -370,7 +392,12 @@ class Loco(TrackComponent):
     def _brake(self):
         """ # TODO Apply the adaptive braking algorithm.
         """
-        pass
+        raise NotImplementedError
+
+    def _sim(self):
+        """
+        """
+        raise NotImplementedError
 
 
 class Base(TrackComponent):
@@ -379,12 +406,13 @@ class Base(TrackComponent):
     """
     def __init__(self, ID, coverage_start, coverage_end):
         """ self.ID = (String) The base station's unique identifier
-            self.coverage_start = (Float) Coverage start milepost
-            self.coverage_end = (Float) Coverage end milepost
+            self.coverage_start = (float) Coverage start milepost
+            self.coverage_end = (float) Coverage end milepost
         """
         TrackComponent.__init__(self, ID)
         self.cov_start = coverage_start
         self.cov_end = coverage_end
+        self.sim = None
 
     def covers_milepost(self, milepost):
         """ Given a milepost, returns True if this base provides 
@@ -392,6 +420,10 @@ class Base(TrackComponent):
         """
         return milepost.mp >= self.cov_start and milepost.mp <= self.cov_end
 
+    def _sim(self):
+        """
+        """
+        raise NotImplementedError
 
 class Wayside(TrackComponent):
     """ An abstraction of a wayside. Includes a realtime simulation of its 
@@ -404,21 +436,47 @@ class Wayside(TrackComponent):
         """
         TrackComponent.__init__(self, ID)
         self.children = {}
+        self.sim = None
 
     def add_child(self, child_object):
         """ Given a child object (i.e. a switch), adds it to the wayside as a 
             device.
         """
         self.children[child_object.ID] = child_object
+    
+    def _sim(self):
+        """
+        """
+        raise NotImplementedError
+
+class WayChild(TrackComponent):
+    """ An abstraction of a wayside child device. Ex: A Switch.
+        Includes a realtime simulation of its activity/communications.
+    """
+    def __init__(self, ID, type):
+        """
+        """
+        self.ID = ID
+        self.status = None
+
+    def get_position(self):
+        """ Returns a string represenation of the devices status.
+        """
+        raise NotImplementedError
+
+    def _sim(self):
+        """
+        """
+        raise NotImplementedError
 
 
 class Milepost:
     """ An abstraction of a milepost.
     """
     def __init__(self, mp, latitude, longitude):
-        """ self.mp = (Float) The numeric milepost marker
-            self.lat = (Float) Latitude of milepost
-            self.long = (Float) Longitude of milepost
+        """ self.mp = (float) The numeric milepost marker
+            self.lat = (float) Latitude of milepost
+            self.long = (float) Longitude of milepost
         """
         self.mp = mp
         self.lat = latitude
