@@ -493,10 +493,10 @@ class Loco(TrackDevice):
                 except Exception as e:
                     g_logger.error(str(self) + ' - Fetch connection error.')
 
-                # Process cad msg, ensuring that its actually for this loco
+                # Process cad msg if msg is actually for this loco
                 if cad_msg.payload.get('ID') == self.ID:
                     try:
-                        # TODO: content = cad_msg.payload
+                        # TODO: Update track restrictions
                         g_logger.info(str(self) + ' - CAD msg processed.')
                     except:
                         g_logger.error(str(self) + ' - Received invalid CAD msg.')

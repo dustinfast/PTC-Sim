@@ -123,3 +123,4 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 * py3  
 * TrackCircuits - does not allow switch change when track * occupied. Aids coll avoidance.  
 * Switches (static, or random from static data) 
+* Instantiate locos/bases/waysides from JSON
