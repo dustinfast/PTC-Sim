@@ -1,8 +1,8 @@
-# LocoBOSS - Locomotive Back Office Server Simulation
+# PTC_SIM - Locomotive Back Office Server Simulation
 
 This application is based on my experience in Postive Train Control (PTC) and demonstrates broker-assisted communication between simulated locomotives and a Back Office Server (BOS). Messaging is accomplished using the Edge Message Protocol (EMP), and user interaction occurs via web interface.
 
-LocoBOSS consists of the following top-level components:
+PTC_SIM consists of the following top-level components:
 
 **Back Office Server with Web Interface**  
 The BOS monitors each locomotive and displays the status of each graphically, including real-time locations via Google Earth. Additionally, the BOS may send commands to locomotives.
@@ -17,7 +17,7 @@ The backbone of the messaging subsystem, the broker allows bi-directional commun
 
 ## Usage
 
-Start the application with `./LocoBOSS` at the terminal, then navigate to http://localhost:5000/LocoBOSS.
+Start the application with `./PTC_SIM` at the terminal, then navigate to http://localhost:5000/PTC_SIM.
   
 Alternatively, the sim_loco, sim_broker, and sim_bos modules may be started from the terminal independently with `./sim_loco`, `./sim_broker` and `./sim_bos`, respectively. The latter serves the web interface.
 
@@ -27,7 +27,7 @@ Alternatively, the sim_loco, sim_broker, and sim_bos modules may be started from
 
 **config.dat** - Configuration information. For example, the message broker hostname/IP address.
 **lib.py** - Shared classes and helper functions.  
-**LocoBOSS.py** - Starts the necessary application processes
+**PTC_SIM.py** - Starts the necessary application processes
 **sim_bos.py** - The back office server, (AKA "BOS", pronounced like "boss").  
 **sim_broker.py** - The message broker.  
 **sim_loco.py** - The locomotive simulator.
@@ -98,7 +98,7 @@ Broker queue sizes in web output
 Class D/Qpid?
 bos loco cmds
 Consolidate lib sections under one class each?
-Ensure normalized app name - LocoBOSS, loco_boss, PTC_BOSS?
+Ensure normalized app name - PTC_SIM
 PEP8 file headers, imports, and docstrings (model after Track?)
 Privatize necessary members and do validation on public members
 readme screenshots and high-level images

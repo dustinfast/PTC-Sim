@@ -1,4 +1,4 @@
-""" lib.py - A collection of shared classes for LocoBOSS.
+""" lib.py - A collection of shared classes for PTC_SIM.
     Contains railroad components, input/output handlers, & messaging subsystem.
     See each section's docstring for more info, as well as README.md.
 
@@ -41,7 +41,7 @@ LOG_SIZE = int(config.get('logging', 'max_file_size'))
 #############################################################
 # Railroad/Locomotive Component Classes                     #
 #############################################################
-""" LocoBOSS's collection of railroad related classes, includes 
+""" PTC_SIM's collection of railroad related classes, includes 
     the track, mileposts, locomotives, and base stations.
 """
 
@@ -281,7 +281,7 @@ class Base:
 #############################################################
 # Messaging Subsystem                                       #
 #############################################################
-""" LocoBOSS's messaging library for sending and receiving fixed-format, 
+""" PTC_SIM's messaging library for sending and receiving fixed-format, 
     variable-length header messages adhering to the Edge Message Protocol(EMP)
     over TCP/IP. See README.md for implementation specific information.
 """
@@ -463,7 +463,7 @@ class Client(object):
 #############################################################
 # Input/Output Handlers (REPL, Logger, and Web)             #
 #############################################################
-""" LocoBOSS's input and output library - I.e., the read-eval-print-loop,
+""" PTC_SIM's input and output library - I.e., the read-eval-print-loop,
     log file writer, and web command handlers.
 """
 

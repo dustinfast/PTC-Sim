@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" The Back Office Server (BOS). Publishes the LocoBOSS website
+""" The Back Office Server (BOS). Publishes the PTC_SIM website
     via Flask and watches for locomotive status msgs addressed to it at the 
     broker. The web display is updated to reflect loco status, including Google
     Earth location mapping. Speed/direction commands may also be issued to
@@ -45,7 +45,7 @@ BOS_EMP = config.get('messaging', 'bos_emp_addr')
 # Flask defs
 web = Flask(__name__)
 
-@web.route('/LocoBOSS')
+@web.route('/PTC_SIM')
 def home():
     return render_template('home.html')
 
@@ -137,6 +137,6 @@ class BOS(object):
 
 if __name__ == '__main__':
     # Start the Back Office Server
-    print('-- LocoBOSS: Back Office Server - Press CTRL + C to quit --\n')
+    print('-- PTC_SIM: Back Office Server - Press CTRL + C to quit --\n')
     sleep(.2)  # Ensure print statment occurs before flask output
     bos = BOS().start(debug=True)
