@@ -92,19 +92,17 @@ Some features typical in a PTC deployment are left unimplemented for the sake of
 
 ## # TODO
 
-Change demo to locoBoss shell script? Or keep using multiprocessing?
-Seperate logs and display each on Logs webpage w/logtail
+Fix readme tables
+Web: logtail/console output
 Broker queue sizes in web output
 Class D/Qpid?
 bos loco cmds
 Consolidate lib sections under one class each?
-Ensure normalized app name - LocoBOSS is web app, loco_boss is py
-Better output on connection error
+Ensure normalized app name - LocoBOSS, loco_boss, PTC_BOSS?
 PEP8 file headers, imports, and docstrings (model after Track?)
 Privatize necessary members and do validation on public members
 readme screenshots and high-level images
 TrackCircuits
-Ensure all URLs OK
 EMP spec file?
 Catch specific socket conn errors w/ except socket.error as e:
 py3

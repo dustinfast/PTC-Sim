@@ -36,7 +36,7 @@ class _process(multiprocessing.Process):
 
 
 if __name__ == '__main__':
-    # TODO: Instantiate demo locos with random start/direction/speed
+    # TODO: Instantiate demo locos with random start/direction/speed OR from JSON?
     """ Start the LocoBOSS application, with each component existing in a
         seperate process.
     """
