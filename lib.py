@@ -1,4 +1,4 @@
-""" A collection of shared classes for PTC_SIM.
+""" A collection of shared classes for PTCSim.
     Contains railroad components, input/output handlers, & messaging subsystem.
     See each section's docstring for more info, as well as README.md.
 
@@ -47,7 +47,7 @@ LOG_SIZE = int(config.get('logging', 'max_file_size'))
 #############################################################
 # Railroad/Locomotive Component Classes                     #
 #############################################################
-""" PTC_SIM's collection of railroad related classes, includes 
+""" PTCSim's collection of railroad related classes, includes 
     the track, mileposts, locomotives, and base stations.
 """
 
@@ -301,8 +301,8 @@ class TrackComponent(object):
 
 
 class Loco(TrackComponent):
-    """ An abstration of a locomotive. Includes a simulation member that
-        simulates its on-track activity/communications. Start with startsim()
+    """ An abstration of a locomotive. Includes a realtime simulation of its 
+        activity/communications.
     """
     def __init__(self, ID):
         """ self.ID         : (str) The Locomotives's unique identifier
@@ -374,7 +374,8 @@ class Loco(TrackComponent):
 
 
 class Base(TrackComponent):
-    """ An abstraction of a base station, including it's coverage area
+    """ An abstraction of a 220 MHz base station, including it's coverage area.
+        Includes a realtime simulation of its activity/communications.
     """
     def __init__(self, ID, coverage_start, coverage_end):
         """ self.ID = (String) The base station's unique identifier
@@ -385,10 +386,16 @@ class Base(TrackComponent):
         self.cov_start = coverage_start
         self.cov_end = coverage_end
 
+    def covers_milepost(self, milepost):
+        """ Given a milepost, returns True if this base provides 
+            coverage at that milepost, else returns False.
+        """
+        return milepost.mp >= self.cov_start and milepost.mp <= self.cov_end
+
 
 class Wayside(TrackComponent):
-    """ An abstraction of a wayside, including a thread that simulates it's 
-        on-track activity/communications.
+    """ An abstraction of a wayside. Includes a realtime simulation of its 
+        activity/communications.
     """
     def __init__(self, ID, milepost, children={}):
         """ self.ID      : (str) The waysides unique ID/address
@@ -426,7 +433,7 @@ class Milepost:
 #############################################################
 # Messaging Subsystem                                       #
 #############################################################
-""" PTC_SIM's messaging library for sending and receiving fixed-format, 
+""" PTCSim's messaging library for sending and receiving fixed-format, 
     variable-length header messages adhering to the Edge Message Protocol(EMP)
     over TCP/IP. See README.md for implementation specific information.
 """
@@ -611,7 +618,7 @@ class Receiver(object):
 #############################################################
 # Input/Output Handlers (REPL, Logger, and Web)             #
 #############################################################
-""" PTC_SIM's input and output library - I.e., the read-eval-print-loop,
+""" PTCSim's input and output library - I.e., the read-eval-print-loop,
     log file writer, and web command handlers.
 """
 

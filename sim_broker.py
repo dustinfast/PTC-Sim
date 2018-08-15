@@ -180,5 +180,5 @@ class Broker(object):
 
 if __name__ == '__main__':
     # Start the broker in terminal mode
-    print("-- PTC_SIM: Message Broker - Type 'exit' to quit --\n")
+    print("-- PTCSim: Message Broker - Type 'exit' to quit --\n")
     Broker().start(terminal=True)

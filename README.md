@@ -1,8 +1,8 @@
-# PTC_SIM - Positive Train Control Simulator
+# PTCSim - Positive Train Control Simulator
 
-This application is a demonstration of a Positive Train Control (PTC) implementation. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's Locomotive Tracking Solution. 
+PTCSim is a demonstration of a Positive Train Control (PTC) solution. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's Locomotive Tracking Solution.
 
-PTC_SIM implements broker-assisted communication between simulated locomotives and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP), Class C, Class D, and . User interaction is facilitated by a web interface dislaying current locomotive status and location via Google Earth display.
+PTCSim implements broker-assisted communication between simulated locomotives and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP), Class C, Class D, and . User interaction is facilitated by a web interface dislaying current locomotive status and location via Google Earth display.
 for the puroses of (PTC mandates)
 
 The Rail Safety Improvment Act of 2008 was enacted by congress and required an estimated 100,000 miles of track to be equiped with PTC. As of 2018, no railroads  .. challenges - cost, existing infrastructure, 
@@ -12,7 +12,7 @@ Although this application is in the context of PTC, it's operation can be genera
 ## Applicaton Structure
 PTC is large and complex - there is no off-the-shelf solution... mandates # TODO: prevention of train on train collisions, # TODO: over-speed derailments, # TODO: incursions into work zone limits, and # TODO: movement through misaligned track-switches with. Interoperability between different railroad is defined by Interoperable Train Control Messaging (ITCM)
 
-PTC_SIM demonstrates a PTC implementation 
+PTCSim demonstrates a PTC implementation 
 
 * **Back Office Server** Monitors each locomtive and displays real-time status, including location (via Google Earth) to it's web interface. Also provides a web-based computer-aided-dispatch (CAD) system for controlling track restrictions and  Additionally, has the ability to send commands to locomotives. - ATCS Message Addressing? I-ETMS msg encapsulation? 
 
@@ -28,9 +28,19 @@ Challenges:
 Reliable commo
 
 
+Additionally, industry interoperability objectives dictate the use of Class C (
+Class D messages are also typically implemented in PTC, to conform to industry interoperability objects.
+
+EMP (Edge Message Protocol) as an upper layer message wrapper
+– Class C is an IP based multicast protocol
+– Class D is an IP based point to point protocol
+– ITP (Interoperability Transport Protocol) as a lower layer routable transport protocol
+• ITP is being tested for proof of concept using FRA funding
+
+
 ## Usage
 
-Start the application with `./PTC_SIM` at the terminal, then navigate to http://localhost:5000/PTC_SIM.
+Start the application with `./PTCSim` at the terminal, then navigate to http://localhost:5000/PTCSim.
   
 Alternatively, the sim_loco, sim_broker, and sim_bos modules may be started from the terminal independently with `./sim_loco`, `./sim_broker` and `./sim_bos`, respectively. The latter serves the web interface.
 
@@ -40,7 +50,7 @@ Alternatively, the sim_loco, sim_broker, and sim_bos modules may be started from
 
 **config.dat** - Configuration information. For example, the message broker hostname/IP address.
 **lib.py** - Shared classes and helper functions.  
-**PTC_SIM.py** - Starts the necessary application processes
+**PTCSim.py** - Starts the necessary application processes
 **sim_bos.py** - The back office server, (AKA "BOS", pronounced like "boss").  
 **sim_broker.py** - The message broker.  
 **sim_loco.py** - The locomotive simulator.
@@ -80,8 +90,8 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 |-------------------------------------------------------|
 | 6000:         | A key/value string of the form     |
 | Loco status   |    {sent          : Unix Time,         |
-| message       |     loco          : 4 digit integer,   |
-|               |     speed        : integer,   |
+| message       |     locoID        : String,   |
+|               |     speed        : Float,   |
 |               |     heading        : Float,   |
 |               |     direction    : 'increasing' or 'decreasing'
 |               |     milepost    : Float,   |
@@ -93,25 +103,16 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 |-------------------------------------------------------|
 | 6001:         | A key/value string of the form     |
 | BOS to loco   |    {sent    : Unix Time,         |
-|           msg   |     loco : 4 digit integer,   |
+|           msg   |   recipientID : String,   |
 |               |     speed:      integer,      |
 |               |     # TODO: restrictions: { ... }      |
 |               |     direction:    'increasing' or 'decreasing'   |
 |               |    }                                  |
 |-------------------------------------------------------|
 
-## Concessions
+## Unimplemented
 
 Some features typical in a PTC deployment are left unimplemented for the sake of demonstration simplicity. For example, no authentication, encryption, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed.  
-
-Additionally, industry interoperability objectives dictate the use of Class C (
-Class D messages are also typically implemented in PTC, to conform to industry interoperability objects.
-
-EMP (Edge Message Protocol) as an upper layer message wrapper
-– Class C is an IP based multicast protocol
-– Class D is an IP based point to point protocol
-– ITP (Interoperability Transport Protocol) as a lower layer routable transport protocol
-• ITP is being tested for proof of concept using FRA funding
 
 ## # TODO
 
@@ -121,7 +122,7 @@ Broker queue sizes in web output
 Class D/Qpid?
 bos loco cmds
 Consolidate lib sections under one class each?
-Ensure normalized app name - PTC_SIM
+Ensure normalized app name - PTCSim
 PEP8 file headers, imports, and docstrings (model after Track and connection?)
 Privatize necessary members and do validation on public members
 readme screenshots and high-level images
