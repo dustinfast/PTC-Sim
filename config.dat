@@ -17,9 +17,11 @@ send_port = 18181                   ; Broker-side "msg receive" listener port
 fetch_port = 18182                  ; Broker-side "fetch" listener port
 bos_emp_addr = sim.bos              ; The Back Office Server's EMP address
 loco_emp_prefix = sim.l.            ; Locomotive EMP address prefix
+base_emp_prefix = sim.b.            ; Base station EMP address prefix
+wayside_emp_prefix = sim.w.         ; Wayside EMP address prefix
 msg_expire_time = 30                ; Seconds msgs sit in broker queue before expiring
 max_msg_size = 1024                 ; Max allowed EMP message size, in bytes
-msg_interval = 5                    ; Loco status msg interval, in seconds
+msg_interval = 5                    ; Status message send interval, in seconds
 network_timeout = 2                 ; Socket timeout, in seconds
 
 [locomotive]

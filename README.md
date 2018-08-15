@@ -2,30 +2,39 @@
 
 This application is a demonstration of a Positive Train Control (PTC) implementation. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's Locomotive Tracking Solution.
 
-PTC Sim implements broker-assisted communication between simulated locomotives and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current locomotive status and location is also displayed.
+PTC was mandated by congress to prevent
+
+* Train on train collisions
+* Over-speed derailments
+* Incursions into work zone limits
+* Movement through misaligned track-switches
+  
+Interoperability between railroads is also required, asdefined by the Federal Railroad Administration's Interoperable Train Control (ITC) standard.
+
+PTC Sim implements broker-assisted communication between simulated track devices (including locomotives) and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current component status and location is also displayed.
 
 ## Applicaton Structure
 
-PTC was mandated by congress to # TODO: prevent train on train collisions, # TODO: over-speed derailments, # TODO: incursions into work zone limits, and # TODO: movement through misaligned track-switches. Interoperability between railroads is required and defined by the Federal Railroad Administration's Interoperable Train Control (ITC) standard. PTC Sim implements these requirements within the following framework:
-
 ### Componenets
 
-* **Back Office Server** : Provides CAD capabilities for communicating track restrictions to locomotives, and displays real-time locomotive status and location via its website interface.
+* **Back Office Server** : Provides CAD capabilities for communicating track restrictions to locomotives and displays real-time track device status and location via its website interface.
 
-* **Message Broker**: An intermediate message translation system allowing bi-directional communication between track components (including locomotives) and the BOS over the railroad's communications infrastructure.  Currently, PTC Sim transports EMP messages via TCP/IP only, but future versions may also demonstrate Class C (IP based multicast protocol) and Class D (IP based point-to-point protocol) communications.
+* **Message Broker**: An intermediate message translation system allowing bi-directional communication between track devices and the BOS.  Currently, each component transports EMP messages via TCP/IP only, but future versions may demonstrate Class C (IP based multicast protocol) and Class D (IP based point-to-point protocol) messaging.
 
 * **Track Simulator**: Simulates a railroad and it's on-track devices, including:  
+  * **Locomotives**:  Each locomotive travels along the track, broadcasting status messages and receiving CAD directives over its two 220 MHz radio transducers.b
   * **220 MHz Radio Base Stations**: Receives locomotive status messages and transmits them to the Message Broker via LAN.
-  * **Locomotives**:  Each locomotive travels along the track, broadcasting status messages over two 220 MHz radio transducers and receiving CAD directives.
-  * **Waysides**: Receives status messages from it's attached switches, then encapsulates them for broadcast over 220 MHz radio.
+  * **Waysides**: Receives status messages from it's attached switches via LAN, then broadcasts them over 220 MHz radio to the BOS.
   * **Switches**: Each switch sends its current position (OPEN, CLOSED, or ERROR) to its parent wayside at regular intervals.
 
 ### File Structure
 
-**config.dat** - Application configuration information. For example, the message broker hostname/IP address.  
-**lib.py** - Shared classes and helper functions.  
+**config.dat** - Application configuration information.
+**lib_app.py** - Shared application-level class library.
+**lib_msging.py** - Messaging subsytem class library.  
+**lib_track.py** - Track simulation class library.
 **start.py** - Starts the necessary application processes and runs the track simulator.  
-**sim_bos.py** - The Back Office Server, (AKA "BOS", pronounced like "boss").  
+**sim_bos.py** - The Back Office Server (AKA "BOS", pronounced like "boss").  
 **sim_broker.py** - The Message Broker.  
 **sim_track.py** - The Track Simulator.  
 **track_bases.json** - JSON representation of the radio base stations facilitating locomotive communications. Each base station consists of a unique ID and the track mileposts it covers. Gaps in coverage area allowed, as are areas of overlapping coverage.  
@@ -33,19 +42,15 @@ PTC was mandated by congress to # TODO: prevent train on train collisions, # TOD
 **track_rail.json** - JSON representation of the railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees).
 **track_waysides.json** - NOT IMPLEMENTED
 
-## Usage
+### Unimplemented
 
-Start the application with `./start.py`, then navigate to http://localhost:5000/ptc_sim.
-  
-Alternatively, the BOS, Message Broker, and Track Simulator may be run independently with `./sim_bos`, `./sim_broker`, and `./sim_track`, respectively.
+Some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, persistent data, and TCP/IP session management are left unimplemented for the sake of demonstration simplicity. In addition, the track simulation is currently restricted to a single branch.
 
-**Note:** Each module was developed with reusability and educational value in mind. The code base is well documented and free for use under the MIT Software License. Please credit the author accordingly.
-
-## Message Specification
+### Message Specification
 
 Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with variable-length header sections. The application-specific messaging implementation is defined as follows:
 
-### EMP Fields
+#### EMP Fields
 
 | Section      | Field | Value                          |
 |--------------|-------|--------------------------------|
@@ -60,10 +65,10 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 |          | Quality of Service    | 0              |
 |          | Sender Address        | DYNAMIC        |
 |          | Destination Address   | DYNAMIC        |
-| Body     | Body/Data             | DYNAMIC        |
+| Body     | Data Element             | DYNAMIC        |
 |          | CRC                   | DYNAMIC        |
 
-### Fixed-Format Messages
+#### Fixed-Format Messages
 
 **6000**: Locomotive Status Message - Contains a single key/value data element of the form: 
 
@@ -82,15 +87,6 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
      }
 ```
 
-**6002**: CAD to Locomotive Message - Contains a single key/value data element of the form:
-
-```
-    { sent      : (int) Unix time,
-      ID        : (str) Intended recipient ID,
-      Restrict  : (list) A list of restricted milepost ranges, as points
-      }
-```
-
 **6001**: Wayside Status Msgs - Contains a single key/value data element of the form:
 
 ```
@@ -100,17 +96,30 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
     }
 ```
 
-## Unimplemented
+**6002**: CAD to Locomotive Message - Contains a single key/value data element of the form:
 
-Some features typical in a PTC deployment are left unimplemented for the sake of demonstration simplicity. For example, no authentication, encryption, high availability, redundancy, or persistent data is implemented, and no TCP/IP session management is performed. Also, the railroad simulation is currently restricted to a single branch.
+```
+    { sent      : (int) Unix time,
+      ID        : (str) Intended recipient ID,
+      Restrict  : (list) A list of restricted milepost ranges, as points
+      }
+```
+
+## Usage
+
+Start the application with `./start.py`, then navigate to http://localhost:5000/ptc_sim.
+  
+Alternatively, the BOS, Message Broker, and Track Simulator may be started independently with `./sim_bos`, `./sim_broker`, and `./sim_track`, respectively.
+
+**Note:** Each module was developed with reusability and educational value in mind. The code base is well documented and free for use under the MIT Software License. Please credit the author accordingly.
 
 ## # TODO
 
-Web: logtail/console output, broker queue sizes
-PEP8 file headers, imports, and docstrings (model after Track and connection?)
-Privatize necessary members and do validation on public members
-readme screenshots and high-level images
-Catch specific socket conn errors w/ except socket.error as e:
-py3
-TrackCircuits - does not allow switch change when track occupied. Aids coll avoidance.
-Switches (static, or random from static data) - 
+* Web: logtail/console output, broker queue sizes  
+* PEP8 file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
+* Privatize necessary members and do validation on public members  
+* readme screenshots and high-level images  
+* Catch specific socket conn errors w/ except socket.error  
+* py3  
+* TrackCircuits - does not allow switch change when track * occupied. Aids coll avoidance.  
+* Switches (static, or random from static data) 
