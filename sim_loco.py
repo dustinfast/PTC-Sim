@@ -208,5 +208,5 @@ class SimLoco(Loco):
 
 if __name__ == '__main__':
     # Start the locomotive simulation in terminal mode
-    print("-- PTCSim: Locomotive Simulator - Type 'exit' to quit --\n")
+    print("-- PTC Sim: Track Simulator - Type 'exit' to quit --\n")
     SimLoco().start(terminal=True)

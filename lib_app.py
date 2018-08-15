@@ -1,4 +1,4 @@
-""" PTCSim's input and output library - I.e., the read-eval-print-loop and log
+""" PTC Sim's input and output library - I.e., the read-eval-print-loop and log
     writer classes.
 
     Author: Dustin Fast, 2018

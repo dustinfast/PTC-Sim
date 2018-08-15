@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Starts the necessary services and processes for PTCSim with 3 random
+""" Starts the necessary services and processes for PTC Sim with 3 random
     locomotives. The locomotives, message broker, and back office server are
     each started as seperate processes with Python's Multiprocessing lib.
 
@@ -37,7 +37,7 @@ class _process(multiprocessing.Process):
 
 if __name__ == '__main__':
     # TODO: Instantiate demo locos with random start/direction/speed OR from JSON?
-    """ Start the PTCSim application, with each component existing in a
+    """ Start the PTC Sim application, with each component existing in a
         seperate process.
     """
     # Start the application componenets
@@ -51,8 +51,8 @@ if __name__ == '__main__':
 
     sleep(.5)  # Allow enough time for all to start
 
-    print('-- Locomotive Back Office Server Simulation')
-    print('-- Navigate to https://localhost:5000/PTCSim')
+    print('-- PTC Sim: A Positive Train Control Demonstration')
+    print('-- Navigate to https://localhost:5000/ptc_sim')
     print("-- Type 'exit' to quit")
 
     while True:

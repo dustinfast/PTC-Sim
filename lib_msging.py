@@ -1,4 +1,4 @@
-""" PTCSim's messaging library for sending and receiving Edge Message 
+""" PTC Sim's messaging library for sending and receiving Edge Message 
     Protocol(EMP) messages over TCP/IP. See README.md for implementation
     specific information.
 

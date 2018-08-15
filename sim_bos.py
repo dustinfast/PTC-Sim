@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" The Back Office Server (BOS). Publishes the PTCSim web interface
+""" The Back Office Server (BOS). Publishes the PTC Sim web interface
     via Flask and watches for locomotive status msgs addressed to it at the 
     broker. The web display is updated to reflect loco status, including Google
     Earth location mapping. Restricted track sections may also be communicated
@@ -48,7 +48,7 @@ BOS_EMP = config.get('messaging', 'bos_emp_addr')
 # Flask defs
 web = Flask(__name__)
 
-@web.route('/PTCSim')
+@web.route('/ptc_sim')
 def home():
     return render_template('home.html')
 
@@ -136,6 +136,6 @@ class BOS(object):
 
 if __name__ == '__main__':
     # Start the Back Office Server
-    print('-- PTCSim: Back Office Server - Press CTRL + C to quit --\n')
+    print('-- PTC Sim: Back Office Server - Press CTRL + C to quit --\n')
     sleep(.2)  # Ensure print statment occurs before flask output
     bos = BOS().start(debug=True)

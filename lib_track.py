@@ -1,4 +1,4 @@
-""" PTCSim's collection of railroad component classes, including the track, 
+""" PTC Sim's collection of railroad component classes, including the track, 
     locomotives, base stations, etc., and their specific simulation threads.
 
 

@@ -1,18 +1,18 @@
-# PTCSim - Positive Train Control Simulator
+# PTC Sim - Positive Train Control Simulator
 
 This application is a demonstration of a Positive Train Control (PTC) implementation. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's Locomotive Tracking Solution.
 
-PTCSim implements broker-assisted communication between simulated locomotives and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current locomotive status and location is also displayed. # TODO: Web Screenshot
+PTC Sim implements broker-assisted communication between simulated locomotives and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current locomotive status and location is also displayed. # TODO: Web Screenshot
 
 ## Applicaton Structure
 
-PTC was mandated by congress to # TODO: prevent train on train collisions, # TODO: over-speed derailments, # TODO: incursions into work zone limits, and # TODO: movement through misaligned track-switches. Interoperability between railroads is required and defined by the Federal Railroad Administration's Interoperable Train Control (ITC) standard. PTCSim implements these requirements within the following framework:
+PTC was mandated by congress to # TODO: prevent train on train collisions, # TODO: over-speed derailments, # TODO: incursions into work zone limits, and # TODO: movement through misaligned track-switches. Interoperability between railroads is required and defined by the Federal Railroad Administration's Interoperable Train Control (ITC) standard. PTC Sim implements these requirements within the following framework:
 
 ### Componenets
 
 * **Back Office Server** : Provides CAD capabilities for communicating track restrictions to locomotives, and displays real-time locomotive status and location via its website interface.
 
-* **Message Broker**: An intermediate message translation system allowing bi-directional communication between track components (including locomotives) and the BOS over the railroad's communications infrastructure.  Currently, PTCSim transports EMP messages via TCP/IP only, but future versions may also demonstrate Class C (IP based multicast protocol) and Class D (IP based point-to-point protocol) communications.
+* **Message Broker**: An intermediate message translation system allowing bi-directional communication between track components (including locomotives) and the BOS over the railroad's communications infrastructure.  Currently, PTC Sim transports EMP messages via TCP/IP only, but future versions may also demonstrate Class C (IP based multicast protocol) and Class D (IP based point-to-point protocol) communications.
 
 * **Track Simulator**: Simulates a railroad and it's on-track devices, including:  
   * **220 MHz Radio Base Stations**: Receives locomotive status messages and transmits them to the Message Broker via LAN.
@@ -35,7 +35,7 @@ PTC was mandated by congress to # TODO: prevent train on train collisions, # TOD
 
 ## Usage
 
-Start the application with `./start.py`, then navigate to http://localhost:5000/PTCSim.
+Start the application with `./start.py`, then navigate to http://localhost:5000/ptc_sim.
   
 Alternatively, the BOS, Message Broker, and Track Simulator may be run independently with `./sim_bos`, `./sim_broker`, and `./sim_track`, respectively.
 
@@ -112,7 +112,7 @@ Broker queue sizes in web output
 Class D/Qpid?
 bos loco cmds
 Consolidate lib sections under one class each?
-Ensure normalized app name - PTCSim
+Ensure normalized app name - PTC Sim
 PEP8 file headers, imports, and docstrings (model after Track and connection?)
 Privatize necessary members and do validation on public members
 readme screenshots and high-level images
