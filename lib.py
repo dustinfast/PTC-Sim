@@ -1,10 +1,11 @@
-""" lib.py - A collection of shared classes for PTC_SIM.
+""" A collection of shared classes for PTC_SIM.
     Contains railroad components, input/output handlers, & messaging subsystem.
     See each section's docstring for more info, as well as README.md.
 
     Author: Dustin Fast, 2018
 """
 
+import time
 import Queue
 import socket
 import logging
@@ -12,6 +13,7 @@ import logging.handlers
 
 from json import loads
 from binascii import crc32
+from datetime import timedelta, dateime
 from struct import pack, unpack
 from ConfigParser import RawConfigParser
 
@@ -20,20 +22,23 @@ from ConfigParser import RawConfigParser
 config = RawConfigParser()
 config.read('config.dat')
 
-# Railroad lib imports and conf data
+# Application level conf data
+REFRESH_TIME = int(config.get('application', 'refresh_time'))
+
+# Track lib conf data
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
 CONN_TIMEOUT = config.get('track', 'connection_timeout')
 
-# Messaging lib imports and conf data
+# Messaging lib conf data
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 NET_TIMEOUT = float(config.get('messaging', 'network_timeout'))
 
-# Input/Output lib imports and conf data
+# Input/Output lib conf data
 LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_FILES = config.get('logging', 'num_files')
 LOG_SIZE = int(config.get('logging', 'max_file_size'))
@@ -184,72 +189,95 @@ class Track(object):
         return self.mp_objects.get(mile, None)
 
 class Connection(object):
-    """ An abstraction of a communication interface. Ex: A 220 MHz base station.
-        Starts a thread on instantiation that watches for timeout.
+    """ An abstraction of a communication interface. Ex: A 220 MHz radio
+        connection. Contains a messaging client and a thread 
+        that unsets self.active on timeout.
     """
-    def __init__(self, ID, enabled=False, active=False, timeout=0):
-        """ self.ID     : (str) The interfaces unique identifier.
-            self.enabled: (bool) Device enabled/disabled
-            self.active : (bool) Device is "connected"
-            self.timeout: (int) Seconds of inactivity before active=False
-            self.last_ka: (datetime) Time of last keep_alive activity
+    def __init__(self, ID, enabled=True, active=False, last_active, timeout=0):
+        """ self.ID             : (str) The interfaces unique ID/address.
+            self.enabled        : (bool) Denotes connection is enabled
+            self.active         : (bool) Denotes connection is active
+            self.last_activity  : (datetime) Time of last activity
+            self.client         : (Client) The interfaces messaging client
+            self.Receiver       : (Receiver) Incoming TCP/IP connection watcher
 
-            self.keep_alive(): Sets self.active
-            self._timeout_watcher(): A thread. Unsets self.active on timeout
+            self._timeout_seconds: (int) Seconds of inactivity before timeout
+            self._timeout_watcher: A thread. Updates self.active on timeout
         """
-        # Connection
+        # Properties
         self.ID = ID
         self.enabled = enabled
         self.active = active
-        self._timeout = 0
+        self.last_activity = last_active
 
-        # Timeout watcher
-        self.timeout_watcher = Thread(target=self._timeoutwatcher)
+        # Interface
+        self.client = Client()
+        self.receiver = Receiver()
+
+        # Timeout
+        # self._timeout_seconds = timeout # Not needed?
         self.set_timeout(timeout)
+        self.timeout_watcher = Thread(target=self._timeoutwatcher)
+    
+    def send(self, payload):
+        """ Sends the given payload over the connection's interface. Also
+            updates keep alive.
+        """
+        # TODO: send payload over client
+        self.keep_alive()
 
     def keep_alive(self):
-        """ Call to update the last activity time for the interface.
+        """ Update the last activity time to prevent timeout.
         """
         self.active = True
+        self.last_activity = datetime.datetime.now()
+        
+    def _timeoutwatcher(self):
+        """ Resets the connections 'active' flag if timeout elapses
+            Intended to run as a thread.
+        """
+        while True:
+            delta = datetime.timedelta(seconds=self._timout_seconds)
+            if delta < datetime.now() - self.last_activity:
+                self.active = False
 
-    def self._timeoutwatcher(self):
-        """
-        """
+            time.sleep(REFRESH_TIME)
 
     def set_timeout(self, timeout):
         """ Sets the timeout value and starts/stops the timeout watcher thread
             as needed. 0 = No timeout.
         """
-        self.set_timeout(timeout)
-        if self.timeout:
-            self.timeout_watcher = Thread(target=self._timeoutwatcher)
+        self._timeout_seconds = timeout
+        if self.timeout_seconds:
+            if not self.timeout_watcher.is_alive():
+                self.timeout_watcher = Thread(target=self._timeoutwatcher)
+                self.timeout_watcher.start()
         else:
             if self.timeout_watcher.is_alive():
                 self.timeout_watcher.terminate()
                 self.timeout_watcher.join()  # To prevent temporary offline
 
 
-
-
-
 class TrackComponent(object):
-    """ The templatee class for on-track communication-enabled devices. I.e., 
+    """ The template class for on-track communication-enabled devices. I.e., 
         Locos, Bases, and Waysides.
     """
-    def __init__(self, ID, connections = []):
+    def __init__(self, ID, enabled=True, connections={}):
         """ self.ID     : (str) The Device's unique identifier.
-            self.conns  : (list) Comm interface objects, of type Connection.
+            self.conns  : (list) Connection objects: { ID_STR: Connection }
         """
-        self.ID = None
+        self.ID = ID
+        self.enabled = enabled
         self.conns = connections
 
 class Loco(TrackComponent):
     """ An abstration of a locomotive.
     """
-    def __init__(self, locoID):
+    def __init__(self, ID):
         """
         """
-        self.ID = str(locoID)
+        TrackComponent.__init__(self)
+        self.ID = str(loco)
         self.speed = None
         self.heading = None
         self.direction = None
@@ -301,7 +329,8 @@ class Loco(TrackComponent):
 
 
 class Base(TrackComponent):
-    """ An abstraction of a base station, including it's coverage area.
+    """ An abstraction of a base station, including it's coverage area and
+         a thread that simulates it's on-track activity/communications
     """
     def __init__(self, baseID, coverage_start, coverage_end):
         TrackComponent.__init__()
@@ -540,6 +569,9 @@ class Client(object):
 
         return msg
 
+class Receiver(object):
+    # TODO: Receiver (from broker)
+    pass
 
 #############################################################
 # Input/Output Handlers (REPL, Logger, and Web)             #
