@@ -13,7 +13,9 @@
 import socket  
 from threading import Thread
 from ConfigParser import RawConfigParser
-from lib import Queue, Message, REPL, Logger  # Also sets socket timeout
+
+from lib_app import REPL, Logger
+from lib_msging import Queue, Message
 
 # Init conf
 config = RawConfigParser()

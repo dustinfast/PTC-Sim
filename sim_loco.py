@@ -11,7 +11,9 @@ from threading import Thread
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
-from lib import Track, Loco, Client, Queue, Message, REPL, Logger
+from lib_app import REPL, Logger
+from lib_track import Track, Loco
+from lib_msging import Client, Queue, Message
 
 # Init conf
 config = RawConfigParser()

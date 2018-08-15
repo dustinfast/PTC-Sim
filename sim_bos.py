@@ -1,18 +1,21 @@
 #!/usr/bin/env python
-""" The Back Office Server (BOS). Publishes the PTCSim website
+""" The Back Office Server (BOS). Publishes the PTCSim web interface
     via Flask and watches for locomotive status msgs addressed to it at the 
     broker. The web display is updated to reflect loco status, including Google
-    Earth location mapping. Speed/direction commands may also be issued to
-    each loco.
+    Earth location mapping. Restricted track sections may also be communicated
+    to each loco from the BOS.
 
     Author: Dustin Fast, 2018
 """
+
 from time import sleep
 from threading import Thread
 from subprocess import check_output
 from ConfigParser import RawConfigParser
 
-from lib import Track, Loco, Milepost, Client, Queue, Logger
+from lib_app import Logger
+from lib_msging import Client, Queue
+from lib_track import Track, Loco, Milepost
 
 # Attempt to import flask and prompt for install on fail
 while True:
@@ -128,10 +131,6 @@ class BOS(object):
 
         # TODO: def _contentbuilder(self):
         #   """ Updates the web datatables.
-        #   """
-
-        # TODO: def _send_cmd_msg(self, msg):
-        #   """
         #   """
 
 
