@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-""" Starts the necessary services and processes for PTC Sim with 3 random
-    locomotives. The locomotives, message broker, and back office server are
-    each started as seperate processes with Python's Multiprocessing lib.
+""" Starts the Track Simulator, Message Broker, and Back Office Server,
+    each as seperate processes, with Python's Multiprocessing lib.
 
     Author: Dustin Fast, 2018
 """
@@ -55,12 +54,22 @@ if __name__ == '__main__':
     print("-- Type 'exit' to quit.")
 
     while True:
-        uinput = raw_input('>> ')
-        
+        try:
+            uinput = raw_input('>> ')
+        except KeyboardInterrupt:
+            uinput = None
+
         if uinput == 'exit':
             loco_proc.terminate()
             broker_proc.terminate()
             bos_proc.terminate()
+            try:
+                loco_proc.join(timeout=5)
+                broker_proc.join(timeout=5)
+                bos_proc.join(timeout=5)
+            except:
+                e = 'Timed out wating for one or more subprocess to close.'
+                raise Exception(e)
             break
         else:
             continue

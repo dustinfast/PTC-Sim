@@ -1,5 +1,4 @@
-""" PTC Sim's input and output library - I.e., the read-eval-print-loop and log
-    writer classes.
+""" PTC Sim's library of common "app level" classes.
 
     Author: Dustin Fast, 2018
 """
@@ -16,7 +15,7 @@ config.read('config.dat')
 REFRESH_TIME = int(config.get('application', 'refresh_time'))
 LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_FILES = config.get('logging', 'num_files')
-LOG_SIZE = int(config.get('logging', 'max_file_size'))
+LOG_SIZE = int(config.get('logging', 'max_file_size')) 
 
 
 class REPL(object):

@@ -7,7 +7,10 @@
 
 import Queue
 import socket
+import datetime
+from time import sleep
 from binascii import crc32
+from threading import Thread
 from struct import pack, unpack
 from ConfigParser import RawConfigParser
 
@@ -139,6 +142,78 @@ class Message(object):
         return (msg_type, sender_addr, dest_addr, payload)
 
 
+class Connection(object):
+    """ An abstraction of a communication interface. Ex: A 220 MHz radio
+        connection. Contains a messaging client and a thread 
+        that unsets self.active on timeout.
+    """
+
+    def __init__(self, ID, timeout=0):
+        """ self.ID             : (str) The interfaces unique ID/address.
+            self.last_activity  : (datetime) Time of last activity
+            self.client         : (Client) The interfaces messaging client
+            self.Receiver       : (Receiver) Incoming TCP/IP connection watcher
+            self.connected_to   : (TrackDevice)            
+
+            self._timeout_seconds: (int) Seconds of inactivity before timeout
+            self._timeout_watcher: A thread. Updates self.active on timeout
+        """
+        # Properties
+        self.ID = ID
+        self.last_activity = None
+        # self.transport_class = None
+
+        # Interface
+        self.client = Client()
+        self.receiver = Receiver()
+
+        # Timeout
+        self._timeout = timeout
+        self.timeout_watcher = Thread(target=self._timeoutwatcher)
+        self.timeout_watcher.start()
+
+    def __str__(self):
+        """ Returns a string representation of the base station """
+        ret_str = 'Connection' + self.ID + ': '
+        ret_str += {True: 'Active', False: 'Inactive'}.get(self.active)
+
+        return ret_str
+
+    def send(self, message):
+        """ Sends the given message over the connection's interface. Also
+            updates keep alive.
+        """
+        self.client.send_msg(message)
+        self.keep_alive()
+
+    def fetch(self, queue_name):
+        """ Fetches the next message from the given queue at the broker and
+            returns it. Also updates keep alive.
+        """
+        self.client.fetch_next_msg(queue_name)
+        self.keep_alive()
+
+    def keep_alive(self):
+        """ Update the last activity time to prevent timeout.
+        """
+        self.active = True
+        self.last_activity = datetime.datetime.now()
+
+    def _timeoutwatcher(self):
+        """ Resets the connections 'active' flag if timeout elapses
+            Intended to run as a thread.
+        """
+        while True:
+            if not self.last_activity:
+                self.connected_to = None
+            elif self._timeout != 0:
+                delta = datetime.timedelta(seconds=self._timeout)
+                if delta < datetime.datetime.now() - self.last_activity:
+                    self.connected_to = None
+
+            sleep(REFRESH_TIME)
+
+
 class Client(object):
     """ Exposes send_msg() and fetch_msg() interfaces to broker clients.
     """
@@ -160,33 +235,40 @@ class Client(object):
             Returns True if msg sent succesfully, else raises an issue-
             specific exception.
         """
-        # Init socket and connect to broker
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.broker, self.send_port))
+        try:
+            # Init socket and connect to broker
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((self.broker, self.send_port))
 
-        # Send message and wait for a response
-        sock.send(message.raw_msg.encode('hex'))
-        response = sock.recv(MAX_MSG_SIZE).decode()
-        sock.close()
+            # Send message and wait for a response
+            sock.send(message.raw_msg.encode('hex'))
+            response = sock.recv(MAX_MSG_SIZE).decode()
+            sock.close()
+        except:
+            raise Exception('Send Error: Could not connect to broker.')
+
         if response == 'OK':
             return True
         elif response == 'FAIL':
-            raise Exception('Broker responded with FAIL.')
+            raise Exception('Send Error: Broker responded with FAIL.')
         else:
-            raise Exception(
-                'Unhandled response received from broker - Send aborted.')
+            err_str = 'Send Error: Unhandled response received from broker.'
+            raise Exception(err_str)
 
     def fetch_next_msg(self, queue_name):
         """ Fetches the next msg from queue_name from the broker and returns it,
             Raises Queue.Empty if specified queue is empty.
         """
-        # Establish socket connection
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.broker, self.fetch_port))
+        try:
+            # Establish socket connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((self.broker, self.fetch_port))
 
-        # Send queue name and wait for response
-        sock.send(queue_name.encode())
-        resp = sock.recv(MAX_MSG_SIZE)
+            # Send queue name and wait for response
+            sock.send(queue_name.encode())
+            resp = sock.recv(MAX_MSG_SIZE)
+        except:
+            raise Exception('Fetch Error: Could not connect to broker.')
 
         msg = None
         if resp == 'EMPTY':

@@ -7,9 +7,10 @@ refresh_time = 5                    ; Thread & loop sleep seconds before next it
                                     
 [track]
 track_rails = track_rails.json      ; Track model file
-track_bases = track_bases.json      ; Base stations file
+track_locos = track_locos.json      ; File containing list of locomotives
+track_bases = track_bases.json      ; File containing list of base stations
 speed_units = mph                   ; mph or kmh
-component_timeout = 60              ; Seconds before a componenent considered offline
+component_timeout = 60              ; Seconds before a track componenent is "offline"
 
 [messaging]
 broker = localhost                  ; Message Broker IP address/hostname

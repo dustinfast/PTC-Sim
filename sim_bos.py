@@ -97,7 +97,7 @@ class BOS(object):
             except Queue.Empty:
                 self.log.info('Msg queue empty.')
             except Exception as e:
-                self.log.error('Fetch failed - connection error.')
+                self.log.warn('Could not connect to broker.')
 
             # Process loco status msg
             if msg:

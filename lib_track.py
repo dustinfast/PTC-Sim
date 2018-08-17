@@ -5,15 +5,15 @@
     Author: Dustin Fast, 2018
 """
 
-import datetime
 from time import sleep
 from json import loads
+from random import randint
 from threading import Thread
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
 from lib_app import Logger
-from lib_msging import Client, Receiver, Queue, Message
+from lib_msging import Connection, Queue, Message
 
 # Init conf
 config = RawConfigParser()
@@ -23,6 +23,7 @@ config.read('config.dat')
 REFRESH_TIME = int(config.get('application', 'refresh_time'))
 
 TRACK_RAILS = config.get('track', 'track_rails')
+TRACK_LOCOS = config.get('track', 'track_locos')
 TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
 TRACK_TIMEOUT = int(config.get('track', 'component_timeout'))
@@ -36,225 +37,17 @@ BOS_EMP = config.get('messaging', 'bos_emp_addr')
 LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
 # Track level logger
-track_logger = Logger('track', True)
-
-# Global instantiated track object, defined at the end of this file.
-sim_track = None 
-
-class Track(object):
-    """ A representation of the track, including its mileposts and radio base 
-        stations.
-    
-        self.locos = A dict of locootives.
-            Format: { LOCOID: LOCO_OBJECT }
-        self.bases = A dict of radio base stations, used by locos  to send msgs. 
-            Format: { BASEID: BASE_OBJECT }
-        self.mp_objects = Used to associate BRANCH/MP with MPOBJ.
-            Format: { MP: MP_OBJECT }
-        self.mp_linear = A representation of the track in order of mps.
-            Format: [ MP_1, ... , MP_n ], where MP1 < MPn
-        self.mp_linear_rev = A represention the track in reverse order of mps.
-            Format: [ MP_n, ... , MP_1], where MP1 < MPn
-        Note: BASEID/LOCOD = strings, MP = floats
-    """
-
-    def __init__(self, track_file=TRACK_RAILS, bases_file=TRACK_BASES):
-        """ track_file: Filename of track JSON
-            bases_file: Filename of base station JSON
-        """
-        self.locos = {}
-        self.bases = {}
-        self.mp_objects = {}
-        self.mp_linear = []
-        self.mp_linear_rev = []
-        # self.restrictions = {}  # { AUTH_ID: ( START_MILEPOST, END_MILEPOST }
-
-        # Populate bases station (self.bases) from base_file json
-        try:
-            with open(bases_file) as base_data:
-                bases = loads(base_data.read())
-        except Exception as e:
-            raise Exception('Error reading ' + bases_file + ': ' + str(e))
-
-        for b in bases:
-            try:
-                baseID = b['id']
-                coverage_start = float(b['coverage'][0])
-                coverage_end = float(b['coverage'][1])
-            except ValueError:
-                raise ValueError('Conversion error in ' + bases_file + '.')
-            except KeyError:
-                raise Exception('Missing key in ' + bases_file + '.')
-
-            self.bases[baseID] = Base(baseID, self, coverage_start, coverage_end)
-
-        # Populate milepost objects (self.mp_objects) from track_file json
-        try:
-            with open(TRACK_RAILS) as rail_data:
-                mileposts = loads(rail_data.read())
-        except Exception as e:
-            raise Exception('Error reading ' + TRACK_RAILS + ': ' + str(e))
-
-        # Build self.mp_objects dict
-        for m in mileposts:
-            try:
-                mp = float(m['milemarker'])
-                lat = float(m['lat'])
-                lng = float(m['long'])
-            except ValueError:
-                raise ValueError('Conversion error in ' + track_file + '.')
-            except KeyError:
-                raise Exception('Missing key in ' + track_file + '.')
-
-            self.mp_objects[mp] = Milepost(mp, lat, lng)
-
-        # Populate self.mp_linear and self.mp_linear_rev from self.mp_objects
-        for mp in sorted(self.mp_objects.keys()):
-            self.mp_linear.append(mp)
-        self.mp_linear_rev = self.mp_linear[::-1]
-
-    def _get_next_mp(self, curr_mp, distance):
-        """ Given a curr_mp and distance, returns the nearest mp marker at
-            curr_mp + distance. Also returns any difference not accounted
-            for.
-            Accepts:
-                curr_mp  = Curr location (a Milepost)
-                distance = Distance in miles (neg dist denotes decreasing DOT)
-            Returns:
-                next_mp   = nearest mp for curr_mp + distance without going over
-                dist_diff = difference between next_mp and actual location
-            Note: If next_mp = curr_mp, diff = distance.
-                  If no next mp (end of track), returns None.
-        """
-        # If no distance, next_mp is curr_mp
-        if distance == 0:
-            return curr_mp, distance
-
-        # Working vars
-        mp = curr_mp.mp
-        target_mp = mp + distance
-        dist_diff = 0
-        next_mp = None
-
-        # Set the milepost object list to iterate, depending on direction
-        if distance > 0:
-            mps = self.mp_linear
-        elif distance < 0:
-            mps = self.mp_linear_rev
-
-        # Find next mp marker, noting unconsumed distance
-        for i, marker in enumerate(mps):
-            if marker == target_mp:
-                next_mp = marker
-                dist_diff = 0
-                break
-            elif (distance > 0 and marker > target_mp) or \
-                 (distance < 0 and marker < target_mp):
-                next_mp = mp
-                if i > 0:
-                    next_mp = mps[i - 1]
-                dist_diff = abs(target_mp - next_mp)
-                break
-
-        # If we didn't find a next mp (i.e. end of track)
-        if not next_mp:
-            return
-
-        # Get mp object associated with next_mp
-        next_mp_obj = self.get_milepost_at(next_mp)
-        if not next_mp_obj:
-            debug_str = '_get_next_mp failed to find a next milepost from: '
-            debug_str += str(mps) + '\n'
-            debug_str += 'cur_mp: ' + str(mp) + '\n'
-            debug_str += 'moved : ' + str(distance) + '\n'
-            debug_str += 'tgt_mp: ' + str(target_mp) + '\n'
-            debug_str += 'mp_idx: ' + str(i) + '\n'
-            debug_str += 'nxt_mp: ' + str(next_mp) + '\n'
-            debug_str += 'disdif: ' + str(dist_diff) + '\n'
-            raise Exception(debug_str)
-
-        return next_mp_obj, dist_diff
-
-    def get_milepost_at(self, mile):
-        """ Returns the Milepost at distance (a float) iff one exists.
-        """
-        return self.mp_objects.get(mile, None)
+track_logger = Logger('log_track', True)
 
 
-class Connection(object):
-    """ An abstraction of a communication interface. Ex: A 220 MHz radio
-        connection. Contains a messaging client and a thread 
-        that unsets self.active on timeout.
-    """
+##################
+# Parent Classes #
+##################
 
-    def __init__(self, ID, timeout=0):
-        """ self.ID             : (str) The interfaces unique ID/address.
-            self.last_activity  : (datetime) Time of last activity
-            self.client         : (Client) The interfaces messaging client
-            self.Receiver       : (Receiver) Incoming TCP/IP connection watcher
-            self.connected_to   : (TrackDevice)            
-
-            self._timeout_seconds: (int) Seconds of inactivity before timeout
-            self._timeout_watcher: A thread. Updates self.active on timeout
-        """
-        # Properties
-        self.ID = ID
-        self.last_activity = None
-        # self.transport_class = None
-
-        # Interface
-        self.client = Client()
-        self.receiver = Receiver()
-
-        # Timeout
-        self._timeout = timeout
-        self.timeout_watcher = Thread(target=self._timeoutwatcher)
-        self.timeout_watcher.start()
-
-    def __str__(self):
-        """ Returns a string representation of the base station """
-        ret_str = 'Connection' + self.ID + ': '
-        ret_str += {True: 'Active', False: 'Inactive'}.get(self.active)
-
-        return ret_str
-
-    def send(self, message):
-        """ Sends the given message over the connection's interface. Also
-            updates keep alive.
-        """
-        self.client.send_msg(message)
-        self.keep_alive()
-
-    def fetch(self, queue_name):
-        """ Fetches the next message from the given queue at the broker and
-            returns it. Also updates keep alive.
-        """
-        self.client.fetch_next_msg(queue_name)
-        self.keep_alive()
-
-    def keep_alive(self):
-        """ Update the last activity time to prevent timeout.
-        """
-        self.active = True
-        self.last_activity = datetime.datetime.now()
-
-    def _timeoutwatcher(self):
-        """ Resets the connections 'active' flag if timeout elapses
-            Intended to run as a thread.
-        """
-        while True:
-            if not self.last_activity:
-                self.connected_to = None
-            elif self._timeout != 0:
-                delta = datetime.timedelta(seconds=self._timeout)
-                if delta < datetime.datetime.now() - self.last_activity:
-                    self.connected_to = None
-
-            sleep(REFRESH_TIME)
-
-
-class TrackSim(object):
-    """ Represents a device simulation.
+class DeviceSim(object):
+    """ A collectoin of threads representing a device simulation with a start
+        and stop interface.
+        Assumes each thread implements self.running (a bool) as a poison pill.
     """
     def __init__(self, label, targets=[]):
         self.running = False  # Thread kill signal
@@ -274,8 +67,9 @@ class TrackSim(object):
         """ Stops the simulation threads.
         """
         if self.running:
-            self.running = False  # Signal kill to threads
-            [t.join(timeout=REFRESH_TIME) for t in self._threads.values()]
+            print('* Stopped sim thread ' + self.label)
+            self.running = False  # Thread poison pill
+            [t.join(timeout=REFRESH_TIME) for t in self._threads]
 
 
 class TrackDevice(object):
@@ -284,8 +78,7 @@ class TrackDevice(object):
         real-time activity and communications simulation for testing and
         demonstration purposes.
     """
-
-    def __init__(self, ID, track, milepost=None):
+    def __init__(self, ID, track, device_type, milepost=None):
         """ self.ID         : (str) The Device's unique identifier
             self.track      : (Track) Track object reference
             self.milepost   : (Milepost) The devices location, as a Milepost
@@ -293,6 +86,7 @@ class TrackDevice(object):
             self.sim        : The device's simulation. Start w/self.sim.start()
         """
         self.ID = ID
+        self.name = device_type + ' ' + self.ID
         self.track = track
         self.milepost = milepost
         self.conns = None
@@ -319,6 +113,10 @@ class TrackDevice(object):
         raise NotImplementedError
 
 
+#################
+# Child Classes #
+#################
+
 class Loco(TrackDevice):
     """ An abstration of a locomotive. Includes a realtime simulation of its 
         activity/communications.
@@ -333,7 +131,7 @@ class Loco(TrackDevice):
             self.baseID     : (int)
             self.bases_inrange: (list) Base objects within communication range
         """
-        TrackDevice.__init__(self, str(ID), track)
+        TrackDevice.__init__(self, str(ID), track, 'Loco')
         self.speed = None
         self.heading = None
         self.direction = None
@@ -347,7 +145,11 @@ class Loco(TrackDevice):
         self.conns = {'Radio1': Connection('Radio1', timeout=TRACK_TIMEOUT),
                       'Radio2': Connection('Radio2', timeout=TRACK_TIMEOUT)}
 
-        self.sim = TrackSim(str(self), [self._sim])
+        simlabel = 'Loco ' + self.ID
+        self.sim = DeviceSim(simlabel, [self._sim])
+        
+        # Randomize speed, direction, etc., so everything is warm and fuzzy.
+        self._randomize_attributes()
 
     def update(self,
                speed=None,
@@ -380,18 +182,30 @@ class Loco(TrackDevice):
         if self.bases_inrange is not None:
             self.bases_inrange = bases_inrange
 
-    def get_status_dict(self):
+    def status_dict(self):
         """ Returns loco's current status as a dict of strings and nums.
         """
         return {'loco': self.ID,
                 'speed': self.speed,
                 'heading': self.heading,
                 'direction': self.direction,
-                'milepost': self.milepost.mp,
+                'milepost': self.milepost.marker,
                 'lat': self.milepost.lat,
                 'long': self.milepost.long,
                 'base': self.baseID,
                 'bases': str([b.ID for b in self.bases_inrange])}
+
+    def _randomize_attributes(self):
+        """ Randomizes (within reason) speed, heading, direction, bpp, and mp.
+        """
+        self.speed = randint(0, 60)
+        self.heading = randint(0, 359)
+        self.direction = {0: 'increasing', 1: 'decreasing'}.get(randint(0, 1))
+        self.bpp = randint(0, 90)
+
+        if self.track.mileposts:
+            max_index = len(self.track.mileposts) - 1
+            self.milepost = self.track.mileposts.values()[randint(0, max_index)]
 
     def _sim(self):
         """ Simulates the locomotive messaging systems and its movement along
@@ -431,6 +245,9 @@ class Loco(TrackDevice):
             self.direction = START_DIR
         
         while self.sim.running:
+            # Sleep for specified interval
+            sleep(MSG_INTERVAL)
+            
             # Move, if at speed
             if self.speed > 0:
                 # Determine dist traveled since last iteration, including
@@ -446,7 +263,8 @@ class Loco(TrackDevice):
                 # Get next milepost and any makeup distance
                 new_mp, dist = self.track._get_next_mp(self.milepost, dist)
                 if not new_mp:
-                    track_logger.info(' End of track reached - Changing direction.')
+                    err_str = self.name + '- At end of track. Reversing.'
+                    track_logger.info(err_str)
                     self.direction *= -1
                 else:
                     _set_heading(self.milepost, new_mp)
@@ -470,42 +288,53 @@ class Loco(TrackDevice):
             msg_type = 6000
             msg_source = self.emp_addr
             msg_dest = BOS_EMP
-            payload = str(self.get_status_dict())
+            payload = str(self.status_dict())
 
             status_msg = Message((msg_type,
                                   msg_source,
                                   msg_dest,
                                   payload))
 
-            # Send status message over each active connection
-            conns = [c for c in self.conns.values() if c.connected_to]
-            for conn in conns:
-                try:
-                    conn.send(status_msg)
-                    track_logger.info(str(self) + '-  Sent status msg.')
-                except Exception as e:
-                    track_logger.error(str(self) + ' - Msg send failed: ' + str(e))
+            # TODO: Locos need to establish a connection with one base and
+            # maintain it while in range
 
-            # Receive and process all incoming CAD message, if any
+            conns = [c for c in self.conns.values() if c.connected_to]
+
+            if not conns:
+                # TODO: Implement for all:
+                err_str = 'Skipping msg send/recv - No connection available.'
+                logger.warn(err_str)
+                continue  # Note: we sleep at the top of this loop
+            
+            conn = conns[0]
+
+            # Do status msg send
+            try:
+                conn.send(status_msg)
+                track_logger.info(self.name + '-  Sent status msg.')
+            except Exception as e:
+                track_logger.error(self.name + ' - Msg send failed: ' + str(e))
+
+            # Receive all incoming CAD message, if any
             while True:
                 cad_msg = None
                 try:
                     cad_msg = conn.fetch_next_msg(self.emp_addr)
                 except Queue.Empty:
-                    break  # Queue empty / all msgs fetched
+                    break  # Queue is empty
                 except Exception as e:
-                    err_str = ' - Could not connect to broker.'
-                    track_logger.warn(str(self) + err_str)
+                    # err_str = ' - Could not connect to broker.'
+                    track_logger.warn(self.name + str(e))
+                    break
 
-                # Process cad msg if msg and if actually for this loco
+                # Process cad msg, if msg and if actually for this loco
                 if cad_msg and cad_msg.payload.get('ID') == self.ID:
                     try:
-                        # TODO: Update track restrictions
-                        track_logger.info(str(self) + ' - CAD msg processed.')
+                        # TODO: Update track restrictions based on msg
+                        track_logger.info(self.name + ' - CAD msg processed.')
                     except:
-                        track_logger.error(str(self) + ' - Received invalid CAD msg.')
-
-                sleep(MSG_INTERVAL)
+                        track_logger.error(
+                            self.name + ' - Received invalid CAD msg.')
 
 
 class Base(TrackDevice):
@@ -517,7 +346,7 @@ class Base(TrackDevice):
             self.coverage_start = (float) Coverage start milepost
             self.coverage_end = (float) Coverage end milepost
         """
-        TrackDevice.__init__(self, ID, track)
+        TrackDevice.__init__(self, ID, track, 'Base')
         self.cov_start = coverage_start
         self.cov_end = coverage_end
 
@@ -525,7 +354,11 @@ class Base(TrackDevice):
         """ Given a milepost, returns True if this base provides 
             coverage at that milepost, else returns False.
         """
-        return milepost.mp >= self.cov_start and milepost.mp <= self.cov_end
+        return milepost.marker >= self.cov_start and milepost.marker <= self.cov_end
+
+    def _sim(self):
+        """ Manages a connection to loco for reprorting locos connected """
+        pass
 
 
 class Wayside(TrackDevice):
@@ -533,12 +366,12 @@ class Wayside(TrackDevice):
         activity/communications.
     """
 
-    def __init__(self, ID, milepost, children={}):
+    def __init__(self, ID, track, milepost, children={}):
         """ self.ID      : (str) The waysides unique ID/address
             self.milepost: (Milepost) The waysides location as a Milepost
             self.children: (dict) Child devices { CHILD_ID: CHILD_OBJECT }
         """
-        TrackDevice.__init__(self, ID)
+        TrackDevice.__init__(self, ID, track, 'Wayside')
         self.children = {}
 
     def add_child(self, child_object):
@@ -553,10 +386,10 @@ class WayChild(TrackDevice):
         Includes a realtime simulation of its activity/communications.
     """
 
-    def __init__(self, ID, type):
+    def __init__(self, ID, track, milepost):
         """
         """
-        self.ID = ID
+        TrackDevice.__init__(self, ID, track, 'Waychild')
         self.status = None
 
     def get_position(self):
@@ -565,23 +398,180 @@ class WayChild(TrackDevice):
         raise NotImplementedError
 
 
+#######################
+# Independent Classes #
+#######################
+
+
+class Track(object):
+    """ A representation of the track, including its mileposts and radio base 
+        stations.
+    
+        self.locos = A dict of locootives.
+            Format: { LOCOID: LOCO_OBJECT }
+        self.bases = A dict of radio base stations, used by locos to send msgs. 
+            Format: { BASEID: BASE_OBJECT }
+        self.mileposts = A dict of all track mileposts
+            Format: { MP: MP_OBJECT }
+        self.marker_linear = A representation of the track in order of mps.
+            Format: [ MP_1, ... , MP_n ], where MP1 < MPn
+        self.marker_linear_rev = A represention the track in reverse order of mps.
+            Format: [ MP_n, ... , MP_1], where MP1 < MPn
+        Note: BASEID/LOCOD = strings, MP = floats
+    """
+
+    def __init__(self,
+                 track_file=TRACK_RAILS,
+                 locos_file=TRACK_LOCOS,
+                 bases_file=TRACK_BASES):
+        """ track_file: Track JSON representation
+            locos_file: Locos JSON representation
+            bases_file: Base stations JSON representation
+        """
+        self.locos = {}
+        self.bases = {}
+        self.mileposts = {}
+        self.marker_linear = []
+        self.marker_linear_rev = []
+        # self.restrictions = {}  # { AUTH_ID: ( START_MILEPOST, END_MILEPOST }
+
+        # Populate bases station (self.bases) from base_file
+        try:
+            with open(bases_file) as base_data:
+                bases = loads(base_data.read())
+        except Exception as e:
+            raise Exception('Error reading ' + bases_file + ': ' + str(e))
+
+        for base in bases:
+            try:
+                baseID = base['id']
+                coverage_start = float(base['coverage'][0])
+                coverage_end = float(base['coverage'][1])
+            except ValueError:
+                raise ValueError('Conversion error in ' + bases_file + '.')
+            except KeyError:
+                raise Exception('Malformed ' + bases_file + ': Key Error.')
+
+            self.bases[baseID] = Base(
+                baseID, self, coverage_start, coverage_end)
+
+        # Populate milepost objects (self.mileposts) from track_file
+        try:
+            with open(track_file) as rail_data:
+                mileposts = loads(rail_data.read())
+        except Exception as e:
+            raise Exception('Error reading ' + track_file + ': ' + str(e))
+
+        for marker in mileposts:
+            try:
+                mp = float(marker['milemarker'])
+                lat = float(marker['lat'])
+                lng = float(marker['long'])
+            except ValueError:
+                raise ValueError('Conversion error in ' + track_file + '.')
+            except KeyError:
+                raise Exception('Malformed ' + track_file + ': Key Error.')
+
+            self.mileposts[mp] = Milepost(mp, lat, lng)
+
+        for mp in sorted(self.mileposts.keys()):
+            self.marker_linear.append(mp)
+        self.marker_linear_rev = self.marker_linear[::-1]
+
+        # Populate Locomotive objects (self.locos) from locos_file
+        try:
+            with open(locos_file) as loco_data:
+                locos = loads(loco_data.read())
+        except Exception as e:
+            raise Exception('Error reading ' + locos_file + ': ' + str(e))
+
+        for loco in locos:
+            try:
+                self.locos[loco['id']] = Loco(loco['id'], self)
+            except KeyError:
+                raise Exception('Malformed ' + locos_file + ': Key Error.')
+
+    def _get_next_mp(self, curr_mp, distance):
+        """ Given a curr_mp and distance, returns the nearest mp marker at
+            curr_mp + distance. Also returns any difference not accounted
+            for.
+            Accepts:
+                curr_mp  = Curr location (a Milepost)
+                distance = Distance in miles (neg dist denotes decreasing DOT)
+            Returns:
+                next_mp   = nearest mp for curr_mp + distance without going over
+                dist_diff = difference between next_mp and actual location
+            Note: If next_mp = curr_mp, diff = distance.
+                  If no next mp (end of track), returns None.
+        """
+        # If no distance, next_mp is curr_mp
+        if distance == 0:
+            return curr_mp, distance
+
+        # Working vars
+        mp = curr_mp.marker
+        target_mp = mp + distance
+        dist_diff = 0
+        next_mp = None
+
+        # Set the milepost object list to iterate, depending on direction
+        if distance > 0:
+            mps = self.marker_linear
+        elif distance < 0:
+            mps = self.marker_linear_rev
+
+        # Find next mp marker, noting unconsumed distance
+        for i, marker in enumerate(mps):
+            if marker == target_mp:
+                next_mp = marker
+                dist_diff = 0
+                break
+            elif (distance > 0 and marker > target_mp) or \
+                 (distance < 0 and marker < target_mp):
+                next_mp = mp
+                if i > 0:
+                    next_mp = mps[i - 1]
+                dist_diff = abs(target_mp - next_mp)
+                break
+
+        # If we didn't find a next mp (i.e. end of track)
+        if not next_mp:
+            return
+
+        # Get mp object associated with next_mp
+        next_mp_obj = self.get_milepost_at(next_mp)
+        if not next_mp_obj:
+            debug_str = '_get_next_mp failed to find a next milepost from: '
+            debug_str += str(mps) + '\n'
+            debug_str += 'cur_mp: ' + str(mp) + '\n'
+            debug_str += 'moved : ' + str(distance) + '\n'
+            debug_str += 'tgt_mp: ' + str(target_mp) + '\n'
+            debug_str += 'mp_idx: ' + str(i) + '\n'
+            debug_str += 'nxt_mp: ' + str(next_mp) + '\n'
+            debug_str += 'disdif: ' + str(dist_diff) + '\n'
+            raise Exception(debug_str)
+
+        return next_mp_obj, dist_diff
+
+    def get_milepost_at(self, mile):
+        """ Returns the Milepost at distance (a float) iff one exists.
+        """
+        return self.mileposts.get(mile, None)
+
+
 class Milepost:
     """ An abstraction of a milepost.
     """
-    def __init__(self, mp, latitude, longitude):
-        """ self.mp = (float) The numeric milepost marker
+    def __init__(self, marker, latitude, longitude):
+        """ self.marker = (float) The numeric milepost marker
             self.lat = (float) Latitude of milepost
             self.long = (float) Longitude of milepost
         """
-        self.mp = mp
+        self.marker = marker
         self.lat = latitude
         self.long = longitude
 
     def __str__(self):
         """ Returns a string representation of the milepost.
          """
-        return str(self.mp)
-    
-
-# Instantiated track object, declared immediately above the Track class
-sim_track = Track()
+        return str(self.marker)
