@@ -585,7 +585,3 @@ class Milepost:
 
 # Instantiated track object, declared immediately above the Track class
 sim_track = Track()
-
-if __name__ == '__main__':
-    l = Loco('t', Track())
-    l.sim.start()
