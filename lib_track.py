@@ -28,10 +28,6 @@ TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
 TRACK_TIMEOUT = int(config.get('track', 'component_timeout'))
 
-START_DIR = config.get('locomotive', 'start_direction')
-START_MP = float(config.get('locomotive', 'start_milepost'))
-START_SPEED = float(config.get('locomotive', 'start_speed'))
-
 MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
@@ -233,16 +229,10 @@ class Loco(TrackDevice):
 
                 self.heading = compass_bearing 
 
-        # Set location and movement params as needed
+        # Start of the locomotive simulator - Simulates movement and messaging.
         self.makeup_dist = 0
-        self.milepost = self.track.get_milepost_at(START_MP)
-        if not self.milepost:
-            raise ValueError('No milepost exists at the given start milepost')
-        
-        if not self.speed:
-            self.speed = START_SPEED
-        if not self.direction:
-            self.direction = START_DIR
+        if not self.speed or self.direction or self.milepost:
+            raise ValueError('Cannot simulate an unintialized Locomotive.')
         
         while self.sim.running:
             # Sleep for specified interval

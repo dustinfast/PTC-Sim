@@ -25,11 +25,6 @@ max_msg_size = 1024                 ; Max allowed EMP message size, in bytes
 msg_interval = 5                    ; Status message send interval, in seconds
 network_timeout = 2                 ; Socket timeout, in seconds
 
-[locomotive]
-start_direction = increasing        ; Either 'increasing' or 'decreasing'
-start_milepost = 2.0                ; Initial loco milepost
-start_speed = 10.0                  ; Initial speed of loco
-
 [logging]
 level = 10                          ; 10 = DEBUG, 20 = INFO, 30 = WARN
 num_files = 1                       ; Max number of rotating logfiles
