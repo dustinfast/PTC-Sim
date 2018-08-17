@@ -128,7 +128,8 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 * py3  
 * PTC-Sim
 * TrackCircuits - does not allow switch change when track * occupied. Aids coll avoidance.  
-* Switches (static, or random from static data) 
-* Instantiate locos/bases/waysides from JSON
+* Switches
 * bos does not quit start.py on CTRL + C, and only quits from sim_bos on CTRL+C: Turn off the CTRL + C msg. Or possibly redirect flask's stdout so exit kills it in sim_bos with a terminate()
+* sim_track does not quit gracefully
 * rename track_ to topology_
+* Fictional track model

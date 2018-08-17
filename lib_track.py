@@ -348,7 +348,7 @@ class Base(TrackDevice):
 
     def _sim(self):
         """ Manages a connection to loco for reprorting locos connected """
-        pass
+        raise NotImplementedError
 
 
 class Wayside(TrackDevice):
@@ -361,26 +361,29 @@ class Wayside(TrackDevice):
             self.milepost: (Milepost) The waysides location as a Milepost
             self.children: (dict) Child devices { CHILD_ID: CHILD_OBJECT }
         """
-        TrackDevice.__init__(self, ID, track, 'Wayside')
-        self.children = {}
+        raise NotImplementedError
+        # TrackDevice.__init__(self, ID, track, 'Wayside')
+        # self.children = {}
 
     def add_child(self, child_object):
         """ Given a child object (i.e. a switch), adds it to the wayside as a 
             device.
         """
-        self.children[child_object.ID] = child_object
+        raise NotImplementedError
+        # self.children[child_object.ID] = child_object
 
 
-class WayChild(TrackDevice):
-    """ An abstraction of a wayside child device. Ex: A Switch.
+class TrackSwitch(TrackDevice):
+    """ An abstraction of an on-track directional switch.
         Includes a realtime simulation of its activity/communications.
     """
 
     def __init__(self, ID, track, milepost):
         """
         """
-        TrackDevice.__init__(self, ID, track, 'Waychild')
-        self.status = None
+        raise NotImplementedError
+        # TrackDevice.__init__(self, ID, track, 'Switch')
+        # self.status = None
 
     def get_position(self):
         """ Returns a string represenation of the devices status.

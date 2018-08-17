@@ -9,6 +9,8 @@ from lib_app import REPL
 from lib_track import Track
 
 
+# TODO: Turn into a class with a start(), so it can be run from start.py
+
 if __name__ == '__main__':
     ##############################
     # Start the track simulation #
