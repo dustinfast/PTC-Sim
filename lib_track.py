@@ -35,9 +35,11 @@ MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
-# Module level logger
-g_logger = Logger('lib_track', True)
+# Track level logger
+track_logger = Logger('track', True)
 
+# Global instantiated track object, defined at the end of this file.
+sim_track = None 
 
 class Track(object):
     """ A representation of the track, including its mileposts and radio base 
@@ -65,6 +67,7 @@ class Track(object):
         self.mp_objects = {}
         self.mp_linear = []
         self.mp_linear_rev = []
+        # self.restrictions = {}  # { AUTH_ID: ( START_MILEPOST, END_MILEPOST }
 
         # Populate bases station (self.bases) from base_file json
         try:
@@ -83,7 +86,7 @@ class Track(object):
             except KeyError:
                 raise Exception('Missing key in ' + bases_file + '.')
 
-            self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
+            self.bases[baseID] = Base(baseID, self, coverage_start, coverage_end)
 
         # Populate milepost objects (self.mp_objects) from track_file json
         try:
@@ -282,7 +285,7 @@ class TrackDevice(object):
         demonstration purposes.
     """
 
-    def __init__(self, ID, milepost=None, track=None):
+    def __init__(self, ID, track, milepost=None):
         """ self.ID         : (str) The Device's unique identifier
             self.track      : (Track) Track object reference
             self.milepost   : (Milepost) The devices location, as a Milepost
@@ -330,7 +333,7 @@ class Loco(TrackDevice):
             self.baseID     : (int)
             self.bases_inrange: (list) Base objects within communication range
         """
-        TrackDevice.__init__(self, str(ID))
+        TrackDevice.__init__(self, str(ID), track)
         self.speed = None
         self.heading = None
         self.direction = None
@@ -344,7 +347,7 @@ class Loco(TrackDevice):
         self.conns = {'Radio1': Connection('Radio1', timeout=TRACK_TIMEOUT),
                       'Radio2': Connection('Radio2', timeout=TRACK_TIMEOUT)}
 
-        self.sim = TrackSim(str(self), self._sim)
+        self.sim = TrackSim(str(self), [self._sim])
 
     def update(self,
                speed=None,
@@ -427,7 +430,7 @@ class Loco(TrackDevice):
         if not self.direction:
             self.direction = START_DIR
         
-        while sim.running:
+        while self.sim.running:
             # Move, if at speed
             if self.speed > 0:
                 # Determine dist traveled since last iteration, including
@@ -443,7 +446,7 @@ class Loco(TrackDevice):
                 # Get next milepost and any makeup distance
                 new_mp, dist = self.track._get_next_mp(self.milepost, dist)
                 if not new_mp:
-                    g_logger.info(' End of track reached - Changing direction.')
+                    track_logger.info(' End of track reached - Changing direction.')
                     self.direction *= -1
                 else:
                     _set_heading(self.milepost, new_mp)
@@ -455,12 +458,12 @@ class Loco(TrackDevice):
                                           if b.covers_milepost(self.milepost)]
                     
                     # Reset existing radio connections
-                    for c in self.conns:
+                    for c in self.conns.values():
                         c.connected_to = None
 
                     # Assign in-range bases to loco radios, one base per radio
-                    num_matches = max(len(self.bases_inrange), len(self.conns))
-                    for i in range(num_matches):
+                    num_matches = min(len(self.bases_inrange), len(self.conns))
+                    for i in range(num_matches - 1):
                         self.conns[i].connected_to = self.bases_inrange[i]
 
             # Build status msg to send to BOS
@@ -475,13 +478,13 @@ class Loco(TrackDevice):
                                   payload))
 
             # Send status message over each active connection
-            conns = [c for c in self.conns if c.connected_to]
+            conns = [c for c in self.conns.values() if c.connected_to]
             for conn in conns:
                 try:
                     conn.send(status_msg)
-                    g_logger.info(str(self) + '-  Sent status msg.')
+                    track_logger.info(str(self) + '-  Sent status msg.')
                 except Exception as e:
-                    g_logger.error(str(self) + ' - Msg send failed: ' + str(e))
+                    track_logger.error(str(self) + ' - Msg send failed: ' + str(e))
 
             # Receive and process all incoming CAD message, if any
             while True:
@@ -491,15 +494,16 @@ class Loco(TrackDevice):
                 except Queue.Empty:
                     break  # Queue empty / all msgs fetched
                 except Exception as e:
-                    g_logger.error(str(self) + ' - Fetch connection error.')
+                    err_str = ' - Could not connect to broker.'
+                    track_logger.warn(str(self) + err_str)
 
-                # Process cad msg if msg is actually for this loco
-                if cad_msg.payload.get('ID') == self.ID:
+                # Process cad msg if msg and if actually for this loco
+                if cad_msg and cad_msg.payload.get('ID') == self.ID:
                     try:
                         # TODO: Update track restrictions
-                        g_logger.info(str(self) + ' - CAD msg processed.')
+                        track_logger.info(str(self) + ' - CAD msg processed.')
                     except:
-                        g_logger.error(str(self) + ' - Received invalid CAD msg.')
+                        track_logger.error(str(self) + ' - Received invalid CAD msg.')
 
                 sleep(MSG_INTERVAL)
 
@@ -508,12 +512,12 @@ class Base(TrackDevice):
     """ An abstraction of a 220 MHz base station, including it's coverage area.
         Includes a realtime simulation of its activity/communications.
     """
-    def __init__(self, ID, coverage_start, coverage_end):
+    def __init__(self, ID, track, coverage_start, coverage_end):
         """ self.ID = (String) The base station's unique identifier
             self.coverage_start = (float) Coverage start milepost
             self.coverage_end = (float) Coverage end milepost
         """
-        TrackDevice.__init__(self, ID)
+        TrackDevice.__init__(self, ID, track)
         self.cov_start = coverage_start
         self.cov_end = coverage_end
 
@@ -578,6 +582,10 @@ class Milepost:
          """
         return str(self.mp)
     
+
+# Instantiated track object, declared immediately above the Track class
+sim_track = Track()
+
 if __name__ == '__main__':
-    l = Loco('t', None)
+    l = Loco('t', Track())
     l.sim.start()

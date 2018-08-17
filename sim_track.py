@@ -12,8 +12,9 @@ from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
 from lib_app import REPL, Logger
-from lib_track import Track, Loco
+from lib_track import Loco, sim_track, track_logger
 from lib_msging import Client, Queue, Message
+
 
 # Init conf
 config = RawConfigParser()
@@ -28,15 +29,17 @@ MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
+# Module level logger
+g_logger = Logger('sim_track', True)
+
 
 class SimLoco(Loco):
     """ A simulated locomotive, including its messaging system. Travels up/down
         the track while sending status msgs and fetching cmd messages.
     """
-    def __init__(self, locoID=randint(1000, 9999)):
+    def __init__(self, locoID=randint(1000, 9999), track=sim_track):
         # Locomotive
-        Loco.__init__(self, str(locoID))
-        self.track = Track()
+        Loco.__init__(self, str(locoID), track)
         self.speed = START_SPEED
         self.direction = START_DIR
         self.disp_str = 'Loco ' + self.ID + ' -'  # For log output convenience
@@ -45,9 +48,6 @@ class SimLoco(Loco):
         self.milepost = self.track.get_milepost_at(START_MP)
         if not self.milepost:
             raise ValueError('No milepost exists at the given start milepost')
-
-        # Logger (defined on self.start)
-        self.log = None
 
         # Simulation 
         self.running = False
@@ -65,14 +65,11 @@ class SimLoco(Loco):
         """ Starts the simulator threads. 
         """
         if not self.running:
-            if not self.log:
-                self.log = Logger('log_loco', terminal)
-            self.log.info(self.disp_str + ' Simulation started.')
+            track_logger.info(self.disp_str + ' Simulation started.')
             
             self.running = True
             self.movement_thread.start()
             t = self.messaging_thread.start()
-            t.stop()
 
             if terminal and not self.terminal_started:
                 self.terminal_started = True
@@ -90,7 +87,7 @@ class SimLoco(Loco):
             # Redefine threads, to allow starting after stopping
             self.movement_thread = Thread(target=self._movement)
             self.messaging_thread = Thread(target=self._messaging)
-            self.log.info(self.disp_str + ' Simulation stopped.')
+            track_logger.info(self.disp_str + ' Simulation stopped.')
 
     def status(self):
         """ Prints the locomotive and simulator status to the console.
@@ -119,18 +116,18 @@ class SimLoco(Loco):
             # Send status message
             try:
                 self.msg_client.send_msg(status_msg)
-                self.log.info(self.disp_str + ' Sent status msg.')
+                track_logger.info(self.disp_str + ' Sent status msg.')
             except Exception as e:
-                self.log.error(self.disp_str + ' Status send failed: ' + str(e))
+                track_logger.error(self.disp_str + str(e))
 
             # Receive and process the next available cmd message, if any
             cmd_msg = None
             try:
                 cmd_msg = self.msg_client.fetch_next_msg(self.loco_emp)
             except Queue.Empty:
-                self.log.info(self.disp_str + ' No msg available to fetch.')
+                track_logger.info(self.disp_str + ' No msg available to fetch.')
             except Exception as e:
-                self.log.error(self.disp_str + ' Fetch failed - connection error.')
+                track_logger.error(self.disp_str + str(e))
             
             # Process msg, ensuring that its actually for this loco
             if cmd_msg and cmd_msg.payload.get('loco') == self.ID:
@@ -138,9 +135,9 @@ class SimLoco(Loco):
                     content = cmd_msg.payload
                     self.speed = content['speed']
                     self.direction = content['direction']
-                    self.log.info(self.disp_str + ' Cmd msg processed.')
+                    track_logger.info(self.disp_str + ' Cmd msg processed.')
                 except:
-                    self.log.error(self.disp_str +  'Received malformed cmd msg.')
+                    track_logger.error(self.disp_str +  'Received malformed cmd msg.')
 
             sleep(MSG_INTERVAL)
 
@@ -165,7 +162,7 @@ class SimLoco(Loco):
                 new_mp, dist = self.track._get_next_mp(self.milepost, dist)
                 if not new_mp:
                     info = ' End of track reached - Changing direction.'
-                    self.log.info(self.disp_str + info)
+                    track_logger.info(self.disp_str + info)
                     self.direction *= -1
                 else:
                     self._set_heading(self.milepost, new_mp)
