@@ -303,7 +303,7 @@ class Loco(TrackDevice):
             if not conns:
                 # TODO: Implement for all:
                 err_str = 'Skipping msg send/recv - No connection available.'
-                logger.warn(err_str)
+                track_logger.warn(err_str)
                 continue  # Note: we sleep at the top of this loop
             
             conn = conns[0]
