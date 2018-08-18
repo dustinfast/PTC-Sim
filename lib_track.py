@@ -38,8 +38,8 @@ LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 ##################
 
 class DeviceSim(object):
-    """ A collection of threads representing a device simulation with a start
-        and stop interface.
+    """ A collection of threads representing a device simulation. Exposes start
+        and stop interfaces.
         Assumes each thread implements self.running (a bool) as a poison pill.
     """
     def __init__(self, device, targets=[]):
@@ -134,10 +134,10 @@ class Loco(TrackDevice):
         self.conns = {'Radio1': Connection('Radio1', timeout=TRACK_TIMEOUT),
                       'Radio2': Connection('Radio2', timeout=TRACK_TIMEOUT)}
 
-        # self.sim = DeviceSim(self, [loco_movement])
         self.sim = DeviceSim(self, [loco_movement, loco_messaging])
         
         # Randomize (within reason) speed, heading, direction, bpp, and mp.
+        # TODO: Get these from last known postion
         self.speed = randint(0, 60)
         self.heading = randint(0, 359)
         self.direction = {0: 'increasing', 1: 'decreasing'}.get(randint(0, 1))
@@ -174,17 +174,23 @@ class Loco(TrackDevice):
         if bpp is not None:
             self.bpp = bpp
         if bases is not None:
+            if not bases:
+                [c.disconnect for c in self.conns]
+                return
+
             for conn_label, base_id in enumerate(bases):
                 try:
                     self.conns[conn_label] = self.track.bases[base_id]
                 except KeyError:
-                    err_str = ' - Invalid connection label or base ID in'
-                    err_str += ' bases parameter.'
+                    err_str = ' - Invalid connection or base ID in bases param.'
                     raise ValueError(self.name + err_str)
 
     def status_dict(self):
         """ Returns loco's current status as a dict of strings and nums.
         """
+        con_str = str({k: v.connected() for (k, v)
+                       in self.conns.iteritems()
+                       if v.connected()})
         return {'loco': self.ID,
                 'speed': self.speed,
                 'heading': self.heading,
@@ -192,7 +198,7 @@ class Loco(TrackDevice):
                 'milepost': self.milepost.marker,
                 'lat': self.milepost.lat,
                 'long': self.milepost.long,
-                'conns': {k for (k, v) in self.conns.iteritems() if v.conn_to}}
+                'conns': con_str}
                 
 
 class Base(TrackDevice):
@@ -509,24 +515,24 @@ def loco_messaging(loco):
         # Drop all out of range base connections, keep alive all existing
         # in-range connections, and build list of unused bases
         unused_inrange = loco.bases_inrange
-        curr_conns = [c for c in loco.conns.values() if c.conn_to]
+        curr_conns = [c for c in loco.conns.values() if c.connected()]
         for conn in curr_conns:
-            if conn.conn_to not in unused_inrange:
-                conn.conn_to = None
+            if conn.connected_to not in unused_inrange:
+                conn.disconnect()
             else:
                 conn.keep_alive()
-                unused_inrange.remove(conn.conn_to)
+                unused_inrange.remove(conn.connected_to)
 
         # Connect unused connections to bases in range (one conn/base)
         for conn in loco.conns.values():
             if not unused_inrange:
                 break
-            if not conn.conn_to:
-                conn.conn_to = unused_inrange[0]
-                unused_inrange.remove(conn.conn_to)
+            if not conn.connected():
+                conn.connect_to(unused_inrange[0])
+                unused_inrange.remove(conn.connected_to)
   
         # Ensure at least one active connection
-        conns = [c for c in loco.conns.values() if c.conn_to]
+        conns = [c for c in loco.conns.values() if c.connected()]
         if not conns:
             # TODO: Generalize w/ Connections.list of Connection objs. Incl members that do these things
             err_str = ' skipping msg send/recv - No active comms.'
@@ -548,10 +554,9 @@ def loco_messaging(loco):
         for conn in conns:
             try:
                 conn.send(status_msg)
-                info_str = ' -  Sent status msg over ' + conn.conn_to.ID
+                info_str = ' -  Sent status msg over ' + conn.connected_to.ID
                 track_log.info(loco.name + info_str)
             except Exception as e:
-                print(str(e))
                 track_log.warn(loco.name + ' send failed: ' + str(e))
                 
         # Fetch incoming cad msgs over active connections, breaking on success.
@@ -562,8 +567,6 @@ def loco_messaging(loco):
             except Queue.Empty:
                 break  # No msgs (or no more msgs) to receive.
             except Exception as e:
-                print(str(e))
-                # err_str = ' -  Fetch failed over ' + conn.conn_to.ID
                 track_log.warn(loco.name + ' fetch failed: ' + str(e))
                 continue  # Try the next connecion
 

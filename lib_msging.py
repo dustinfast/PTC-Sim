@@ -138,7 +138,6 @@ class Message(object):
 
         # Turn the payload into a python dictionary
         try:
-            print(payload)
             payload = eval(payload)
         except:
             raise Exception('Msg payload not of form { key: value, ... }')
@@ -148,16 +147,17 @@ class Message(object):
 
 class Connection(object):
     """ An abstraction of a communication interface. Ex: A 220 MHz radio
-        connection. Contains a messaging client and a thread that unsets
-        self.conn_to on timeout.
-        Note that no actual TCP/IP or EMP addressing occurs here.
+        connection. Contains a messaging client and a thread that disconnects
+        on timeout.
+        Note: This class is nominal and for sim purposes only at this point -
+        no actual TCP/IP or EMP addressing here.
     """
     def __init__(self, ID, timeout=0):
-        """ self.ID             : (str) The interfaces unique ID/address.
+        """ self.ID             : (str) The interfaces unique ID/address
             self.last_activity  : (datetime) Time of last activity
             self.client         : (Client) The interfaces messaging client
             self.Receiver       : (Receiver) Incoming TCP/IP connection watcher
-            self.conn_to        : (TrackDevice)
+            self.connected_to   : (TrackDevice) Active connection partner
 
             self._timeout_seconds: (int) Seconds of inactivity before timeout
             self._timeout_watcher: A thread. Updates self.active on timeout
@@ -168,7 +168,7 @@ class Connection(object):
         # TODO: self.transport_class. i.e. radio, etc.
 
         # Interface
-        self.conn_to = None
+        self.connected_to = None
         self.client = Client()
         self.receiver = Receiver()
 
@@ -204,18 +204,34 @@ class Connection(object):
         self.active = True
         self.last_activity = datetime.datetime.now()
 
+    def connect_to(self, obj):
+        """ Establishes the connection (nominally, at this point), to the
+            given TrackDevice.
+        """
+        self.connected_to = obj
+
+    def connected(self):
+        """ Returns True iff connection is connected.
+        """
+        if self.connected_to:
+            return True
+
+    def disconnect(self):
+        """ "Terminates" the nominal connection
+        """
+        self.connected_to = None
+
     def _timeoutwatcher(self):
         """ Resets the connections 'active' flag if timeout elapses
             Intended to run as a thread.
         """
         while True:
             if not self.last_activity:
-                self.conn_to = None
+                self.disconnect()
             elif self._timeout != 0:
                 delta = datetime.timedelta(seconds=self._timeout)
                 if delta < datetime.datetime.now() - self.last_activity:
-                    self.conn_to = None
-
+                    self.disconnect()
             sleep(REFRESH_TIME)
 
 

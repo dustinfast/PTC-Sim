@@ -63,6 +63,9 @@ class BOS(object):
         # Message watcher thread
         self.status_watcher_thread = Thread(target=self._statuswatcher)
 
+        # Web content updater thread
+        self.webupdate_thread = Thread(target=self._statuswatcher)
+
     def start(self, debug=False):
         """ Start the BOS. I.e., the status watcher thread and web interface.
         """
@@ -70,18 +73,20 @@ class BOS(object):
         
         self.running = True
         self.status_watcher_thread.start()
+        self.webupdate_thread.start()
 
         app.run(debug=debug)  # Web interface, blocks until killed from console
 
         # Do shutdown
-        print('\nBOS Quitting... Please wait.')
+        print('\nBOS Stopping... Please wait.')
         self.running = False
         self.status_watcher_thread.join(timeout=REFRESH_TIME)
+        self.webupdate_thread.join(timeout=REFRESH_TIME)
         bos_log.info('BOS stopped.')
 
     def _statuswatcher(self):
         """ The status message watcher thread - watches the broker for msgs
-            addressed to it and processes them.
+            addressed to it and processes them. See 
         """
         while self.running:
             # Fetch the next available msg, if any
@@ -90,10 +95,11 @@ class BOS(object):
                 msg = self.msg_client.fetch_next_msg(BOS_EMP)
             except Queue.Empty:
                 bos_log.info('Msg queue empty.')
-            except Exception as e:
+            except Exception:
                 bos_log.warn('Could not connect to broker.')
 
-            # Process loco status msg
+            # Process loco status msg. Msg should be of form given in 
+            # docs/app_messaging_spec.md, Msg ID 6000.
             if msg:
                 try:
                     locoID = msg.payload['loco']
@@ -101,8 +107,7 @@ class BOS(object):
                                         msg.payload['lat'],
                                         msg.payload['long'])
 
-                    baseIDs = eval(msg.payload['bases'])
-                    bases = [self.track.bases.get(b) for b in baseIDs]
+                    active_conns = eval(msg.payload['conns'])  # evals to dict
 
                     # Update the loco object
                     loco = self.track.locos.get(locoID)
@@ -113,14 +118,22 @@ class BOS(object):
                                 msg.payload['heading'],
                                 msg.payload['direction'],
                                 milepost,
-                                msg.payload['base'],
-                                bases)
+                                active_conns)
 
                     bos_log.info('Processed status msg for loco ' + loco.ID)
                 except KeyError as e:
                     bos_log.error('Malformed status msg: ' + str(msg.payload))
 
             sleep(REFRESH_TIME)
+        
+        def _webupdater(self):
+            """ The web updater thread. Parses the BOS's local track object
+                devices and updates the web output (Google Earth/KMLs,
+                DataTables, etc.)
+                accordingly.
+            """
+
+            # Update loco dislay
 
 
 if __name__ == '__main__':

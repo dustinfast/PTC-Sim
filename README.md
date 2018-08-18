@@ -78,33 +78,33 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 
 **6000**: Locomotive Status Message - Contains a single key/value data element of the form: 
 
-```python
+```
     { sent      : (int) Unix time,
       locoID    : (str) Unique locomotive ID,
       speed     : (float) Current speed,
       heading   : (float) Current Heading,
       direction : (str) 'increasing' or 'decreasing',
       milepost  : (float) Nearest milepost ID,
-      lat       : (float) Current GPS latitude in d.d.,
-      long      : (float) Current GPS longitude in d.d.,
+      lat       : (float) Current GPS latitude in decimal degrees
+      long      : (float) Current GPS longitude in decimal degrees
       bpp       : (float) Current Brake Pipe Pressure,
-      base      : (Integer) ID of current base station,
+      conns     : (str) Key/Value pairs string of the form { CONNECTION_LABEL: BASEID } 
       bases     : (list) All receiving base station IDs
      }
 ```
 
 **6001**: Wayside Status Msgs - Contains a single key/value data element of the form:
 
-```python
+```
     { sent      : (int) Unix time,
       ID        : (str) Unique wayside ID,
-      Children  : (str) Key/value string of the form { ID: Status }
+      Children  : (str) Key/value pairs string of the form { ID: Status }
     }
 ```
 
 **6002**: CAD to Locomotive Message - Contains a single key/value data element of the form:
 
-```python
+```
     { sent      : (int) Unix time,
       ID        : (str) Intended recipient ID,
       Restrict  : (list) A list of restricted milepost ranges, as points
@@ -128,6 +128,7 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 * Move appname to conf and use PTC-Sim
 * Generalize sim_track, sim_loco, sim_bos, and DeviceSim classes into Threader
 * Seperate sim functions from device classes, then remove track param from TrackDevice
+* TrackDevice.err(str)
 
 * PEP8 file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members  
