@@ -111,30 +111,31 @@ class Loco(TrackDevice):
     """
     def __init__(self, ID, track):
         """ self.ID         : (str) The Locomotives's unique identifier
-            self.speed      : (float)
-            self.heading    : (float)
+            self.track      : (Track) Track object ref
+            self.speed      : (float) Current speed
+            self.heading    : (float) Current compass bearing
             self.direction  : (str) Either 'increasing' or 'decreasing'
             self.milepost   : (Milepost) Current location, as a Milepost
             self.bpp        : (float) Brake pipe pressure. Affects braking.
-            self.baseID     : (int)
             self.bases_inrange: (list) Base objects within communication range
         """
         TrackDevice.__init__(self, str(ID), 'Loco')
+        self.emp_addr = LOCO_EMP_PREFIX + self.ID
         self.track = track
+
         self.speed = None
         self.heading = None
         self.direction = None
         self.milepost = None
         self.bpp = None
-
-        self.baseID = None
         self.bases_inrange = []
-        self.emp_addr = LOCO_EMP_PREFIX + self.ID
+        self.bases = []
 
         self.conns = {'Radio1': Connection('Radio1', timeout=TRACK_TIMEOUT),
                       'Radio2': Connection('Radio2', timeout=TRACK_TIMEOUT)}
 
-        self.sim = DeviceSim(self, [loco_movement, loco_messaging])
+        self.sim = DeviceSim(self, [loco_movement])
+        # self.sim = DeviceSim(self, [loco_movement, loco_messaging])
         
         # Randomize (within reason) speed, heading, direction, bpp, and mp.
         self.speed = randint(0, 60)
@@ -153,15 +154,14 @@ class Loco(TrackDevice):
                direction=None,
                milepost=None,
                bpp=None,
-               baseID=None,
-               bases_inrange=None):
-        """ speed: A float
-            heading: A float
-            direction: Either 'increasing', or 'decreasing'
-            milepost: A Milepost object instance
-            bpp: A float
-            baseID: An int
-            bases_inrange: A list of Base object instances
+               bases=None):
+        """ speed: A float, locos current speed.
+            heading: A float, locos current compass bearing.
+            direction: Either 'increasing', or 'decreasing'.
+            milepost: A Milepost denoting Locos current location.
+            bpp: A float, denoting current brake pipe pressure.
+            bases: A dict denoting current base connections. Is of the 
+                   format: { ConnectionLabel: base_ID }
         """
         if speed is not None:
             self.speed = speed
@@ -173,10 +173,14 @@ class Loco(TrackDevice):
             self.milepost = milepost
         if bpp is not None:
             self.bpp = bpp
-        if baseID is not None:
-            self.baseID = baseID
-        if self.bases_inrange is not None:
-            self.bases_inrange = bases_inrange
+        if bases is not None:
+            for conn_label, base_id in enumerate(bases):
+                try:
+                    self.conns[conn_label] = self.track.bases[base_id]
+                except KeyError:
+                    err_str = ' - Invalid connection label or base ID in'
+                    err_str += ' bases parameter.'
+                    raise ValueError(self.name + err_str)
 
     def status_dict(self):
         """ Returns loco's current status as a dict of strings and nums.
@@ -188,8 +192,7 @@ class Loco(TrackDevice):
                 'milepost': self.milepost.marker,
                 'lat': self.milepost.lat,
                 'long': self.milepost.long,
-                'base': self.baseID,
-                'bases': str([b.ID for b in self.bases_inrange])}
+                'conns': {k: v for (k, v) in self.conns.iteritems() if v.conn_to}}
 
 
 class Base(TrackDevice):
@@ -298,7 +301,7 @@ class Track(object):
 
         for base in bases:
             try:
-                baseID = base['id']
+                base_id = base['id']
                 coverage_start = float(base['coverage'][0])
                 coverage_end = float(base['coverage'][1])
             except ValueError:
@@ -306,7 +309,7 @@ class Track(object):
             except KeyError:
                 raise Exception('Malformed ' + bases_file + ': Key Error.')
 
-            self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
+            self.bases[base_id] = Base(base_id, coverage_start, coverage_end)
 
         # Populate milepost objects (self.mileposts) from track_file
         try:
@@ -435,7 +438,8 @@ class Milepost:
 ##############################
 
 def loco_movement(loco):
-    """ Real-time simulation of a locomotive's on-track movement.
+    """ Real-time simulation of a locomotive's on-track movement. Also
+        determines base stations in range of locos current position.
     """
     def _brake():
         """ Apply the adaptive braking algorithm.
@@ -459,12 +463,9 @@ def loco_movement(loco):
 
             loco.heading = compass_bearing
 
-    #######################################
-    # Start of the locomotive simulator - #
-    # Simulates movement and messaging.   #
-    #######################################
+    # Start of locomotive simulator
     makeup_dist = 0
-    if not loco.speed or not loco.direction or not loco.milepost:
+    if not loco.direction or not loco.milepost or loco.speed is None:
         raise ValueError('Cannot simulate an unintialized Locomotive.')
 
     while loco.sim.running:
@@ -497,44 +498,41 @@ def loco_movement(loco):
                 loco.bases_inrange = [b for b in loco.track.bases.values()
                                       if b.covers_milepost(loco.milepost)]
 
-                # Reset existing radio connections
-                for c in loco.conns.values():
-                    c.connected_to = None
-
-                if loco.bases_inrange:
-                    # Assign in-range bases to loco conns - one base/conn
-                    num_matches = min(
-                        len(loco.bases_inrange), len(loco.conns))
-                    for i in range(num_matches - 1):
-                        print i
-                        print(loco.bases_inrange)
-                        print('---')
-                        print(loco.conns)
-                        loco.conns[i].connected_to = loco.bases_inrange[i]
-
-                    # Arbitrarily choose the 0th base as the current base
-                    # TODO: This should really be a base obj
-                    loco.baseID = loco.bases_inrange[0]
-                else:
-                    err_str = ' skipping msg send/recv - No bases in range.'
-                    track_log.warn(loco.name + err_str)
-
 
 def loco_messaging(loco):
-    """ Real-time simulation of a locomotives's messaging system
+    """ Real-time simulation of a locomotives's messaging system. Maintains
+        connections to bases in range of loco position and sends/fetches msgs.
     """
     while loco.sim.running:
         sleep(MSG_INTERVAL)  # Sleep for specified interval
 
-        # Ensure an active connection
-        conns = [c for c in loco.conns.values() if c.connected_to]
+        # Drop all out of range base connections, keep alive all existing
+        # in-range connections, and note other possible bases to connect to.
+        temp_inrange = loco.bases_inrange
+        curr_conns = [c for c in loco.conns.values() if c.conn_to]
+        for conn in curr_conns:
+            if conn.conn_to not in temp_inrange:
+                conn.conn_to = None
+            else:
+                conn.keep_alive()
+                temp_inrange.remove(conn.conn_to)
+
+        # Connect unused connections and unused bases in range (one conn/base)
+        unconnected = [c for c in loco.conns.values() if not c.conn_to]
+        while unconnected and temp_inrange:
+            unconnected[0].conn_to = temp_inrange[0]
+            temp_inrange.remove(temp_inrange[0])
+            unconnected = [c for c in loco.conns.values() if not c.conn_to]
+            # unconnected.remove(unconnected[0])
+            # temp_inrange.remove(temp_inrange[0])
+            
+        # Ensure at least one active connection
+        conns = [c for c in loco.conns.values() if c.conn_to]
         if not conns:
-            # TODO: Implement for all:
+            # TODO: Generalize w/ Connections.list of Connection objs. Incl members that do these things
             err_str = ' skipping msg send/recv - No connection available.'
             track_log.warn(loco.name + err_str)
-            continue  # Note: we sleep at the top of this loop
-
-        base_conn = conns[0]
+            continue  # Try again next iteration
 
         # Build status msg to send to BOS
         msg_type = 6000
@@ -547,24 +545,26 @@ def loco_messaging(loco):
                               msg_dest,
                               payload))
 
-        # Do status msg send
-        try:
-            base_conn.send(status_msg)
-            track_log.info(loco.name + '-  Sent status msg.')
-        except Exception as e:
-            track_log.error(loco.name + ' - Msg send failed: ' + str(e))
+        # Send status msg over active connections, breaking on first success.
+        for conn in conns:
+            try:
+                conn.send(status_msg)
+                info_str = ' -  Sent status msg over ' + conn.conn_to.name
+                track_log.info(loco.name + info_str)
+            except Exception as e:
+                err_str = ' -  Msg send failed over ' + conn.conn_to.name
+                track_log.error(loco.name + err_str + ': ' + str(e))
 
-        # Receive all incoming CAD message, if any.
+        # Receive all incoming CAD messages, if any.
         while True:
             cad_msg = None
             try:
-                cad_msg = base_conn.fetch_next_msg(loco.emp_addr)
+                cad_msg = conn.fetch(loco.emp_addr)
             except Queue.Empty:
-                break  # Queue is empty
+                break  # No msgs (or no more msgs) to receive.
             except Exception as e:
-                # err_str = ' - Could not connect to broker.'
-                track_log.warn(loco.name + str(e))
-                break
+                err_str = ' -  Fetch failed over ' + conn.conn_to.name
+                track_log.error(loco.name + err_str + ': ' + str(e))
 
             # Process cad msg, if msg and if actually for this loco
             if cad_msg and cad_msg.payload.get('ID') == loco.ID:
@@ -573,6 +573,10 @@ def loco_messaging(loco):
                     track_log.info(loco.name + ' - CAD msg processed.')
                 except:
                     track_log.error(loco.name + ' - Received invalid CAD msg.')
+        else:
+            err_str = 'Active connections exists, but msg fetch/recv failed.'
+            track_log.warn(loco.name + err_str)
+
 
 def base_messaging(self):
     """ Real-time simulation of a base station's messaging system

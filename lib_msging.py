@@ -147,16 +147,16 @@ class Message(object):
 
 class Connection(object):
     """ An abstraction of a communication interface. Ex: A 220 MHz radio
-        connection. Contains a messaging client and a thread 
-        that unsets self.active on timeout.
+        connection. Contains a messaging client and a thread that unsets
+        self.conn_to on timeout.
+        Note that no actual TCP/IP or EMP addressing occurs here.
     """
-
     def __init__(self, ID, timeout=0):
         """ self.ID             : (str) The interfaces unique ID/address.
             self.last_activity  : (datetime) Time of last activity
             self.client         : (Client) The interfaces messaging client
             self.Receiver       : (Receiver) Incoming TCP/IP connection watcher
-            self.connected_to   : (TrackDevice)            
+            self.conn_to        : (TrackDevice)
 
             self._timeout_seconds: (int) Seconds of inactivity before timeout
             self._timeout_watcher: A thread. Updates self.active on timeout
@@ -164,9 +164,10 @@ class Connection(object):
         # Properties
         self.ID = ID
         self.last_activity = None
-        # self.transport_class = None
+        # TODO: self.transport_class. i.e. radio, etc.
 
         # Interface
+        self.conn_to = None
         self.client = Client()
         self.receiver = Receiver()
 
@@ -208,11 +209,11 @@ class Connection(object):
         """
         while True:
             if not self.last_activity:
-                self.connected_to = None
+                self.conn_to = None
             elif self._timeout != 0:
                 delta = datetime.timedelta(seconds=self._timeout)
                 if delta < datetime.datetime.now() - self.last_activity:
-                    self.connected_to = None
+                    self.conn_to = None
 
             sleep(REFRESH_TIME)
 

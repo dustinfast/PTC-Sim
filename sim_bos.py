@@ -41,9 +41,9 @@ while True:
 
 # TODO: Move into BOS class (or it's own class)
 # Flask defs
-web = Flask(__name__)
+app = Flask(__name__)
 
-@web.route('/ptc_sim')
+@app.route('/ptc_sim')
 def home():
     return render_template('home.html')
 
@@ -71,7 +71,7 @@ class BOS(object):
         self.running = True
         self.status_watcher_thread.start()
 
-        web.run(debug=debug)  # Web interface, blocks until killed from console
+        app.run(debug=debug)  # Web interface, blocks until killed from console
 
         # Do shutdown
         print('\nBOS Quitting... Please wait.')
