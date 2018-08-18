@@ -133,3 +133,4 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 * sim_track does not quit gracefully
 * rename track_ to topology_
 * Fictional track model
+* Better exception bubbling from start.py

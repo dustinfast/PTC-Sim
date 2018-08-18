@@ -30,13 +30,14 @@ if __name__ == '__main__':
             
             uinput = raw_input('>>')
             if uinput == 'exit':
-                print('Quitting...')
                 break
 
     except Exception as e:
         print(e)
 
     # Stop each device's sim
+    print('Stopping sims...')
     for l in ptctrack.locos.values():
         l.sim.stop()
+        print('done')
     

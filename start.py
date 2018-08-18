@@ -26,28 +26,26 @@ class _process(multiprocessing.Process):
         """
         expr = 'from ' + self.module_name
         expr += ' import ' + self.class_name + ' as mod'
-        
-        try:
-            exec(expr)
-            mod().start()
-        except:
-            raise ValueError('Invalid module: ', self.module_name)
+        print(expr)
+        exec(expr)
+
+        mod().start()
+
 
 
 if __name__ == '__main__':
     """ Start the PTC Sim application, with each component existing in a
         seperate process.
     """
-    # Start the application componenets
-    bos_proc = _process('sim_bos', 'BOS')
-    broker_proc = _process('sim_broker', 'Broker')
-    loco_proc = _process('sim_track', 'SimLoco')
+    # Init a process for each top-level module and start them.
+    sim_procs = []
+    sim_procs.append(_process('sim_bos', 'BOS'))
+    sim_procs.append(_process('sim_broker', 'Broker'))
+    sim_procs.append(_process('sim_track', 'TrackSim'))
 
-    bos_proc.start()
-    broker_proc.start()
-    loco_proc.start()
+    [p.start() for p in sim_procs]
 
-    sleep(.5)  # Allow enough time for all to start
+    sleep(.5)  # Prevent console output overlap by allowing procs time to start.
 
     print('-- PTC Sim: A Positive Train Control Demonstration')
     print('-- Navigate to https://localhost:5000/ptc_sim for web interface.')
@@ -60,15 +58,14 @@ if __name__ == '__main__':
             uinput = None
 
         if uinput == 'exit':
-            loco_proc.terminate()
-            broker_proc.terminate()
-            bos_proc.terminate()
+            print('Stopping processes...')
+            [p.terminate() for p in sim_procs]
+
             try:
-                loco_proc.join(timeout=5)
-                broker_proc.join(timeout=5)
-                bos_proc.join(timeout=5)
+                [p.join(timeout=5) for p in sim_procs]
+
             except:
-                e = 'Timed out wating for one or more subprocess to close.'
+                e = 'Timed out wating for one or more subprocesses to close.'
                 raise Exception(e)
             break
         else:

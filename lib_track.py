@@ -231,7 +231,7 @@ class Loco(TrackDevice):
 
         # Start of the locomotive simulator - Simulates movement and messaging.
         self.makeup_dist = 0
-        if not self.speed or self.direction or self.milepost:
+        if not self.speed or not self.direction or not self.milepost:
             raise ValueError('Cannot simulate an unintialized Locomotive.')
         
         while self.sim.running:
