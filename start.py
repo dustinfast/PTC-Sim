@@ -34,7 +34,7 @@ class _process(multiprocessing.Process):
 
 
 if __name__ == '__main__':
-    """ Start the PTC Sim application, with each component existing in a
+    """ Start the PTC-Sim application, with each component existing in a
         seperate process.
     """
     # Init a process for each top-level module and start them.
@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     sleep(.5)  # Prevent console output overlap by allowing procs time to start.
 
-    print('-- PTC Sim: A Positive Train Control Demonstration')
+    print('-- PTC-Sim: A Positive Train Control Demonstration')
     print('-- Navigate to https://localhost:5000/ptc_sim for web interface.')
     print("-- Type 'exit' to quit.")
 

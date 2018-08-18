@@ -1,4 +1,4 @@
-""" PTC Sim's collection of railroad component classes, including the track, 
+""" PTC-Sim's collection of railroad component classes, including the track, 
     locomotives, base stations, etc., and their specific simulation threads.
 
 
@@ -41,7 +41,7 @@ track_logger = Logger('log_track', True)
 ##################
 
 class DeviceSim(object):
-    """ A collectoin of threads representing a device simulation with a start
+    """ A collection of threads representing a device simulation with a start
         and stop interface.
         Assumes each thread implements self.running (a bool) as a poison pill.
     """

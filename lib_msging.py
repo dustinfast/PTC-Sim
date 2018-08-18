@@ -1,4 +1,4 @@
-""" PTC Sim's messaging library for sending and receiving Edge Message 
+""" PTC-Sim's messaging library for sending and receiving Edge Message 
     Protocol(EMP) messages over TCP/IP. See README.md for implementation
     specific information.
 
@@ -14,12 +14,13 @@ from threading import Thread
 from struct import pack, unpack
 from ConfigParser import RawConfigParser
 
+from lib_app import REFRESH_TIME
+
 # Init conf
 config = RawConfigParser()
 config.read('config.dat')
 
-# Import conf data
-REFRESH_TIME = int(config.get('application', 'refresh_time'))
+# Import messaging conf data
 BROKER = config.get('messaging', 'broker')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))

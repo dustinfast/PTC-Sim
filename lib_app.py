@@ -1,4 +1,4 @@
-""" PTC Sim's library of common "app level" classes.
+""" PTC-Sim's library of common "app level" classes.
 
     Author: Dustin Fast, 2018
 """
@@ -17,8 +17,12 @@ LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_FILES = config.get('logging', 'num_files')
 LOG_SIZE = int(config.get('logging', 'max_file_size')) 
 
+# Module level loggers, Declared here and defined at the end of this file.
+track_log = None
+broker_log = None
+bos_log = None
 
-class REPL(object):
+class Prompt(object):
     """ A dynamic Read-Eval-Print-Loop. I.e., a command line interface.
         Contains two predefined commands: help, and exit. Additional cmds may
         be added with add_cmd(). These additional cmds all operate on the 
@@ -26,10 +30,10 @@ class REPL(object):
     """
 
     def __init__(self, context, prompt='>>', welcome_msg=None):
-        """ Instantiates an REPL object.
+        """ Instantiates an Prompt object.
             context: The object all commands operate on.
-            prompt: The REPL prompt.
-            welcome: String to display on REPL start.
+            prompt: The Prompt prompt.
+            welcome: String to display on Prompt start.
         """
         self.running = False  # kill flag
         self.context = context
@@ -40,7 +44,7 @@ class REPL(object):
                          'exit': 'self._exit()'}
 
     def start(self):
-        """ Starts the REPL.
+        """ Starts the Prompt.
         """
         self.running = True
         if self.welcome_msg:
@@ -62,16 +66,16 @@ class REPL(object):
         """ Returns an instance of self with predefined start cmd, stop cmd, 
             and exit conditions.
             Assumes context has start() and stop() members.
-            After calling get_repl, start the repl with REPL.start()
+            After calling get_repl, start the repl with Prompt.start()
         """
-        repl = REPL(self.context, '')
+        repl = Prompt(self.context, '')
         repl.add_cmd('start', 'start()')
         repl.add_cmd('stop', 'stop()')
         repl.set_exitcmd('stop')
         return repl
 
     def add_cmd(self, cmd_txt, expression):
-        """ Makes a command available via the REPL. Accepts:
+        """ Makes a command available via the Prompt. Accepts:
                 cmd_txt: Txt cmd entered by the user.
                 expression: A well-formed python statment. Ex: 'print('Hello)'
         """
@@ -133,3 +137,9 @@ class Logger(logging.Logger):
             console_handler.setLevel(level + 10)
             console_handler.setFormatter(console_fmt)
             self.addHandler(console_handler)
+
+
+# Module level loggers, Defined here and declared at the top of this file
+track_log = Logger('log_track', True)
+broker_log = Logger('log_broker', True)
+bos_log = Logger('log_bos', True)

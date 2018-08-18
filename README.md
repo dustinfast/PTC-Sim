@@ -1,4 +1,4 @@
-# PTC Sim - Positive Train Control Simulator
+# PTC-Sim - Positive Train Control Simulator
 
 This application is a demonstration of a Positive Train Control (PTC) control applied to a simulated Track with virtual locomotives and communications infrastructure such as 220 MHz radio base-stations and messaging subsystem. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's locomotive trackingsSolution. Tt contains no proprietary code, and is free under the MIT license.
 
@@ -15,7 +15,7 @@ PTC was mandated by congress to prevent:
   
 Interoperability between railroads is also required, asdefined by the Federal Railroad Administration's Interoperable Train Control (ITC) standard.
 
-PTC Sim implements broker-assisted communication between simulated track devices (including locomotives) and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current component status and location is also displayed.
+PTC-Sim implements broker-assisted communication between simulated track devices (including locomotives) and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current component status and location is also displayed.
 
 ## Applicaton Structure
 
@@ -127,7 +127,7 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 * Fictional track model
 * Better exception bubbling from start.py
 * Move appname to conf and use PTC-Sim
-
+* Generalize sim_track, sim_loco, sim_bos, and DeviceSim classes into Threader
 
 * PEP8 file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members  
@@ -135,3 +135,4 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 * py3  
 * TrackCircuits - does not allow switch change when track * occupied. Aids coll avoidance.  
 * bos does not quit start.py on CTRL + C, and only quits from sim_bos on CTRL+C: Turn off the CTRL + C msg. Or possibly redirect flask's stdout so exit kills it in sim_bos with a terminate()
+  Use multiprocessing instead of threading where reasonable

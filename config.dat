@@ -1,8 +1,9 @@
-; config.dat - PTC Sim's global configuration file.
+; config.dat - PTC-Sim's global configuration file.
 ; 
 ; Author: Dustin Fast, 2018
 
 [application]
+app_name = PTC-Sim                  ; Application web and terminal display name
 refresh_time = 5                    ; Thread & loop sleep seconds between iterations
                                     
 [track]

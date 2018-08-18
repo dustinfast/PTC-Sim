@@ -8,8 +8,9 @@
 from time import sleep
 from threading import Thread
 
-from lib_app import REPL, REFRESH_TIME
-from lib_track import Track, track_logger
+from lib_app import Prompt, track_log
+from lib_app import REFRESH_TIME
+from lib_track import Track
 
 
 class TrackSim(object):
@@ -26,7 +27,7 @@ class TrackSim(object):
         """ Start the message broker threads
         """
         if not self.running:
-            track_logger.info('Track Sim Starting...')
+            track_log.info('Track Sim Starting...')
             self.running = True
             self.tracksim_thread.start()
 
@@ -42,13 +43,13 @@ class TrackSim(object):
             # Redefine thread, to allow starting after stopping
             self.tracksim_thread = Thread(target=self._tracksim)
 
-            track_logger.info('Track Sim stopped.')
+            track_log.info('Track Sim stopped.')
 
     def _tracksim(self):
         """ The Track simulator - Simulates locomotives
             traveling on a track. # TODO: Implement bases, switches, etc.
         """
-        # Instantiate Track object - It contains all track devices and locos
+        # Instantiate the Track - It contains all devices and locos on it.
         ptctrack = Track()
 
         # Start each track componenet-device's simulation thread
@@ -63,7 +64,7 @@ class TrackSim(object):
                 status_str = 'Loco ' + l.ID + ': '
                 status_str += str(l.speed) + ' @ ' + str(l.milepost.marker)
                 status_str += '. Bases in range: ' + str(l.bases_inrange)
-                track_logger.info(status_str)
+                track_log.info(status_str)
 
             sleep(REFRESH_TIME)
 
@@ -74,12 +75,8 @@ class TrackSim(object):
 
 
 if __name__ == '__main__':
-    # Start the track simulation in REPL/Terminal mode
-    print("-- PTC Sim: Track Simulator - Type 'exit' to quit --\n")
+    # Start the track simulation in Prompt/Terminal mode
+    print("-- PTC-Sim: Track Simulator - Type 'exit' to quit --\n")
     sim = TrackSim()
     sim.start()    
-    REPL(sim).get_repl().start()
-    
-
-
-    
+    Prompt(sim).get_repl().start()  # Blocks until 'exit' cmd received.
