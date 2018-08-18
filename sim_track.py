@@ -35,7 +35,7 @@ class TrackSim(object):
             threads. 
         """
         if self.running:
-            # Signal stop to threads and join
+            # Signal stop to thread and join
             self.running = False
             self.tracksim_thread.join(timeout=REFRESH_TIME)
 
@@ -45,24 +45,25 @@ class TrackSim(object):
             track_logger.info('Track Sim stopped.')
 
     def _tracksim(self):
-        """ The Track simulator - Currently only simulates locomotives
-            traveling on a track.
+        """ The Track simulator - Simulates locomotives
+            traveling on a track. # TODO: Implement bases, switches, etc.
         """
+        # Instantiate Track object - It contains all track devices and locos
         ptctrack = Track()
+
+        # Start each track componenet-device's simulation thread
+        # These devices exists "on" the track and simulate their own 
+        # operation.
+        for l in ptctrack.locos.values():
+            l.sim.start()
         
+        # While not thread 
         while self.running:
-            try:
-                # Start each track componenet-device's simulation thread
-                # These devices exists "on" the track and simulate their own 
-                # operation.
-                for l in ptctrack.locos.values():
-                    l.sim.start()
-
-                for l in ptctrack.locos.values():
-                        print(str(l.speed) + ' @ ' + str(l.milepost.marker))
-
-            except Exception as e:
-                print(e)
+            for l in ptctrack.locos.values():
+                status_str = 'Loco ' + l.ID + ': '
+                status_str += str(l.speed) + ' @ ' + str(l.milepost.marker)
+                status_str += '. Bases in range: ' + str(l.bases_inrange)
+                track_logger.info(status_str)
 
             sleep(REFRESH_TIME)
 

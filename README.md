@@ -121,16 +121,17 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 ## # TODO
 
 * Web: logtail/console output, broker queue sizes  
-* PEP8 file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
-* Privatize necessary members and do validation on public members  
-* readme screenshots and high-level images  
 * Catch specific socket conn errors w/ except socket.error  
-* py3  
-* TrackCircuits - does not allow switch change when track * occupied. Aids coll avoidance.  
-* Switches
-* bos does not quit start.py on CTRL + C, and only quits from sim_bos on CTRL+C: Turn off the CTRL + C msg. Or possibly redirect flask's stdout so exit kills it in sim_bos with a terminate()
 * sim_track does not quit gracefully
 * rename track_ to topology_
 * Fictional track model
 * Better exception bubbling from start.py
 * Move appname to conf and use PTC-Sim
+
+
+* PEP8 file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
+* Privatize necessary members and do validation on public members  
+* readme screenshots and high-level images  
+* py3  
+* TrackCircuits - does not allow switch change when track * occupied. Aids coll avoidance.  
+* bos does not quit start.py on CTRL + C, and only quits from sim_bos on CTRL+C: Turn off the CTRL + C msg. Or possibly redirect flask's stdout so exit kills it in sim_bos with a terminate()
