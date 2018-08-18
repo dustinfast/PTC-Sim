@@ -12,7 +12,7 @@ from threading import Thread
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
-from lib_app import Logger
+from lib_app import track_log
 from lib_msging import Connection, Queue, Message
 
 # Init conf
@@ -32,9 +32,6 @@ MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
-# Track level logger
-track_logger = Logger('log_track', True)
-
 
 ##################
 # Parent Classes #
@@ -45,18 +42,20 @@ class DeviceSim(object):
         and stop interface.
         Assumes each thread implements self.running (a bool) as a poison pill.
     """
-    def __init__(self, label, targets=[]):
+    def __init__(self, device, targets=[]):
         self.running = False  # Thread kill signal
         self._thread_targets = targets
         self._threads = []
-        self.label = label
+        self.device = device
+        self.label = device.name
         
     def start(self):
         """ Starts the simulation threads. 
         """
         if not self.running:
             self.running = True
-            self._threads = [Thread(target=t) for t in self._thread_targets]
+            self._threads = [Thread(target=t, args=[self.device]) 
+                             for t in self._thread_targets]
             [t.start() for t in self._threads]
 
     def stop(self):
@@ -74,18 +73,16 @@ class TrackDevice(object):
         real-time activity and communications simulation for testing and
         demonstration purposes.
     """
-    def __init__(self, ID, track, device_type, milepost=None):
+    def __init__(self, ID, device_type, milepost=None):
         """ self.ID         : (str) The Device's unique identifier
-            self.track      : (Track) Track object reference
             self.milepost   : (Milepost) The devices location, as a Milepost
             self.conns      : (list) Connection objects
             self.sim        : The device's simulation. Start w/self.sim.start()
         """
         self.ID = ID
         self.name = device_type + ' ' + self.ID
-        self.track = track
         self.milepost = milepost
-        self.conns = None
+        self.conns = {}
         self.sim = None
 
     def __str__(self):
@@ -102,11 +99,6 @@ class TrackDevice(object):
         """
         if [c for c in self.conns if c.active]:
             return True
-
-    def _sim(self):
-        """ Virtual function.
-        """
-        raise NotImplementedError
 
 
 #################
@@ -127,7 +119,8 @@ class Loco(TrackDevice):
             self.baseID     : (int)
             self.bases_inrange: (list) Base objects within communication range
         """
-        TrackDevice.__init__(self, str(ID), track, 'Loco')
+        TrackDevice.__init__(self, str(ID), 'Loco')
+        self.track = track
         self.speed = None
         self.heading = None
         self.direction = None
@@ -141,11 +134,18 @@ class Loco(TrackDevice):
         self.conns = {'Radio1': Connection('Radio1', timeout=TRACK_TIMEOUT),
                       'Radio2': Connection('Radio2', timeout=TRACK_TIMEOUT)}
 
-        simlabel = 'Loco ' + self.ID
-        self.sim = DeviceSim(simlabel, [self._sim])
+        self.sim = DeviceSim(self, [loco_movement, loco_messaging])
         
-        # Randomize speed, direction, etc., so everything is warm and fuzzy.
-        self._randomize_attributes()
+        # Randomize (within reason) speed, heading, direction, bpp, and mp.
+        self.speed = randint(0, 60)
+        self.heading = randint(0, 359)
+        self.direction = {0: 'increasing', 1: 'decreasing'}.get(randint(0, 1))
+        self.bpp = randint(0, 90)
+
+        if track.mileposts:
+            max_index = len(track.mileposts) - 1
+            self.milepost = track.mileposts.values()[
+                randint(0, max_index)]
 
     def update(self,
                speed=None,
@@ -191,159 +191,17 @@ class Loco(TrackDevice):
                 'base': self.baseID,
                 'bases': str([b.ID for b in self.bases_inrange])}
 
-    def _randomize_attributes(self):
-        """ Randomizes (within reason) speed, heading, direction, bpp, and mp.
-        """
-        self.speed = randint(0, 60)
-        self.heading = randint(0, 359)
-        self.direction = {0: 'increasing', 1: 'decreasing'}.get(randint(0, 1))
-        self.bpp = randint(0, 90)
-
-        if self.track.mileposts:
-            max_index = len(self.track.mileposts) - 1
-            self.milepost = self.track.mileposts.values()[randint(0, max_index)]
-
-    def _sim(self):
-        """ Simulates the locomotive messaging systems and its movement along
-            the track.
-        """
-        def _brake(self):
-            """ Apply the adaptive braking algorithm.
-            """
-            raise NotImplementedError
-
-        def _set_heading(prev_mp, curr_mp):
-                """ Sets loco heading based on current and prev lat/long
-                """
-                lat1 = radians(prev_mp.lat)
-                lat2 = radians(curr_mp.lat)
-
-                long_diff = radians(prev_mp.long - curr_mp.long)
-
-                a = cos(lat1) * sin(lat2)
-                b = (sin(lat1) * cos(lat2) * cos(long_diff))
-                x = sin(long_diff) * cos(lat2)
-                y = a - b
-                deg = degrees(atan2(x, y))
-                compass_bearing = (deg + 360) % 360
-
-                self.heading = compass_bearing 
-
-        # Start of the locomotive simulator - Simulates movement and messaging.
-        self.makeup_dist = 0
-        if not self.speed or not self.direction or not self.milepost:
-            raise ValueError('Cannot simulate an unintialized Locomotive.')
-        
-        while self.sim.running:
-            # Sleep for specified interval
-            sleep(MSG_INTERVAL)
-            
-            # Move, if at speed
-            if self.speed > 0:
-                # Determine dist traveled since last iteration, including
-                # makeup distance, if any.
-                hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
-                dist = self.speed * hours * 1.0  # distance = speed * time
-                dist += self.makeup_dist
-
-                # Set sign of dist based on dir of travel
-                if self.direction == 'decreasing':
-                    dist *= -1
-
-                # Get next milepost and any makeup distance
-                new_mp, dist = self.track._get_next_mp(self.milepost, dist)
-                if not new_mp:
-                    err_str = self.name + '- At end of track. Reversing.'
-                    track_logger.info(err_str)
-                    self.direction *= -1
-                else:
-                    _set_heading(self.milepost, new_mp)
-                    self.milepost = new_mp
-                    self.makeup_dist = dist
-
-                    # Determine base stations in range of current position
-                    self.bases_inrange = [b for b in self.track.bases.values()
-                                          if b.covers_milepost(self.milepost)]
-                    
-                    # Reset existing radio connections
-                    for c in self.conns.values():
-                        c.connected_to = None
-
-                    if self.bases_inrange:
-                        # Assign in-range bases to loco conns - one base/conn
-                        # num_matches = min(len(self.bases_inrange), len(self.conns))
-                        # for i in range(num_matches - 1):
-                        #     print(self.conns)
-                        #     print(self.bases_inrange)
-                        #     self.conns[i].connected_to = self.bases_inrange[i]
-
-                        # Arbitrarily choose the 0th base as the current base
-                        # TODO: This should really be a base obj
-                        self.baseID = self.bases_inrange[0]
-
-            # Build status msg to send to BOS
-            msg_type = 6000
-            msg_source = self.emp_addr
-            msg_dest = BOS_EMP
-            payload = str(self.status_dict())
-
-            status_msg = Message((msg_type,
-                                  msg_source,
-                                  msg_dest,
-                                  payload))
-
-            # TODO: Locos need to establish a connection with one base and
-            # maintain it while in range
-
-            conns = [c for c in self.conns.values() if c.connected_to]
-
-            if not conns:
-                # TODO: Implement for all:
-                err_str = 'Skipping msg send/recv - No connection available.'
-                track_logger.warn(err_str)
-                continue  # Note: we sleep at the top of this loop
-            
-            conn = conns[0]
-
-            # Do status msg send
-            try:
-                conn.send(status_msg)
-                track_logger.info(self.name + '-  Sent status msg.')
-            except Exception as e:
-                track_logger.error(self.name + ' - Msg send failed: ' + str(e))
-
-            # Receive all incoming CAD message, if any
-            while True:
-                cad_msg = None
-                try:
-                    cad_msg = conn.fetch_next_msg(self.emp_addr)
-                except Queue.Empty:
-                    break  # Queue is empty
-                except Exception as e:
-                    # err_str = ' - Could not connect to broker.'
-                    track_logger.warn(self.name + str(e))
-                    break
-
-                # Process cad msg, if msg and if actually for this loco
-                if cad_msg and cad_msg.payload.get('ID') == self.ID:
-                    try:
-                        # TODO: Update track restrictions based on msg
-                        track_logger.info(self.name + ' - CAD msg processed.')
-                    except:
-                        track_logger.error(
-                            self.name + ' - Received invalid CAD msg.')
-
 
 class Base(TrackDevice):
     """ An abstraction of a 220 MHz base station, including it's coverage area.
         Includes a realtime simulation of its activity/communications.
     """
-    def __init__(self, ID, track, coverage_start, coverage_end):
+    def __init__(self, ID, coverage_start, coverage_end):
         """ self.ID = (String) The base station's unique identifier
             self.coverage_start = (float) Coverage start milepost
             self.coverage_end = (float) Coverage end milepost
         """
-        TrackDevice.__init__(self, ID, track, 'Base')
+        TrackDevice.__init__(self, ID, 'Base')
         self.cov_start = coverage_start
         self.cov_end = coverage_end
 
@@ -353,23 +211,19 @@ class Base(TrackDevice):
         """
         return milepost.marker >= self.cov_start and milepost.marker <= self.cov_end
 
-    def _sim(self):
-        """ Manages a connection to loco for reprorting locos connected """
-        raise NotImplementedError
-
 
 class Wayside(TrackDevice):
     """ An abstraction of a wayside. Includes a realtime simulation of its 
         activity/communications.
     """
 
-    def __init__(self, ID, track, milepost, children={}):
+    def __init__(self, ID, milepost, children={}):
         """ self.ID      : (str) The waysides unique ID/address
             self.milepost: (Milepost) The waysides location as a Milepost
             self.children: (dict) Child devices { CHILD_ID: CHILD_OBJECT }
         """
         raise NotImplementedError
-        # TrackDevice.__init__(self, ID, track, 'Wayside')
+        # TrackDevice.__init__(self, ID, 'Wayside')
         # self.children = {}
 
     def add_child(self, child_object):
@@ -385,11 +239,11 @@ class TrackSwitch(TrackDevice):
         Includes a realtime simulation of its activity/communications.
     """
 
-    def __init__(self, ID, track, milepost):
+    def __init__(self, ID, milepost):
         """
         """
         raise NotImplementedError
-        # TrackDevice.__init__(self, ID, track, 'Switch')
+        # TrackDevice.__init__(self, ID, 'Switch')
         # self.status = None
 
     def get_position(self):
@@ -452,8 +306,7 @@ class Track(object):
             except KeyError:
                 raise Exception('Malformed ' + bases_file + ': Key Error.')
 
-            self.bases[baseID] = Base(
-                baseID, self, coverage_start, coverage_end)
+            self.bases[baseID] = Base(baseID, coverage_start, coverage_end)
 
         # Populate milepost objects (self.mileposts) from track_file
         try:
@@ -575,3 +428,159 @@ class Milepost:
         """ Returns a string representation of the milepost.
          """
         return str(self.marker)
+
+
+##############################
+# Track Device Sim Functions #
+##############################
+
+def loco_movement(loco):
+    """ Real-time simulation of a locomotive's on-track movement.
+    """
+    def _brake():
+        """ Apply the adaptive braking algorithm.
+        """
+        raise NotImplementedError
+
+    def _set_heading(prev_mp, curr_mp):
+            """ Sets loco heading based on current and prev lat/long
+            """
+            lat1 = radians(prev_mp.lat)
+            lat2 = radians(curr_mp.lat)
+
+            long_diff = radians(prev_mp.long - curr_mp.long)
+
+            a = cos(lat1) * sin(lat2)
+            b = (sin(lat1) * cos(lat2) * cos(long_diff))
+            x = sin(long_diff) * cos(lat2)
+            y = a - b
+            deg = degrees(atan2(x, y))
+            compass_bearing = (deg + 360) % 360
+
+            loco.heading = compass_bearing
+
+    #######################################
+    # Start of the locomotive simulator - #
+    # Simulates movement and messaging.   #
+    #######################################
+    makeup_dist = 0
+    if not loco.speed or not loco.direction or not loco.milepost:
+        raise ValueError('Cannot simulate an unintialized Locomotive.')
+
+    while loco.sim.running:
+        sleep(MSG_INTERVAL)  # Sleep for specified interval
+
+        # Move, if at speed
+        if loco.speed > 0:
+            # Determine dist traveled since last iteration, including
+            # makeup distance, if any.
+            hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
+            dist = loco.speed * hours * 1.0  # distance = speed * time
+            dist += makeup_dist
+
+            # Set sign of dist based on dir of travel
+            if loco.direction == 'decreasing':
+                dist *= -1
+
+            # Get next milepost and any makeup distance
+            new_mp, dist = loco.track._get_next_mp(loco.milepost, dist)
+            if not new_mp:
+                err_str = ' - At end of track. Reversing.'
+                track_log.info(loco.name + err_str)
+                loco.direction *= -1
+            else:
+                _set_heading(loco.milepost, new_mp)
+                loco.milepost = new_mp
+                makeup_dist = dist
+
+                # Determine base stations in range of current position
+                loco.bases_inrange = [b for b in loco.track.bases.values()
+                                      if b.covers_milepost(loco.milepost)]
+
+                # Reset existing radio connections
+                for c in loco.conns.values():
+                    c.connected_to = None
+
+                if loco.bases_inrange:
+                    # Assign in-range bases to loco conns - one base/conn
+                    num_matches = min(
+                        len(loco.bases_inrange), len(loco.conns))
+                    for i in range(num_matches - 1):
+                        print i
+                        print(loco.bases_inrange)
+                        print('---')
+                        print(loco.conns)
+                        loco.conns[i].connected_to = loco.bases_inrange[i]
+
+                    # Arbitrarily choose the 0th base as the current base
+                    # TODO: This should really be a base obj
+                    loco.baseID = loco.bases_inrange[0]
+                else:
+                    err_str = ' skipping msg send/recv - No bases in range.'
+                    track_log.warn(loco.name + err_str)
+
+
+def loco_messaging(loco):
+    """ Real-time simulation of a locomotives's messaging system
+    """
+    while loco.sim.running:
+        sleep(MSG_INTERVAL)  # Sleep for specified interval
+
+        # Ensure an active connection
+        conns = [c for c in loco.conns.values() if c.connected_to]
+        if not conns:
+            # TODO: Implement for all:
+            err_str = ' skipping msg send/recv - No connection available.'
+            track_log.warn(loco.name + err_str)
+            continue  # Note: we sleep at the top of this loop
+
+        base_conn = conns[0]
+
+        # Build status msg to send to BOS
+        msg_type = 6000
+        msg_source = loco.emp_addr
+        msg_dest = BOS_EMP
+        payload = str(loco.status_dict())
+
+        status_msg = Message((msg_type,
+                              msg_source,
+                              msg_dest,
+                              payload))
+
+        # Do status msg send
+        try:
+            base_conn.send(status_msg)
+            track_log.info(loco.name + '-  Sent status msg.')
+        except Exception as e:
+            track_log.error(loco.name + ' - Msg send failed: ' + str(e))
+
+        # Receive all incoming CAD message, if any.
+        while True:
+            cad_msg = None
+            try:
+                cad_msg = base_conn.fetch_next_msg(loco.emp_addr)
+            except Queue.Empty:
+                break  # Queue is empty
+            except Exception as e:
+                # err_str = ' - Could not connect to broker.'
+                track_log.warn(loco.name + str(e))
+                break
+
+            # Process cad msg, if msg and if actually for this loco
+            if cad_msg and cad_msg.payload.get('ID') == loco.ID:
+                try:
+                    # TODO: Update track restrictions based on msg
+                    track_log.info(loco.name + ' - CAD msg processed.')
+                except:
+                    track_log.error(loco.name + ' - Received invalid CAD msg.')
+
+def base_messaging(self):
+    """ Real-time simulation of a base station's messaging system
+    """
+    raise NotImplementedError
+
+
+def wayside_messaging(self):
+    """ Real-time simulation of a wayside's messaging system
+    """
+    raise NotImplementedError
