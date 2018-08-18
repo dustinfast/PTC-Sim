@@ -134,8 +134,8 @@ class Loco(TrackDevice):
         self.conns = {'Radio1': Connection('Radio1', timeout=TRACK_TIMEOUT),
                       'Radio2': Connection('Radio2', timeout=TRACK_TIMEOUT)}
 
-        self.sim = DeviceSim(self, [loco_movement])
-        # self.sim = DeviceSim(self, [loco_movement, loco_messaging])
+        # self.sim = DeviceSim(self, [loco_movement])
+        self.sim = DeviceSim(self, [loco_movement, loco_messaging])
         
         # Randomize (within reason) speed, heading, direction, bpp, and mp.
         self.speed = randint(0, 60)
@@ -507,30 +507,29 @@ def loco_messaging(loco):
         sleep(MSG_INTERVAL)  # Sleep for specified interval
 
         # Drop all out of range base connections, keep alive all existing
-        # in-range connections, and note other possible bases to connect to.
-        temp_inrange = loco.bases_inrange
+        # in-range connections, and build list of unused bases
+        unused_inrange = loco.bases_inrange
         curr_conns = [c for c in loco.conns.values() if c.conn_to]
         for conn in curr_conns:
-            if conn.conn_to not in temp_inrange:
+            if conn.conn_to not in unused_inrange:
                 conn.conn_to = None
             else:
                 conn.keep_alive()
-                temp_inrange.remove(conn.conn_to)
+                unused_inrange.remove(conn.conn_to)
 
-        # Connect unused connections and unused bases in range (one conn/base)
-        unconnected = [c for c in loco.conns.values() if not c.conn_to]
-        while unconnected and temp_inrange:
-            unconnected[0].conn_to = temp_inrange[0]
-            temp_inrange.remove(temp_inrange[0])
-            unconnected = [c for c in loco.conns.values() if not c.conn_to]
-            # unconnected.remove(unconnected[0])
-            # temp_inrange.remove(temp_inrange[0])
-            
+        # Connect unused connections to  bases in range (one conn/base)
+        for conn in loco.conns.values():
+            if not unused_inrange:
+                break
+            if not conn.conn_to:
+                conn.conn_to = unused_inrange[0]
+                unused_inrange.remove(conn.conn_to)
+  
         # Ensure at least one active connection
         conns = [c for c in loco.conns.values() if c.conn_to]
         if not conns:
             # TODO: Generalize w/ Connections.list of Connection objs. Incl members that do these things
-            err_str = ' skipping msg send/recv - No connection available.'
+            err_str = ' skipping msg send/recv - No active comms.'
             track_log.warn(loco.name + err_str)
             continue  # Try again next iteration
 
@@ -563,7 +562,7 @@ def loco_messaging(loco):
             except Queue.Empty:
                 break  # No msgs (or no more msgs) to receive.
             except Exception as e:
-                err_str = ' -  Fetch failed over ' + conn.conn_to.name
+                err_str = ' -  Fetch failed over ' + conn.conn_to.ID
                 track_log.error(loco.name + err_str + ': ' + str(e))
 
             # Process cad msg, if msg and if actually for this loco
@@ -574,7 +573,7 @@ def loco_messaging(loco):
                 except:
                     track_log.error(loco.name + ' - Received invalid CAD msg.')
         else:
-            err_str = 'Active connections exists, but msg fetch/recv failed.'
+            err_str = 'Active connections exist, but msg fetch/recv failed.'
             track_log.warn(loco.name + err_str)
 
 

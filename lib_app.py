@@ -56,7 +56,7 @@ class Prompt(object):
             if not uinput:
                 continue  # if null input
             if not cmd:
-                print('Invalid command: "' + uinput + '". Try "help".')
+                print('Invalid command: "' + str(uinput) + '". Try "help".')
             else:
                 eval(cmd)
 
