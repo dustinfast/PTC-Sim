@@ -192,7 +192,9 @@ class Loco(TrackDevice):
                 'milepost': self.milepost.marker,
                 'lat': self.milepost.lat,
                 'long': self.milepost.long,
-                'conns': {k: v for (k, v) in self.conns.iteritems() if v.conn_to}}
+                'conns': {k for (k, v) in self.conns.iteritems() if v.conn_to}}
+
+        
 
 
 class Base(TrackDevice):
@@ -517,7 +519,7 @@ def loco_messaging(loco):
                 conn.keep_alive()
                 unused_inrange.remove(conn.conn_to)
 
-        # Connect unused connections to  bases in range (one conn/base)
+        # Connect unused connections to bases in range (one conn/base)
         for conn in loco.conns.values():
             if not unused_inrange:
                 break
@@ -548,22 +550,24 @@ def loco_messaging(loco):
         for conn in conns:
             try:
                 conn.send(status_msg)
-                info_str = ' -  Sent status msg over ' + conn.conn_to.name
+                info_str = ' -  Sent status msg over ' + conn.conn_to.ID
                 track_log.info(loco.name + info_str)
             except Exception as e:
-                err_str = ' -  Msg send failed over ' + conn.conn_to.name
-                track_log.error(loco.name + err_str + ': ' + str(e))
-
-        # Receive all incoming CAD messages, if any.
-        while True:
+                print(str(e))
+                track_log.warn(loco.name + ' send failed: ' + str(e))
+                
+        # Fetch incoming cad msgs over active connections, breaking on success.
+        for conn in conns:
             cad_msg = None
             try:
                 cad_msg = conn.fetch(loco.emp_addr)
             except Queue.Empty:
                 break  # No msgs (or no more msgs) to receive.
             except Exception as e:
-                err_str = ' -  Fetch failed over ' + conn.conn_to.ID
-                track_log.error(loco.name + err_str + ': ' + str(e))
+                print(str(e))
+                # err_str = ' -  Fetch failed over ' + conn.conn_to.ID
+                track_log.warn(loco.name + ' fetch failed: ' + str(e))
+                continue  # Try the next connecion
 
             # Process cad msg, if msg and if actually for this loco
             if cad_msg and cad_msg.payload.get('ID') == loco.ID:
@@ -572,9 +576,10 @@ def loco_messaging(loco):
                     track_log.info(loco.name + ' - CAD msg processed.')
                 except:
                     track_log.error(loco.name + ' - Received invalid CAD msg.')
+                break  # Either way, the msg was fetched # TODO: ACK w/broker?
         else:
-            err_str = 'Active connections exist, but msg fetch/recv failed.'
-            track_log.warn(loco.name + err_str)
+            err_str = ' - active connections exist, but msg fetch/recv failed.'
+            track_log.error(loco.name + err_str)
 
 
 def base_messaging(self):

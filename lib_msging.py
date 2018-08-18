@@ -138,6 +138,7 @@ class Message(object):
 
         # Turn the payload into a python dictionary
         try:
+            print(payload)
             payload = eval(payload)
         except:
             raise Exception('Msg payload not of form { key: value, ... }')
