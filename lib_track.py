@@ -87,8 +87,8 @@ class TrackDevice(object):
 
     def __str__(self):
         """ Returns a string representation of the device """
-        return __name__ + ' ' + self.ID
-
+        return self.name
+        
     def add_connection(self, connection):
         """ Adds the given Connection instance to the devices's connections.
         """
@@ -193,9 +193,7 @@ class Loco(TrackDevice):
                 'lat': self.milepost.lat,
                 'long': self.milepost.long,
                 'conns': {k for (k, v) in self.conns.iteritems() if v.conn_to}}
-
-        
-
+                
 
 class Base(TrackDevice):
     """ An abstraction of a 220 MHz base station, including it's coverage area.
