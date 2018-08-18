@@ -269,10 +269,17 @@ class Loco(TrackDevice):
                     for c in self.conns.values():
                         c.connected_to = None
 
-                    # Assign in-range bases to loco radios, one base per radio
-                    num_matches = min(len(self.bases_inrange), len(self.conns))
-                    for i in range(num_matches - 1):
-                        self.conns[i].connected_to = self.bases_inrange[i]
+                    if self.bases_inrange:
+                        # Assign in-range bases to loco conns - one base/conn
+                        # num_matches = min(len(self.bases_inrange), len(self.conns))
+                        # for i in range(num_matches - 1):
+                        #     print(self.conns)
+                        #     print(self.bases_inrange)
+                        #     self.conns[i].connected_to = self.bases_inrange[i]
+
+                        # Arbitrarily choose the 0th base as the current base
+                        # TODO: This should really be a base obj
+                        self.baseID = self.bases_inrange[0]
 
             # Build status msg to send to BOS
             msg_type = 6000

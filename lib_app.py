@@ -31,6 +31,7 @@ class REPL(object):
             prompt: The REPL prompt.
             welcome: String to display on REPL start.
         """
+        self.running = False  # kill flag
         self.context = context
         self.prompt = prompt
         self.welcome_msg = welcome_msg
@@ -41,9 +42,10 @@ class REPL(object):
     def start(self):
         """ Starts the REPL.
         """
+        self.running = True
         if self.welcome_msg:
             print(self.welcome_msg)
-        while True:
+        while self.running:
             uinput = raw_input(self.prompt)
             cmd = self.commands.get(uinput)
 
@@ -53,6 +55,20 @@ class REPL(object):
                 print('Invalid command. Try "help".')
             else:
                 eval(cmd)
+
+        self.running = False
+
+    def get_repl(self):
+        """ Returns an instance of self with predefined start cmd, stop cmd, 
+            and exit conditions.
+            Assumes context has start() and stop() members.
+            After calling get_repl, start the repl with REPL.start()
+        """
+        repl = REPL(self.context, '')
+        repl.add_cmd('start', 'start()')
+        repl.add_cmd('stop', 'stop()')
+        repl.set_exitcmd('stop')
+        return repl
 
     def add_cmd(self, cmd_txt, expression):
         """ Makes a command available via the REPL. Accepts:
@@ -81,8 +97,7 @@ class REPL(object):
         """
         if self.exit_command:
             eval(self.commands[self.exit_command])
-        exit()
-
+        self.running = False
 
 class Logger(logging.Logger):
     """ An extension of Python's logging.Logger. Implements log file rotation

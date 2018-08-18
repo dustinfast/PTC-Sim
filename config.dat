@@ -3,7 +3,7 @@
 ; Author: Dustin Fast, 2018
 
 [application]
-refresh_time = 5                    ; Thread & loop sleep seconds before next iteration
+refresh_time = 5                    ; Thread & loop sleep seconds between iterations
                                     
 [track]
 track_rails = track_rails.json      ; Track model file
