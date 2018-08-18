@@ -1,9 +1,8 @@
-
-### Message Specification
+# PTC-Sim Implementation-Specific Message Specification
 
 Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with variable-length header sections. The application-specific messaging implementation is defined as follows:
 
-#### EMP Fields
+## EMP Fields
 
 | Section      | Field | Value                          |
 |--------------|-------|--------------------------------|
@@ -21,9 +20,11 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 | Body     | Data Element             | DYNAMIC        |
 |          | CRC                   | DYNAMIC        |
 
-#### Fixed-Format Messages
+## Fixed-Format Messages
 
-**6000**: Locomotive Status Message - Contains a single key/value data element of the form: 
+### 6000
+
+Locomotive Status Message - Contains a single key/value data element of the form: 
 
 ```
     { sent      : (int) Unix time,
@@ -32,20 +33,22 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
       heading   : (float) Current Heading,
       direction : (str) 'increasing' or 'decreasing',
       milepost  : (float) Nearest milepost ID,
-      lat       : (float) Current GPS latitude in d.d.,
-      long      : (float) Current GPS longitude in d.d.,
+      lat       : (float) Current GPS latitude in decimal degrees
+      long      : (float) Current GPS longitude in decimal degrees
       bpp       : (float) Current Brake Pipe Pressure,
-      base      : (Integer) ID of current base station,
+      conns     : (str) Key/Value pairs string of the form { CONNECTION_LABEL: BASEID } 
       bases     : (list) All receiving base station IDs
      }
 ```
 
-**6001**: Wayside Status Msgs - Contains a single key/value data element of the form:
+### 6001
+
+Wayside Status Msgs - Contains a single key/value data element of the form:
 
 ```
     { sent      : (int) Unix time,
       ID        : (str) Unique wayside ID,
-      Children  : (str) Key/value string of the form { ID: Status }
+      Children  : (str) Key/value pairs string of the form { ID: Status }
     }
 ```
 
