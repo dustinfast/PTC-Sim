@@ -9,9 +9,9 @@ from time import sleep
 from threading import Thread
 
 from lib_app import Prompt, track_log
-from lib_app import REFRESH_TIME
 from lib_track import Track
 
+from lib_app import REFRESH_TIME
 
 class TrackSim(object):
     """ The Track Simulator. Consists of three seperate threads:

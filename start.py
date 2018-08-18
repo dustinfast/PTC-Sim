@@ -10,27 +10,23 @@ import multiprocessing
 
 
 class _process(multiprocessing.Process):
-    """ Wraps the given module in a multiprocessing.Process.
-        Assumes the given module contains a start() member.
+    """ Wraps the given module in a multiprocessing.Process and provides a 
+        run() interface. Assumes the given module contains a start() member.
     """
     def __init__(self, module_name, class_name):
-        """ Accepts:
-                module_name: A string denoting the module name
+        """ Accepts module_name, a string denoting the module name
         """
         multiprocessing.Process.__init__(self)
         self.module_name = module_name
         self.class_name = class_name
 
     def run(self):
-        """ Use reflection to import the module and start the given class.
+        """ Use reflection to import the given module and call its start()
         """
         expr = 'from ' + self.module_name
         expr += ' import ' + self.class_name + ' as mod'
-        print(expr)
         exec(expr)
-
         mod().start()
-
 
 
 if __name__ == '__main__':

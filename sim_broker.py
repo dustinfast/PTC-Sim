@@ -11,12 +11,14 @@
 
     Author: Dustin Fast, 2018
 """
-import socket  
+
+import socket
 from threading import Thread
 
 from lib_app import Prompt, broker_log
-from lib_app import REFRESH_TIME
 from lib_msging import Queue, Message
+
+from lib_app import REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, MAX_MSG_SIZE
 
 
@@ -30,10 +32,8 @@ class Broker(object):
         # Dict of outgoing msg queues, by dest address: { ADDRESS: Queue }
         self.outgoing_queues = {}
 
-        # State flags
-        self.running = False
-
-        # Threads
+        # Threading
+        self.running = False  # Thread kill flag
         self.msg_recvr_thread = Thread(target=self._msgreceiver)
         self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
 
@@ -41,8 +41,7 @@ class Broker(object):
         """ Start the message broker threads.
         """
         if not self.running:
-            broker_log.info('Broker Started.')
-            
+            broker_log.info('Broker Starting.')
             self.running = True
             self.msg_recvr_thread.start()
             self.fetch_watcher_thread.start()
@@ -52,7 +51,7 @@ class Broker(object):
             threads. 
         """
         if self.running:
-            # Signal stop to threads and join
+            # Signal stop to threads, then join
             self.running = False
             self.msg_recvr_thread.join(timeout=REFRESH_TIME)
             self.fetch_watcher_thread.join(timeout=REFRESH_TIME)

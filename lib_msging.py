@@ -26,6 +26,8 @@ SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 NET_TIMEOUT = float(config.get('messaging', 'network_timeout'))
+BOS_EMP = config.get('messaging', 'bos_emp_addr')
+
 
 # Set default timeout for all sockets, including importers of this library
 socket.setdefaulttimeout(NET_TIMEOUT)
