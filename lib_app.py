@@ -12,6 +12,7 @@ config = RawConfigParser()
 config.read('config.dat')
 
 # Import conf data
+APP_NAME = config.get('application', 'app_name')
 REFRESH_TIME = int(config.get('application', 'refresh_time'))
 LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_FILES = config.get('logging', 'num_files')

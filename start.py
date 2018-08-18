@@ -8,6 +8,8 @@
 from time import sleep
 import multiprocessing
 
+from lib_app import APP_NAME
+
 
 class _process(multiprocessing.Process):
     """ Wraps the given module in a multiprocessing.Process and provides a 
@@ -43,9 +45,11 @@ if __name__ == '__main__':
 
     sleep(.5)  # Prevent console output overlap by allowing procs time to start.
 
-    print('-- PTC-Sim: A Positive Train Control Demonstration')
-    print('-- Navigate to https://localhost:5000/ptc_sim for web interface.')
-    print("-- Type 'exit' to quit.")
+    welcome = '** ' + APP_NAME + ': A Positive Train Control Demonstration.\n'
+    welcome += '** Navigate to https://localhost:5000/' + APP_NAME
+    welcome += ' for web interface.\n'
+    welcome + "** Type 'exit' to quit."
+    print(welcome)
 
     while True:
         try:

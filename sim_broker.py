@@ -18,7 +18,7 @@ from threading import Thread
 from lib_app import Prompt, broker_log
 from lib_msging import Queue, Message
 
-from lib_app import REFRESH_TIME
+from lib_app import APP_NAME, REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, MAX_MSG_SIZE
 
 
@@ -152,7 +152,7 @@ class Broker(object):
 
 if __name__ == '__main__':
     # Start the message broker in Prompt/Terminal mode
-    print("-- PTC-Sim: Track Simulator - Type 'exit' to quit --\n")
+    print("-- " + APP_NAME + ": Track Simulator - Type 'exit' to quit --\n")
     broker = Broker()
     broker.start()
     Prompt(broker).get_repl().start()  # Blocks until 'exit' cmd received.

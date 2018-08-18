@@ -78,7 +78,7 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 
 **6000**: Locomotive Status Message - Contains a single key/value data element of the form: 
 
-```
+```python
     { sent      : (int) Unix time,
       locoID    : (str) Unique locomotive ID,
       speed     : (float) Current speed,
@@ -95,7 +95,7 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 
 **6001**: Wayside Status Msgs - Contains a single key/value data element of the form:
 
-```
+```python
     { sent      : (int) Unix time,
       ID        : (str) Unique wayside ID,
       Children  : (str) Key/value string of the form { ID: Status }
@@ -104,7 +104,7 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 
 **6002**: CAD to Locomotive Message - Contains a single key/value data element of the form:
 
-```
+```python
     { sent      : (int) Unix time,
       ID        : (str) Intended recipient ID,
       Restrict  : (list) A list of restricted milepost ranges, as points
@@ -117,7 +117,6 @@ Start the application with `./start.py`, then navigate to http://localhost:5000/
   
 Alternatively, the BOS, Message Broker, and Track Simulator may be started independently with `./sim_bos`, `./sim_broker`, and `./sim_track`, respectively.
 
-
 ## # TODO
 
 * Web: logtail/console output, broker queue sizes  
@@ -125,7 +124,7 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 * sim_track does not quit gracefully
 * rename track_ to topology_
 * Fictional track model
-* Better exception bubbling from start.py
+* Better exception bubbling to start.py
 * Move appname to conf and use PTC-Sim
 * Generalize sim_track, sim_loco, sim_bos, and DeviceSim classes into Threader
 * Seperate sim functions from device classes, then remove track param from TrackDevice
@@ -133,7 +132,7 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 * PEP8 file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members  
 * readme screenshots and high-level images  
-* py3  
+* py3 - >>> config = configparser.ConfigParser()
 * TrackCircuits - does not allow switch change when track * occupied. Aids coll avoidance.  
 * bos does not quit start.py on CTRL + C, and only quits from sim_bos on CTRL+C: Turn off the CTRL + C msg. Or possibly redirect flask's stdout so exit kills it in sim_bos with a terminate()
 * Use multiprocessing instead of threading where reasonable

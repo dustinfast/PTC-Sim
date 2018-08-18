@@ -3,7 +3,7 @@
 ; Author: Dustin Fast, 2018
 
 [application]
-app_name = PTC-Sim                  ; Application web and terminal display name
+app_name = PTC-Sim                  ; Web and terminal display name. URL compatible chars only.
 refresh_time = 5                    ; Thread & loop sleep seconds between iterations
                                     
 [track]

@@ -11,7 +11,7 @@ from threading import Thread
 from lib_app import Prompt, track_log
 from lib_track import Track
 
-from lib_app import REFRESH_TIME
+from lib_app import APP_NAME, REFRESH_TIME
 
 class TrackSim(object):
     """ The Track Simulator. Consists of three seperate threads:
@@ -76,7 +76,7 @@ class TrackSim(object):
 
 if __name__ == '__main__':
     # Start the track simulation in Prompt/Terminal mode
-    print("-- PTC-Sim: Track Simulator - Type 'exit' to quit --\n")
+    print("-- " + APP_NAME + ": Track Simulator - Type 'exit' to quit --\n")
     sim = TrackSim()
     sim.start()    
     Prompt(sim).get_repl().start()  # Blocks until 'exit' cmd received.

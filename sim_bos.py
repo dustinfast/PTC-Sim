@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" PTC Sim's Back Office Server (BOS). 
+""" PTC-Sim's Back Office Server (BOS). 
     Publishes the PTC-Sim web interface via Flask and watches the message
     broker (via TCP/IP) for device and locomotive status msgs. The web display 
     is then updated to reflect these statuses, including Google Earth location
@@ -18,7 +18,7 @@ from lib_app import bos_log
 from lib_msging import Client, Queue
 from lib_track import Track, Loco, Milepost
 
-from lib_app import REFRESH_TIME
+from lib_app import APP_NAME, REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 
 # Attempt to import flask and prompt for install on fail
@@ -43,7 +43,7 @@ while True:
 # Flask defs
 app = Flask(__name__)
 
-@app.route('/ptc_sim')
+@app.route('/' + APP_NAME)
 def home():
     return render_template('home.html')
 
@@ -125,7 +125,7 @@ class BOS(object):
 
 if __name__ == '__main__':
     # Start the Back Office Server
-    print('-- PTC-Sim: Back Office Server - Press CTRL + C to quit --\n')
+    print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
     sleep(.2)  # Ensure print statment occurs before flask output
-    bos = BOS().start(debug=True)
+    bos = BOS().start(debug=True)  # Blocks until CTRL+C
     # TODO: BOS REPL
