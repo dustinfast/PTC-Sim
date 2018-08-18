@@ -24,7 +24,7 @@ from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 # Attempt to import flask and prompt for install on fail
 while True:
     try:
-        from flask import Flask, render_template
+        from flask import Flask, render_template, jsonify
         break
     except:
         prompt = 'Flask is required, install it? (Y/n): '
@@ -39,32 +39,37 @@ while True:
             exit()
 
 
-# TODO: Move into BOS class (or it's own class)
-# Flask defs
-app = Flask(__name__)
+######################
+# Flask Web Handlers #
+######################
+loco_status = '-1'
+web = Flask(__name__)
 
-@app.route('/' + APP_NAME)
+@web.route('/' + APP_NAME)
 def home():
-    return render_template('home.html')
+    return render_template('home.html', loco_status=loco_status)
+
+
+@web.route('/_stuff', methods=['GET'])
+def update_home():
+    return jsonify(loco_status='-3')
 
 
 class BOS(object):
     """ The Back Office Server. Consists of a messaging client and status
         watcher thread that fetches messages from the broker over TCP/IP, in
-        addition to the web interface
+        addition to the web interface.
     """
     def __init__(self):
-        self.running = False  # Thread kill flag
         self.track = Track()  # Track object instance
 
         # Messaging client
         self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)
 
-        # Message watcher thread
+        # Threads
+        self.running = False  # Thread kill flag
         self.status_watcher_thread = Thread(target=self._statuswatcher)
-
-        # Web content updater thread
-        self.webupdate_thread = Thread(target=self._statuswatcher)
+        self.webupdate_thread = Thread(target=self._webupdater)
 
     def start(self, debug=False):
         """ Start the BOS. I.e., the status watcher thread and web interface.
@@ -74,8 +79,9 @@ class BOS(object):
         self.running = True
         self.status_watcher_thread.start()
         self.webupdate_thread.start()
-
-        app.run(debug=debug)  # Web interface, blocks until killed from console
+        global loco_status
+        loco_status = 'teststatus1'
+        web.run(debug=debug)  # Web interface, blocks until killed from console
 
         # Do shutdown
         print('\nBOS Stopping... Please wait.')
@@ -121,19 +127,23 @@ class BOS(object):
                                 active_conns)
 
                     bos_log.info('Processed status msg for loco ' + loco.ID)
-                except KeyError as e:
+                except KeyError:
                     bos_log.error('Malformed status msg: ' + str(msg.payload))
 
             sleep(REFRESH_TIME)
         
-        def _webupdater(self):
-            """ The web updater thread. Parses the BOS's local track object
-                devices and updates the web output (Google Earth/KMLs,
-                DataTables, etc.)
-                accordingly.
-            """
+    def _webupdater(self):
+        """ The web updater thread. Parses the BOS's local track object
+            devices and updates the web output (Google Earth/KMLs,
+            DataTables, etc.)
+            accordingly.
+        """
 
-            # Update loco dislay
+        # Update loco display
+        global loco_status
+        for i in range(100):
+            loco_status = str(i)
+            sleep(2)
 
 
 if __name__ == '__main__':

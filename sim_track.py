@@ -21,7 +21,7 @@ class TrackSim(object):
     """
     def __init__(self):
         self.running = False  # Thread kill flag
-        self.tracksim_thread = Thread(target=self._tracksim)  # Tracksim thread
+        self.tracksim_thread = Thread(target=self._tracksim)
 
     def start(self):
         """ Start the message broker threads
