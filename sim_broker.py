@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-""" A message broker for Edge Message Protocol (EMP) messages.
-    Msgs are received and enqued for receipt and dequed for recipient on
-    request.
+""" PTC-Sim's Edge Message Protocol (EMP) Message Broker.
+    Msgs are received by the broker via TCP/IP and enqued for receipt.
+    Recipients connect to the broker via TCP/IP and fetch msgs by queue name.
+    After a fetch, the msg is removed from the queue.
 
     Message Specification:
         EMP V4 (specified in msg_spec/S-9354.pdf) fixed-format messages 
@@ -10,21 +11,16 @@
 
     Author: Dustin Fast, 2018
 """
-import socket  
+
+import socket
 from threading import Thread
-from ConfigParser import RawConfigParser
-from lib import Queue, Message, REPL, Logger  # Also sets socket timeout
 
-# Init conf
-config = RawConfigParser()
-config.read('config.dat')
+from lib_app import Prompt, broker_log
+from lib_msging import Queue, Message
 
-# Import conf data
-REFRESH_TIME = float(config.get('application', 'refresh_time'))
-BROKER = config.get('messaging', 'broker')
-SEND_PORT = int(config.get('messaging', 'send_port'))
-FETCH_PORT = int(config.get('messaging', 'fetch_port'))
-MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
+from lib_app import APP_NAME, REFRESH_TIME
+from lib_msging import BROKER, SEND_PORT, FETCH_PORT, MAX_MSG_SIZE
+
 
 class Broker(object):
     """ The message broker. Consists of three seperate threads:
@@ -36,40 +32,26 @@ class Broker(object):
         # Dict of outgoing msg queues, by dest address: { ADDRESS: Queue }
         self.outgoing_queues = {}
 
-        # State flags
-        self.running = False
-        self.terminal_started = False
-
-        # Logger (defined on self.start)
-        self.log = None
-
-        # Threads
+        # Threading
+        self.running = False  # Thread kill flag
         self.msg_recvr_thread = Thread(target=self._msgreceiver)
         self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
 
-    def start(self, terminal=False):
-        """ Start the message broker threads. If terminal, also starts the
-            REPL and enables log output to console.
+    def start(self):
+        """ Start the message broker threads.
         """
         if not self.running:
-            if not self.log:
-                self.log = Logger('log_broker', terminal)
-            self.log.info('Broker Started.')
-            
+            broker_log.info('Broker Starting.')
             self.running = True
             self.msg_recvr_thread.start()
             self.fetch_watcher_thread.start()
-
-            if terminal and not self.terminal_started:
-                self.terminal_started = True
-                self._repl()  # Blocks
             
     def stop(self):
         """ Stops the msg broker. I.e., the msg receiver and fetch watcher 
             threads. 
         """
         if self.running:
-            # Signal stop to threads and join
+            # Signal stop to threads, then join
             self.running = False
             self.msg_recvr_thread.join(timeout=REFRESH_TIME)
             self.fetch_watcher_thread.join(timeout=REFRESH_TIME)
@@ -78,7 +60,7 @@ class Broker(object):
             self.msg_recvr_thread = Thread(target=self._msgreceiver)
             self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
 
-            self.log.info('Broker stopped.')
+            broker_log.info('Broker stopped.')
 
     def _msgreceiver(self):
         """ Watches for incoming messages over TCP/IP on the interface and port 
@@ -105,7 +87,7 @@ class Broker(object):
                 conn.close()
             except Exception as e:
                 log_str += 'Msg recv failed due to ' + str(e)
-                self.log.error(log_str)
+                broker_log.error(log_str)
 
                 try:
                     conn.send('FAIL'.encode())
@@ -121,7 +103,7 @@ class Broker(object):
             self.outgoing_queues[msg.dest_addr].put(msg)
             log_str = 'Success - ' + msg.sender_addr + ' '
             log_str += 'to ' + msg.dest_addr
-            self.log.info(log_str)
+            broker_log.info(log_str)
 
         # Do cleanup
         sock.close()
@@ -159,7 +141,7 @@ class Broker(object):
                     conn.send(msg.raw_msg.encode('hex'))  # Send msg
                     log_str += 'Msg served.'
 
-                self.log.info(log_str)
+                broker_log.info(log_str)
                 conn.close()
             except:
                 continue
@@ -167,18 +149,10 @@ class Broker(object):
         # Do cleanup
         sock.close()
 
-    def _repl(self):
-        """ Blocks while watching for terminal input, then processes it.
-        """
-        # Init the Read-Eval-Print-Loop and start it
-        repl = REPL(self, '')
-        repl.add_cmd('start', 'start()')
-        repl.add_cmd('stop', 'stop()')
-        repl.set_exitcmd('stop')
-        repl.start()
-
 
 if __name__ == '__main__':
-    # Start the broker in terminal mode
-    print("-- PTC_SIM: Message Broker - Type 'exit' to quit --\n")
-    Broker().start(terminal=True)
+    # Start the message broker in Prompt/Terminal mode
+    print("-- " + APP_NAME + ": Track Simulator - Type 'exit' to quit --\n")
+    broker = Broker()
+    broker.start()
+    Prompt(broker).get_repl().start()  # Blocks until 'exit' cmd received.

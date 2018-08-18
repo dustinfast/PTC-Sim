@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-""" Starts the necessary services and processes for PTC_SIM with 3 random
-    locomotives. The locomotives, message broker, and back office server are
-    each started as seperate processes with Python's Multiprocessing lib.
+""" Starts the Track Simulator, Message Broker, and Back Office Server,
+    each as seperate processes, with Python's Multiprocessing lib.
 
     Author: Dustin Fast, 2018
 """
@@ -9,59 +8,65 @@
 from time import sleep
 import multiprocessing
 
+from lib_app import APP_NAME
+
 
 class _process(multiprocessing.Process):
-    """ Wraps the given module in a multiprocessing.Process.
-        Assumes the given module contains a start() member.
+    """ Wraps the given module in a multiprocessing.Process and provides a 
+        run() interface. Assumes the given module contains a start() member.
     """
     def __init__(self, module_name, class_name):
-        """ Accepts:
-                module_name: A string denoting the module name
+        """ Accepts module_name, a string denoting the module name
         """
         multiprocessing.Process.__init__(self)
         self.module_name = module_name
         self.class_name = class_name
 
     def run(self):
-        """ Use reflection to import the module and start the given class.
+        """ Use reflection to import the given module and call its start()
         """
         expr = 'from ' + self.module_name
         expr += ' import ' + self.class_name + ' as mod'
-        
-        try:
-            exec(expr)
-            mod().start()
-        except:
-            raise ValueError('Invalid module: ', self.module_name)
+        exec(expr)
+        mod().start()
 
 
 if __name__ == '__main__':
-    # TODO: Instantiate demo locos with random start/direction/speed OR from JSON?
-    """ Start the PTC_SIM application, with each component existing in a
+    """ Start the PTC-Sim application, with each component existing in a
         seperate process.
     """
-    # Start the application componenets
-    bos_proc = _process('sim_bos', 'BOS')
-    broker_proc = _process('sim_broker', 'Broker')
-    loco_proc = _process('sim_loco', 'SimLoco')
+    # Init a process for each top-level module and start them.
+    sim_procs = []
+    sim_procs.append(_process('sim_bos', 'BOS'))
+    sim_procs.append(_process('sim_broker', 'Broker'))
+    sim_procs.append(_process('sim_track', 'TrackSim'))
 
-    bos_proc.start()
-    broker_proc.start()
-    loco_proc.start()
+    [p.start() for p in sim_procs]
 
-    sleep(.5)  # Allow enough time for all to start
+    sleep(.5)  # Prevent console output overlap by allowing procs time to start.
 
-    print('-- Locomotive Back Office Server Simulation')
-    print('-- Navigate to https://localhost:5000/PTC_SIM')
-    print("-- Type 'exit' to quit")
+    welcome = '** ' + APP_NAME + ': A Positive Train Control Demonstration.\n'
+    welcome += '** Navigate to https://localhost:5000/' + APP_NAME
+    welcome += ' for web interface.\n'
+    welcome + "** Type 'exit' to quit."
+    print(welcome)
 
     while True:
-        uinput = raw_input('>> ')
-        
+        try:
+            uinput = raw_input('>> ')
+        except KeyboardInterrupt:
+            uinput = None
+
         if uinput == 'exit':
-            loco_proc.terminate()
-            broker_proc.terminate()
-            bos_proc.terminate()
+            print('Stopping processes...')
+            [p.terminate() for p in sim_procs]
+
+            try:
+                [p.join(timeout=5) for p in sim_procs]
+
+            except:
+                e = 'Timed out wating for one or more subprocesses to close.'
+                raise Exception(e)
             break
         else:
             continue

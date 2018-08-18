@@ -1,18 +1,25 @@
 #!/usr/bin/env python
-""" The Back Office Server (BOS). Publishes the PTC_SIM website
-    via Flask and watches for locomotive status msgs addressed to it at the 
-    broker. The web display is updated to reflect loco status, including Google
-    Earth location mapping. Speed/direction commands may also be issued to
-    each loco.
+""" PTC-Sim's Back Office Server (BOS). 
+    Publishes the PTC-Sim web interface via Flask and watches the message
+    broker (via TCP/IP) for device and locomotive status msgs. The web display 
+    is then updated to reflect these statuses, including Google Earth location
+    mapping. 
+    The BOS may also also send outgoing computer-aided-dispatch (CAD) msgs to
+    each device.
 
     Author: Dustin Fast, 2018
 """
+
 from time import sleep
 from threading import Thread
 from subprocess import check_output
-from ConfigParser import RawConfigParser
 
-from lib import Track, Loco, Milepost, Client, Queue, Logger
+from lib_app import bos_log
+from lib_msging import Client, Queue
+from lib_track import Track, Loco, Milepost
+
+from lib_app import APP_NAME, REFRESH_TIME
+from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 
 # Attempt to import flask and prompt for install on fail
 while True:
@@ -31,36 +38,27 @@ while True:
             print('Exiting.')
             exit()
 
-# Init conf
-config = RawConfigParser()
-config.read('config.dat')
 
-# Import conf data
-REFRESH_TIME = float(config.get('application', 'refresh_time'))
-BROKER = config.get('messaging', 'broker')
-BROKER_SEND_PORT = int(config.get('messaging', 'send_port'))
-BROKER_FETCH_PORT = int(config.get('messaging', 'fetch_port'))
-BOS_EMP = config.get('messaging', 'bos_emp_addr')
-
+# TODO: Move into BOS class (or it's own class)
 # Flask defs
-web = Flask(__name__)
+app = Flask(__name__)
 
-@web.route('/PTC_SIM')
+@app.route('/' + APP_NAME)
 def home():
     return render_template('home.html')
 
 
 class BOS(object):
-    """ The back office server. Consists of a messaging client and status
-        watcher thread that fetches messages from the broker over TCP/IP.
+    """ The Back Office Server. Consists of a messaging client and status
+        watcher thread that fetches messages from the broker over TCP/IP, in
+        addition to the web interface
     """
     def __init__(self):
-        self.running = False  # State Flag
-        self.log = None  # Logger (defined on self.start)
+        self.running = False  # Thread kill flag
         self.track = Track()  # Track object instance
 
         # Messaging client
-        self.msg_client = Client(BROKER, BROKER_SEND_PORT, BROKER_FETCH_PORT)
+        self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)
 
         # Message watcher thread
         self.status_watcher_thread = Thread(target=self._statuswatcher)
@@ -68,19 +66,18 @@ class BOS(object):
     def start(self, debug=False):
         """ Start the BOS. I.e., the status watcher thread and web interface.
         """
-        self.log = Logger('log_bos')
-        self.log.info('BOS Started.')
+        bos_log.info('BOS Starting.')
         
         self.running = True
         self.status_watcher_thread.start()
 
-        web.run(debug=debug)  # Web interface, blocks until killed from console
+        app.run(debug=debug)  # Web interface, blocks until killed from console
 
         # Do shutdown
-        print('\nQuitting... Please wait.')
+        print('\nBOS Quitting... Please wait.')
         self.running = False
         self.status_watcher_thread.join(timeout=REFRESH_TIME)
-        self.log.info('BOS stopped.')
+        bos_log.info('BOS stopped.')
 
     def _statuswatcher(self):
         """ The status message watcher thread - watches the broker for msgs
@@ -92,9 +89,9 @@ class BOS(object):
             try:
                 msg = self.msg_client.fetch_next_msg(BOS_EMP)
             except Queue.Empty:
-                self.log.info('Msg queue empty.')
+                bos_log.info('Msg queue empty.')
             except Exception as e:
-                self.log.error('Fetch failed - connection error.')
+                bos_log.warn('Could not connect to broker.')
 
             # Process loco status msg
             if msg:
@@ -110,7 +107,7 @@ class BOS(object):
                     # Update the loco object
                     loco = self.track.locos.get(locoID)
                     if not loco:
-                        loco = Loco(locoID)
+                        loco = Loco(locoID, self.track)
 
                     loco.update(msg.payload['speed'],
                                 msg.payload['heading'],
@@ -119,24 +116,16 @@ class BOS(object):
                                 msg.payload['base'],
                                 bases)
 
-                    self.log.info('Processed status msg for loco ' + loco.ID)
+                    bos_log.info('Processed status msg for loco ' + loco.ID)
                 except KeyError as e:
-                    self.log.error('Malformed status msg received: ' +
-                                   str(msg.payload))
+                    bos_log.error('Malformed status msg: ' + str(msg.payload))
 
             sleep(REFRESH_TIME)
-
-        # TODO: def _contentbuilder(self):
-        #   """ Updates the web datatables.
-        #   """
-
-        # TODO: def _send_cmd_msg(self, msg):
-        #   """
-        #   """
 
 
 if __name__ == '__main__':
     # Start the Back Office Server
-    print('-- PTC_SIM: Back Office Server - Press CTRL + C to quit --\n')
+    print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
     sleep(.2)  # Ensure print statment occurs before flask output
-    bos = BOS().start(debug=True)
+    bos = BOS().start(debug=True)  # Blocks until CTRL+C
+    # TODO: BOS REPL
