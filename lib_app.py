@@ -123,7 +123,8 @@ class Logger(logging.Logger):
         log_fmt = logging.Formatter(log_fmt + '')
 
         # Init log file rotation
-        rotate_handler = logging.handlers.RotatingFileHandler(name + '.log',
+        fname = 'logs/' + name + '.log'
+        rotate_handler = logging.handlers.RotatingFileHandler(fname,
                                                               max_filesize,
                                                               num_files)
         rotate_handler.setLevel(level)
