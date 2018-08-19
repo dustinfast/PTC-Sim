@@ -11,9 +11,9 @@
 						<h3 style="display: inline; vertical-align: bottom;">Active Locomotives</h3>
 						<br>
 					</div>
-					<h5>&nbsp;<a href="#" style="display:inline; outline: none; font-size:12px;" data-target="#earth_modal" data-toggle="modal">New...</a></h5>
-					<hr/>
-					{{ loco_status }}
+					
+					<!-- Loco Status Table. Populated dynamically via AJAX in main.js -->
+					<div id="locos_table"></div>
 				</div>
 			</div>
 		</div>
@@ -24,9 +24,9 @@
 					<div class="panel-heading">
 						<h3 style="display: inline; vertical-align: bottom;">Status View</h3>
 					</div>
-					<h5>&nbsp; Click an active locomotive to view status.</h5>
-					<hr/>
-
+					
+					<!-- Loco Map/Status Display. Populated dynamically via AJAX in main.js -->
+					<div id="loco_status"></div>
 				</div>
 			</div>
 		</div>
@@ -45,5 +45,6 @@
 		</div>
 	</div>
 </div>
+<script type="text/javascript">home_content_updater();</script>
 
 {% endblock %}

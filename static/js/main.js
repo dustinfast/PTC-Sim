@@ -1,12 +1,11 @@
-function update_content() {
-    $.getJSON($SCRIPT_ROOT + "/_stuff",
-              function (data) {
-        $("loco_status").text(data.loco_status + " %")});
-        // alert('test');
-        }
-
-function content_updater() {
+// Queries the server for updated home content json
+function home_content_updater() {
     setInterval(function () {
-        update_content();
-    }, 10000);
+        $.getJSON($SCRIPT_ROOT + "/_home_content",
+            function (data) {
+                $("#locos_table").text(data.locos_table);
+                $("#loco_status").text(data.loco_status);
+                alert(data.locos_table);
+            });
+    }, 1000);
 }

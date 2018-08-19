@@ -39,20 +39,24 @@ while True:
             exit()
 
 
-######################
-# Flask Web Handlers #
-######################
-loco_status = '-1'
+# Web state vars
+locos_table = ''
+loco_status = {}
+current_loco_sel = ''
+
+
+# Flask Web Handlers 
 web = Flask(__name__)
 
 @web.route('/' + APP_NAME)
 def home():
-    return render_template('home.html', loco_status=loco_status)
+    return render_template('home.html')
 
 
-@web.route('/_stuff', methods=['GET'])
+@web.route('/_home_content', methods=['GET'])
 def update_home():
-    return jsonify(loco_status='-3')
+    global locos_table
+    return jsonify(locos_table=locos_table, loco_status=loco_status)
 
 
 class BOS(object):
@@ -79,8 +83,8 @@ class BOS(object):
         self.running = True
         self.status_watcher_thread.start()
         self.webupdate_thread.start()
-        global loco_status
-        loco_status = 'teststatus1'
+        global locos_table
+        locos_table = 'teststatus1'
         web.run(debug=debug)  # Web interface, blocks until killed from console
 
         # Do shutdown
@@ -140,9 +144,9 @@ class BOS(object):
         """
 
         # Update loco display
-        global loco_status
+        global locos_table
         for i in range(100):
-            loco_status = str(i)
+            locos_table = str(i)
             sleep(2)
 
 
