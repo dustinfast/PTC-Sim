@@ -498,22 +498,24 @@ def loco_messaging(loco):
 
         # Drop all out of range base connections and keep alive existing
         # in-range connections
-        for conn in [c for c in loco.conns.values() if c.connected() is True]:
+        lconns = loco.conns.values()
+        for conn in [c for c in lconns if c.connected() is True]:
             if conn.connected_to not in loco.bases_inrange:
                 conn.disconnect()
             else:
                 conn.keep_alive()
 
-        curr_conns = [c for c in loco.conns.values() if c.connected() is False]
-        for i, conn in enumerate(curr_conns):
+        open_conns = [c for c in lconns if c.connected() is False]
+        used_bases = [c.connected_to for c in lconns if c.connected() is True]
+        for i, conn in enumerate(open_conns):
             try:
-                if loco.bases_inrange[i] not in curr_conns:
+                if loco.bases_inrange[i] not in used_bases:
                     conn.connect(loco.bases_inrange[i])
             except IndexError:
                 break  # No (or no more) bases in range to consider
             
         # Ensure at least one active connection
-        conns = [c for c in loco.conns.values() if c.connected() is True]
+        conns = [c for c in lconns if c.connected() is True]
         if not conns:
             err_str = ' skipping msg send/recv - No active comms.'
             track_log.warn(loco.name + err_str)

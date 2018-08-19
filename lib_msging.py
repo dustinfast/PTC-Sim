@@ -315,7 +315,7 @@ def get_6000_msg(loco):
         con_str = str({k: v.connected_to.ID for (k, v)
                        in loco.conns.iteritems()
                        if v.connected() is True})
-
+                       
         status = {'loco': loco.ID,
                   'speed': loco.speed,
                   'heading': loco.heading,
