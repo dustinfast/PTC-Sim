@@ -101,7 +101,7 @@ class Broker(object):
             if not self.outgoing_queues.get(msg.dest_addr):
                 self.outgoing_queues[msg.dest_addr] = Queue.Queue()
             self.outgoing_queues[msg.dest_addr].put(msg)
-            log_str = 'Success - ' + msg.sender_addr + ' '
+            log_str = 'Fetch success - ' + msg.sender_addr + ' '
             log_str += 'to ' + msg.dest_addr
             broker_log.info(log_str)
 

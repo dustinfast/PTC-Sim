@@ -3,7 +3,6 @@
 class WebTable:
     """ An HTML Table, with build methods.
     """
-
     def __init__(self, head_tag=None, col_headers=[]):
         """ num_columns: Number of table columns
             col_headers: A list of strings representing table column headings
@@ -53,6 +52,40 @@ def cell(content, css_class=None):
     if css_class:
         return '<td class='' + str(css_class) + ''>' + content + '</td>'
     return '<td>' + content + '</td>'
+
+
+def get_locos_table(track):
+    """ Given a track object, returns the locos html table for web display.
+    """
+    # print('*debug*')
+    select_loco_btn = ' -> '
+    outter = WebTable(col_headers=[' ID', ' Status', ' + '])  # Outter table
+    for loco in track.locos.values():
+        print(loco.name + ', '.join([str(c.connected_to) for c in loco.conns.values()]))
+        conn_values = []
+        for c in loco.conns.values():
+            if not c.connected_to:
+                conn_values.append('N/A')
+            else:
+                conn_values.append(c.connected_to.ID)
+
+        inner_headers = [c for c in loco.conns.keys()]
+        inner = WebTable(col_headers=inner_headers)  # Inner table
+        inner.add_row([cell(c) for c in conn_values])
+        outter.add_row([cell(loco.ID),
+                        cell(inner.html()),
+                        cell(select_loco_btn)])
+
+    # print(outter.html())
+    return outter.html()
+
+def get_main_panels(track):
+    """ Returns a dict of loco panels: { loco_id: panel }, where panel contains
+        loco status/location via KML consisting of current track restrictions,
+        bases, waysides, etc. Also contains a None key, corresponding to a
+        panel for the track but with no locos.
+    """
+    return {None: 'Click a locomotive to view control panel.'}
 
 
 if __name__ == '__main__':

@@ -62,8 +62,10 @@ class TrackSim(object):
             for l in ptctrack.locos.values():
                 status_str = 'Loco ' + l.ID + ': '
                 status_str += str(l.speed) + ' @ ' + str(l.milepost.marker)
-                status_str += '. Bases in range: ' + str(len(l.bases_inrange))
-                # status_str += ', '.join([b.ID for b in l.bases_inrange])
+                status_str += '. Bases in range: '
+                status_str += ', '.join([b.ID for b in l.bases_inrange])
+                status_str += ' Conns: '
+                status_str += ', '.join([c.connected_to.ID for c in l.conns.values() if c.connected_to])
                 track_log.info(status_str)
 
             sleep(REFRESH_TIME)

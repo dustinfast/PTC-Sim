@@ -14,6 +14,7 @@ from time import sleep
 from threading import Thread
 from subprocess import check_output
 
+from lib_web import get_locos_table, get_main_panels
 from lib_app import bos_log
 from lib_msging import Client, Queue
 from lib_track import Track, Loco, Milepost
@@ -39,10 +40,14 @@ while True:
             exit()
 
 
+#################
+# Flask Web app #
+#################
+
 # Web state vars
-locos_table = ''
-loco_panels = {}
-curr_loco = ''
+locos_table = '-1'
+main_panels = {}  # { None: loco-free-panel, loco_id: panel, ... }
+curr_loco = None
 
 # Flask Web Handlers 
 web = Flask(__name__)
@@ -51,21 +56,24 @@ web = Flask(__name__)
 def home():
     return render_template('home.html')
 
-
 @web.route('/_home_update', methods=['GET'])
 def _home_update():
     try:
-        loco_panel = loco_panels[curr_loco]
+        main_panel = main_panels[curr_loco]
     except:
-        loco_panel = 'Click a locomotive to view control panel.'
+        main_panel = 'Error.'
 
-    return jsonify(locos_table=locos_table, loco_panel=loco_panel)
+    return jsonify(locos_table=locos_table, main_panel=main_panel)
 
 
 # @web.route('/_home_select_loco', methods=['POST'])
 # def _home_select_loco():
 #     curr_loco = 
 
+
+#############
+# BOS Class #
+#############
 
 class BOS(object):
     """ The Back Office Server. Consists of a messaging client and status
@@ -124,7 +132,7 @@ class BOS(object):
                                         msg.payload['long'])
 
                     active_conns = eval(msg.payload['conns'])  # evals to dict
-
+                    print(active_conns)
                     # Update the loco object
                     loco = self.track.locos.get(locoID)
                     if not loco:
@@ -143,16 +151,17 @@ class BOS(object):
             sleep(REFRESH_TIME)
         
     def _webupdater(self):
-        """ The web updater thread. Parses the BOS's local track object
+        """ The web updater thread. Parses the BOS's local track object's
             devices and updates the web output (HTML table, Google Earth/KMLs, 
             etc.) accordingly.
         """
-        i = 0
+        global locos_table, main_panels
+
         while self.running:
-            # Update locos_table
-            global locos_table
-            i += 1
-            locos_table = str(i)
+            # Update locos_table, the table of locomotives
+            locos_table = get_locos_table(self.track)
+            main_panels = get_main_panels(self.track)
+
             sleep(REFRESH_TIME)
 
 
@@ -161,6 +170,4 @@ if __name__ == '__main__':
     print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
     sleep(.2)  # Ensure print statment occurs before flask output
     bos = BOS().start(debug=True)  # Blocks until CTRL+C
-    print('end')
-    exit()
     # TODO: BOS REPL

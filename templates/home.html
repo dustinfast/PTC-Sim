@@ -4,7 +4,7 @@
 	<!-- <h4>Click a locomotive to view status. If none exist, instantiate with "Instantiate New..."</h4> -->
 	<div class="row">
 		<div class="col">
-			<!-- Active Locomotives table -->
+			<!-- Locomotives Table -->
 			<div id="loco-container" style="width: 300px; overflow: hidden; padding: 0 10px 0 10px; float: left;">
 				<div id="locos" class="panel panel-default //window-height">
 					<div class="panel-heading">
@@ -18,7 +18,7 @@
 			</div>
 		</div>
 		<div class="col">
-			<!-- Locomotive Status View -->
+			<!-- Main Panel View -->
 			<div id="status-container" style="width: 400px; overflow: hidden; padding: 0 10px 0 10px; float: left;">
 				<div id="status" class="panel panel-default //window-height">
 					<div class="panel-heading">
@@ -26,20 +26,22 @@
 					</div>
 					
 					<!-- Loco Map/Status Display. Populated dynamically via AJAX in main.js -->
-					<div id="loco_panel"></div>
+					<div id="main_panel"></div>
 				</div>
 			</div>
 		</div>
-		<div class="col">
-			<!-- Console Output -->
-			<div id="console-container" style="width: 300px; overflow: hidden; padding: 0 10px 0 10px; float: left;">
-				<div id="console" class="panel panel-default //window-height">
-					<div class="panel-heading">
-						<h3 style="display: inline; vertical-align: bottom;">Console Output</h3>
-					</div>
-					<h5>&nbsp;...</h5>
-					<hr/>
+		<div class="row">
+			<div class="col">
+				<!-- Console Output -->
+				<div id="console-container" style="width: 300px; overflow: hidden; padding: 0 10px 0 10px; float: left;">
+					<div id="console" class="panel panel-default //window-height">
+						<div class="panel-heading">
+							<h3 style="display: inline; vertical-align: bottom;">Console Output</h3>
+						</div>
+						<h5>&nbsp;...</h5>
+						<hr/>
 
+					</div>
 				</div>
 			</div>
 		</div>

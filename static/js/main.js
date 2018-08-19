@@ -3,11 +3,11 @@ function home_content_updater() {
     setInterval(function () {
         $.getJSON($SCRIPT_ROOT + "/_home_update",
             function (data) {
-                $("#locos_table").text(data.locos_table);
-                $("#loco_status").text(data.loco_status);
+                $("#locos_table").html(data.locos_table);
+                $("#main_panel").html(data.main_panel);
                 // alert(data.locos_table);
             });
-    }, 1000);
+    }, 2000);
 }
 
 // function loco_selected() {
