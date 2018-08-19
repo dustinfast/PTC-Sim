@@ -4047,3 +4047,300 @@
 2018-08-18 16:09:00,604 - WARNING @ sim_bos: Could not connect to broker.
 2018-08-18 16:09:05,767 - WARNING @ sim_bos: Could not connect to broker.
 2018-08-18 16:09:06,618 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:10:42,456 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:10:43,216 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:10:43,471 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:10:44,233 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:10:49,500 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:10:50,259 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:00,098 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:11:00,846 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:11:01,115 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:01,864 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:07,130 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:11,920 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:11:13,154 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:19,171 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:25,190 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:31,206 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:37,243 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:43,279 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:49,315 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:11:55,329 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:01,358 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:07,385 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:13,420 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:19,460 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:25,492 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:31,506 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:37,520 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:43,545 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:49,561 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:12:55,588 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:01,624 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:07,660 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:13,690 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:19,733 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:25,753 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:31,770 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:37,789 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:43,806 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:49,822 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:13:55,845 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:01,881 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:07,901 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:13,913 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:19,928 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:26,739 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:14:27,496 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:14:27,766 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:28,513 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:30,799 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:31,549 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:33,812 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:34,572 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:36,845 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:37,596 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:39,865 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:40,609 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:42,880 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:43,635 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:45,920 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:46,661 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:47,680 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:14:48,953 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:51,982 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:55,029 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:14:58,078 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:01,105 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:04,125 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:07,141 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:10,158 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:13,184 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:16,207 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:19,232 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:22,246 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:25,260 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:28,296 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:31,332 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:34,357 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:37,390 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:40,420 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:43,436 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:15:51,006 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:15:51,750 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:15:52,039 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:15:52,770 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:15:55,062 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:15:55,819 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:15:58,072 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:15:58,844 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:01,099 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:01,884 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:04,144 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:04,907 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:06,920 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:16:07,184 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:10,198 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:13,226 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:16,263 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:19,292 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:22,321 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:25,342 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:28,369 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:31,397 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:34,428 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:37,444 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:40,457 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:43,483 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:46,499 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:49,535 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:52,555 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:55,566 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:16:58,592 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:17:01,615 - WARNING @ sim_bos: Could not connect to broker..
+2018-08-18 16:17:13,829 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:17:14,815 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:17:14,894 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:15,838 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:17,933 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:18,861 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:20,966 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:21,882 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:23,096 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:17:23,986 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:27,010 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:30,039 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:33,075 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:36,108 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:39,135 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:42,174 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:45,217 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:48,252 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:51,289 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:54,321 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:17:57,364 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:18:00,404 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:18:03,438 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:19:57,395 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:19:58,151 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:19:58,424 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:19:59,173 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:01,457 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:02,196 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:04,477 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:05,217 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:06,492 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:20:07,509 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:10,543 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:13,588 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:16,621 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:19,650 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:20:21,394 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:21:07,622 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:21:08,362 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:21:08,660 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:09,381 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:11,684 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:12,413 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:14,710 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:15,454 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:17,721 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:18,477 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:20,082 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:21:20,753 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:23,786 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:26,811 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:29,835 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:32,861 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:35,877 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:38,888 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:41,904 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:44,924 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:47,947 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:50,969 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:54,000 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:21:57,026 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:00,038 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:03,061 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:06,085 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:09,128 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:12,141 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:15,154 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:18,177 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:21,194 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:24,220 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:27,257 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:30,286 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:33,312 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:36,334 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:39,365 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:42,392 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:45,415 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:48,430 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:51,457 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:54,467 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:22:57,492 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:23:00,503 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:23:03,525 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:23:06,545 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:23:09,572 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:23:12,595 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:23:15,608 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:23:18,619 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:24:56,946 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:24:57,752 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:24:57,969 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:24:58,769 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:00,986 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:01,805 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:03,822 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:25:04,006 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:07,038 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:10,078 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:13,119 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:16,132 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:19,150 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:22,161 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:25,183 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:28,198 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:31,243 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:34,269 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:37,292 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:40,322 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:43,354 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:46,394 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:49,400 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:52,415 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:55,440 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:25:58,454 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:01,467 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:04,506 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:07,513 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:10,540 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:13,565 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:16,591 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:19,635 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:22,650 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:25,664 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:28,681 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:31,706 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:34,726 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:37,742 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:40,763 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:26:43,795 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:07,207 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:27:07,966 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:27:08,237 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:08,977 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:11,262 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:11,994 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:14,016 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:27:14,272 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:17,303 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:20,328 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:23,357 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:26,385 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:29,414 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:32,427 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:35,456 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:38,482 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:41,493 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:44,510 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:47,523 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:50,549 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:53,565 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:56,588 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:27:59,601 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:02,630 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:05,651 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:08,676 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:11,687 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:14,724 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:17,750 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:20,776 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:23,801 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:26,822 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:29,848 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:32,861 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:35,897 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:38,907 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:41,923 - WARNING @ sim_bos: Could not connect to broker.
+2018-08-18 16:28:49,309 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:28:50,063 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:29:10,594 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:29:44,486 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:29:45,253 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:29:59,414 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:31:45,586 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:31:46,326 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:31:54,960 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:32:21,641 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:32:22,414 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:32:25,970 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:33:39,115 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:33:39,910 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:33:43,528 - INFO @ sim_bos: BOS stopped.
+2018-08-18 16:37:16,161 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:37:16,946 - INFO @ sim_bos: BOS Starting.
+2018-08-18 16:37:21,926 - INFO @ sim_bos: BOS stopped.

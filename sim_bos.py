@@ -41,9 +41,8 @@ while True:
 
 # Web state vars
 locos_table = ''
-loco_status = {}
-current_loco_sel = ''
-
+loco_panels = {}
+curr_loco = ''
 
 # Flask Web Handlers 
 web = Flask(__name__)
@@ -53,10 +52,19 @@ def home():
     return render_template('home.html')
 
 
-@web.route('/_home_content', methods=['GET'])
-def update_home():
-    global locos_table
-    return jsonify(locos_table=locos_table, loco_status=loco_status)
+@web.route('/_home_update', methods=['GET'])
+def _home_update():
+    try:
+        loco_panel = loco_panels[curr_loco]
+    except:
+        loco_panel = 'Click a locomotive to view control panel.'
+
+    return jsonify(locos_table=locos_table, loco_panel=loco_panel)
+
+
+# @web.route('/_home_select_loco', methods=['POST'])
+# def _home_select_loco():
+#     curr_loco = 
 
 
 class BOS(object):
@@ -83,8 +91,6 @@ class BOS(object):
         self.running = True
         self.status_watcher_thread.start()
         self.webupdate_thread.start()
-        global locos_table
-        locos_table = 'teststatus1'
         web.run(debug=debug)  # Web interface, blocks until killed from console
 
         # Do shutdown
@@ -96,7 +102,7 @@ class BOS(object):
 
     def _statuswatcher(self):
         """ The status message watcher thread - watches the broker for msgs
-            addressed to it and processes them. See 
+            addressed to it and processes them.
         """
         while self.running:
             # Fetch the next available msg, if any
@@ -138,16 +144,16 @@ class BOS(object):
         
     def _webupdater(self):
         """ The web updater thread. Parses the BOS's local track object
-            devices and updates the web output (Google Earth/KMLs,
-            DataTables, etc.)
-            accordingly.
+            devices and updates the web output (HTML table, Google Earth/KMLs, 
+            etc.) accordingly.
         """
-
-        # Update loco display
-        global locos_table
-        for i in range(100):
+        i = 0
+        while self.running:
+            # Update locos_table
+            global locos_table
+            i += 1
             locos_table = str(i)
-            sleep(2)
+            sleep(REFRESH_TIME)
 
 
 if __name__ == '__main__':
@@ -155,4 +161,6 @@ if __name__ == '__main__':
     print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
     sleep(.2)  # Ensure print statment occurs before flask output
     bos = BOS().start(debug=True)  # Blocks until CTRL+C
+    print('end')
+    exit()
     # TODO: BOS REPL

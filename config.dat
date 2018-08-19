@@ -4,7 +4,7 @@
 
 [application]
 app_name = PTC-Sim                  ; Web and terminal display name. URL compatible chars only.
-refresh_time = 5                    ; Thread & loop sleep seconds between iterations
+refresh_time = 2                    ; Thread & loop sleep seconds between iterations
                                     
 [track]
 track_rails = track/rails.json      ; Track model file
