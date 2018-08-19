@@ -7,7 +7,7 @@ function home_content_updater() {
                 $("#main_panel").html(data.main_panel);
                 // alert(data.locos_table);
             });
-    }, 2000);
+    }, 10000);
 }
 
 // function loco_selected() {

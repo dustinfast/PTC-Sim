@@ -57,11 +57,9 @@ def cell(content, css_class=None):
 def get_locos_table(track):
     """ Given a track object, returns the locos html table for web display.
     """
-    # print('*debug*')
-    select_loco_btn = ' -> '
+    select_loco_btn = ' -> '  # Temp
     outter = WebTable(col_headers=[' ID', ' Status', ' + '])  # Outter table
     for loco in track.locos.values():
-        print(loco.name + ', '.join([str(c.connected_to) for c in loco.conns.values()]))
         conn_values = []
         for c in loco.conns.values():
             if not c.connected_to:
@@ -76,7 +74,6 @@ def get_locos_table(track):
                         cell(inner.html()),
                         cell(select_loco_btn)])
 
-    # print(outter.html())
     return outter.html()
 
 def get_main_panels(track):

@@ -49,7 +49,7 @@ class TrackSim(object):
         """ The Track simulator - Simulates locomotives
             traveling on a track. # TODO: Implement bases, switches, etc.
         """
-        # Instantiate the Track - It contains all devices and locos on it.
+        # Instantiate the Track - It contains all devices and locos.
         ptctrack = Track()
 
         # Start each track componenet-device's simulation thread

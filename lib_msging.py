@@ -204,17 +204,19 @@ class Connection(object):
         self.active = True
         self.last_activity = datetime.datetime.now()
 
-    def connect_to(self, obj):
+    def connect(self, obj):
         """ Establishes the connection (nominally, at this point), to the
             given TrackDevice.
         """
         self.connected_to = obj
+        self.keep_alive()
 
     def connected(self):
-        """ Returns True iff connection is connected.
+        """ Returns True if connection is connected, else returns False
         """
         if self.connected_to:
             return True
+        return False
 
     def disconnect(self):
         """ "Terminates" the nominal connection
@@ -306,3 +308,32 @@ class Receiver(object):
     def __init__(self):
         pass
 
+
+def get_6000_msg(loco):
+        """ Returns a well-formed 6000 (loco status) msg for the given loco.
+        """
+        con_str = str({k: v.connected_to.ID for (k, v)
+                       in loco.conns.iteritems()
+                       if v.connected() is True})
+
+        status = {'loco': loco.ID,
+                  'speed': loco.speed,
+                  'heading': loco.heading,
+                  'direction': loco.direction,
+                  'milepost': loco.milepost.marker,
+                  'lat': loco.milepost.lat,
+                  'long': loco.milepost.long,
+                  'bpp': loco.bpp,
+                  'conns': con_str}
+
+        msg_type = 6000
+        msg_source = loco.emp_addr
+        msg_dest = BOS_EMP
+        payload = status
+
+        status_msg = Message((msg_type,
+                              msg_source,
+                              msg_dest,
+                              payload))
+
+        return status_msg

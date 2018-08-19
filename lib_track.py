@@ -13,7 +13,7 @@ from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
 from lib_app import track_log
-from lib_msging import Connection, Queue, Message
+from lib_msging import Connection, Queue, get_6000_msg
 
 # Init conf
 config = RawConfigParser()
@@ -26,10 +26,9 @@ TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_LOCOS = config.get('track', 'track_locos')
 TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
-TRACK_TIMEOUT = int(config.get('track', 'component_timeout'))
+CONN_TIMEOUT = int(config.get('track', 'component_timeout'))
 
 MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
-BOS_EMP = config.get('messaging', 'bos_emp_addr')
 LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
 
@@ -76,7 +75,7 @@ class TrackDevice(object):
     def __init__(self, ID, device_type, milepost=None):
         """ self.ID         : (str) The Device's unique identifier
             self.milepost   : (Milepost) The devices location, as a Milepost
-            self.conns      : (list) Connection objects
+            self.conns      : (dict) Connection objects - { ID: Connection }
             self.sim        : The device's simulation. Start w/self.sim.start()
         """
         self.ID = ID
@@ -131,8 +130,8 @@ class Loco(TrackDevice):
         self.bases_inrange = []
         self.bases = []
 
-        self.conns = {'Radio1': Connection('Radio1', timeout=TRACK_TIMEOUT),
-                      'Radio2': Connection('Radio2', timeout=TRACK_TIMEOUT)}
+        self.conns = {'Radio1': Connection('Radio1', timeout=CONN_TIMEOUT),
+                      'Radio2': Connection('Radio2', timeout=CONN_TIMEOUT)}
 
         self.sim = DeviceSim(self, [loco_movement, loco_messaging])
         
@@ -177,29 +176,13 @@ class Loco(TrackDevice):
             if not bases:
                 [c.disconnect for c in self.conns]
                 return
+            try:
+                for conn_label, base_id in bases.iteritems():
+                    self.conns[conn_label].connect(self.track.bases[base_id])
+            except KeyError:
+                err_str = ' - Invalid connection or base ID in bases param.'
+                raise ValueError(self.name + err_str)
 
-            for conn_label, base_id in enumerate(bases):
-                try:
-                    self.conns[conn_label] = self.track.bases[base_id]
-                except KeyError:
-                    err_str = ' - Invalid connection or base ID in bases param.'
-                    raise ValueError(self.name + err_str)
-
-    def status_dict(self):
-        """ Returns loco's current status as a dict of strings and nums.
-        """
-        con_str = str({k: v.connected() for (k, v)
-                       in self.conns.iteritems()
-                       if v.connected()})
-        return {'loco': self.ID,
-                'speed': self.speed,
-                'heading': self.heading,
-                'direction': self.direction,
-                'milepost': self.milepost.marker,
-                'lat': self.milepost.lat,
-                'long': self.milepost.long,
-                'conns': con_str}
-                
 
 class Base(TrackDevice):
     """ An abstraction of a 220 MHz base station, including it's coverage area.
@@ -307,7 +290,7 @@ class Track(object):
 
         for base in bases:
             try:
-                base_id = base['id']
+                base_id = str(base['id'])
                 coverage_start = float(base['coverage'][0])
                 coverage_end = float(base['coverage'][1])
             except ValueError:
@@ -349,7 +332,8 @@ class Track(object):
 
         for loco in locos:
             try:
-                self.locos[loco['id']] = Loco(loco['id'], self)
+                loco_id = str(loco['id'])
+                self.locos[loco_id] = Loco(loco_id, self)
             except KeyError:
                 raise Exception('Malformed ' + locos_file + ': Key Error.')
 
@@ -512,45 +496,31 @@ def loco_messaging(loco):
     while loco.sim.running:
         sleep(MSG_INTERVAL)  # Sleep for specified interval
 
-        # Drop all out of range base connections, keep alive all existing
-        # in-range connections, and build list of unused bases
-        unused_inrange = loco.bases_inrange
-        curr_conns = [c for c in loco.conns.values() if c.connected()]
-        for conn in curr_conns:
-            if conn.connected_to not in unused_inrange:
+        # Drop all out of range base connections and keep alive existing
+        # in-range connections
+        for conn in [c for c in loco.conns.values() if c.connected() is True]:
+            if conn.connected_to not in loco.bases_inrange:
                 conn.disconnect()
             else:
                 conn.keep_alive()
-                unused_inrange.remove(conn.connected_to)
 
-        # Connect unused connections to bases in range (one conn/base)
-        for conn in loco.conns.values():
-            if not unused_inrange:
-                break
-            if not conn.connected():
-                conn.connect_to(unused_inrange[0])
-                unused_inrange.remove(conn.connected_to)
-  
+        curr_conns = [c for c in loco.conns.values() if c.connected() is False]
+        for i, conn in enumerate(curr_conns):
+            try:
+                if loco.bases_inrange[i] not in curr_conns:
+                    conn.connect(loco.bases_inrange[i])
+            except IndexError:
+                break  # No (or no more) bases in range to consider
+            
         # Ensure at least one active connection
-        conns = [c for c in loco.conns.values() if c.connected()]
+        conns = [c for c in loco.conns.values() if c.connected() is True]
         if not conns:
-            # TODO: Generalize w/ Connections.list of Connection objs. Incl members that do these things
             err_str = ' skipping msg send/recv - No active comms.'
             track_log.warn(loco.name + err_str)
             continue  # Try again next iteration
 
-        # Build status msg to send to BOS
-        msg_type = 6000
-        msg_source = loco.emp_addr
-        msg_dest = BOS_EMP
-        payload = str(loco.status_dict())
-
-        status_msg = Message((msg_type,
-                              msg_source,
-                              msg_dest,
-                              payload))
-
         # Send status msg over active connections, breaking on first success.
+        status_msg = get_6000_msg(loco)
         for conn in conns:
             try:
                 conn.send(status_msg)

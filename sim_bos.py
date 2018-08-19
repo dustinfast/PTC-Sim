@@ -130,18 +130,18 @@ class BOS(object):
                     milepost = Milepost(msg.payload['milepost'],
                                         msg.payload['lat'],
                                         msg.payload['long'])
-
                     active_conns = eval(msg.payload['conns'])  # evals to dict
-                    print(active_conns)
-                    # Update the loco object
+                    # Reference (or instantiate) the loco object with given ID
                     loco = self.track.locos.get(locoID)
                     if not loco:
                         loco = Loco(locoID, self.track)
 
+                    # Update the BOS's loco object with status msg params
                     loco.update(msg.payload['speed'],
                                 msg.payload['heading'],
                                 msg.payload['direction'],
                                 milepost,
+                                msg.payload['bpp'],
                                 active_conns)
 
                     bos_log.info('Processed status msg for loco ' + loco.ID)
