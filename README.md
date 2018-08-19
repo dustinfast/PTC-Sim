@@ -1,25 +1,23 @@
 # PTC-Sim - Positive Train Control Simulator
 
-This application is a demonstration of a Positive Train Control (PTC) control applied to a simulated Track with virtual locomotives and communications infrastructure such as 220 MHz radio base-stations and messaging subsystem. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's locomotive trackingsSolution. Tt contains no proprietary code, and is free under the MIT license.
+This application is a demonstration of Positive Train Control (PTC) control applied to a simulated Track with virtual locomotives and communications infrastructure, such as 220 MHz radio base-stations, waysides, etc.. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's locomotive tracking solution. It contains no proprietary code, and is free under the MIT license.  
 
-Federal Railroad Administration's (FRA) PTC implementation deadline of 2015, and later extended to 2018, , mandated by the Act of...
+PTC was mandated by congress in 2008 for all Class I or larger railroads with an implementation deadline of 2015. The deadline was later extended to 2018 after little progress was made due to technical challenges. 
 
-PTC was mandated by congress in 2008 for all Class I or larger railroads with an implementation deadline of 2015. The deadline was later extended to 2018 after little progress was made due to technical challenges. That deadline was to prevent
-
-PTC was mandated by congress to prevent:
+PTC's mandate is to prevent:
 
 * Train on train collisions
 * Over-speed derailments
 * Incursions into work zone limits
 * Movement through misaligned track-switches
   
-Interoperability between railroads is also required, asdefined by the Federal Railroad Administration's Interoperable Train Control (ITC) standard.
+Interoperability between railroads is also required, as defined by the Federal Railroad Administration's Interoperable Train Control (ITC) standard.
 
-PTC-Sim implements broker-assisted communication between simulated track devices (including locomotives) and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current component status and location is also displayed.
+PTC-Sim implements broker-assisted communication between simulated track devices (including locomotives) and a Back Office Server (BOS) utilizing the Edge Message Protocol (EMP). Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current component status and location is displayed graphically.
 
 ## Applicaton Structure
 
-### Componenets
+### Components
 
 Each component exists as a seperate entity:
 
@@ -50,7 +48,7 @@ Each component exists as a seperate entity:
 
 ### Unimplemented
 
-Some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, persistent data, and TCP/IP session management are left unimplemented for the sake of demonstration simplicity. In addition, the track simulation is currently restricted to a single branch.
+Some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, persistent data, and connection session management are left unimplemented for the sake of demonstration simplicity. In addition, the track simulation is currently restricted to a single branch.
 
 ### Message Specification
 
@@ -60,26 +58,22 @@ Adheres to EMP V4 (specified in S-9354.pdf) and uses fixed-format messages with 
 
 Start the application with `./start.py`, then navigate to http://localhost:5000/ptc_sim.
   
-Alternatively, the BOS, Message Broker, and Track Simulator may be started independently with `./sim_bos`, `./sim_broker`, and `./sim_track`, respectively.
+Alternatively, the BOS, Message Broker, and Track Simulator may be started independently with `./sim_bos.py`, `./sim_broker.py`, and `./sim_track.py`, respectively.
 
 ## # TODO
 
 * Web: logtail/console output, broker queue sizes  
 * Catch specific socket conn errors w/ except socket.error  
 * sim_track does not quit gracefully
-* rename track_ to topology_
 * Fictional track model
 * Better exception bubbling to start.py
-* Move appname to conf and use PTC-Sim
-* Generalize sim_track, sim_loco, sim_bos, and DeviceSim classes into Threader
-* Seperate sim functions from device classes, then remove track param from TrackDevice
-* TrackDevice.err(str)
+* TrackDevice.err(str)?
 
 * PEP8 file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members  
 * readme screenshots and high-level images  
 * py3 - >>> config = configparser.ConfigParser()
-* Track Circuits to aid col avoidance.  
+* Track Circuits, to aid col avoidance.  
 * bos does not quit start.py on CTRL + C, and only quits from sim_bos on CTRL+C: Turn off the CTRL + C msg. Or possibly redirect flask's stdout so exit kills it in sim_bos with a terminate()
 * Use multiprocessing instead of threading where reasonable
 * Move msg spec (folder and readme) to /docs
