@@ -69,7 +69,7 @@ def _home_locotable_update():
 
 @bos_web.route('/_home_map_update', methods=['GET'])
 def _home_map_update():
-    return jsonify(panel_map.as_json())
+    return jsonify(status_map=panel_map.as_json())
 
 # @bos_web.route('/_home_select_loco', methods=['POST'])
 # def _home_select_loco():
@@ -104,7 +104,8 @@ class BOS(object):
         self.running = True
         self.status_watcher_thread.start()
         self.webupdate_thread.start()
-        bos_web.run(debug=debug)  # Web interface, blocks until killed from console
+
+        bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL+C
 
         # Do shutdown
         print('\nBOS Stopping... Please wait.')
@@ -175,5 +176,4 @@ if __name__ == '__main__':
     # Start the Back Office Server
     print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
     sleep(.2)  # Ensure print statment occurs before flask output
-    bos = BOS().start(debug=True)  # Blocks until CTRL+C
-    # TODO: BOS REPL
+    bos = BOS().start(debug=True)

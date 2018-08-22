@@ -6,10 +6,27 @@ function get_home_locotable_async() {
         });
     }
 
+    
 function get_home_map_async() {
     $.getJSON($SCRIPT_ROOT + "/_home_map_update",
         function (data) {
-            panel_map_markers.map(function (mk) { mk.setMap(panel_map) });
+            panel_map_markers.map(function (mk) { mk.setMap(null) });
+            // console.log(data.status_map.markers)
+            $.each(data.status_map.markers, function (i) {
+                createMarker(data);
+
+                function createMarker(data) {
+                    var infowindow = new google.maps.InfoWindow();
+                    var marker = new google.maps.Marker({
+                        position: new google.maps.LatLng(data.status_map.markers[i].lat, data.status_map.markers[i].lng),
+                        icon: data.status_map.markers[i].icon,
+                        map: panel_map,
+                    });
+                    // infowindow.close();
+                    // infowindow.setContent(data.status_map.markers[i].infobox);
+                    // infowindow.open(panel_map, marker);
+                };
+            });
         });
 }
 
@@ -19,8 +36,9 @@ function update_home_content_async() {
     setInterval(function () {
         get_home_locotable_async();  
         get_home_map_async();
-    }, 5000);
+    }, 10000);
 }
+
 // End Home Content Updater
 
 // Loco table -> Select Loco Handler

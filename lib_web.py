@@ -117,8 +117,8 @@ def get_status_map(track, loco_id=None):
     # Define icons and html tags
     loco_grn = '/static/img/loco_ico_grn_sm.png'
     loco_red = '/static/img/loco_ico_red_sm.png'
-    base_grn = '/static/img/base_ico_grn_sm.png'
-    base_red = '/static/img/base_ico_red_sm.png'    
+    base_grn = '/static/img/base_ico_grn.png'
+    base_red = '/static/img/base_ico_red.png'    
 
     # -- Bases:
     for base in track.bases.values():
