@@ -142,9 +142,9 @@ class Loco(TrackDevice):
         self.direction = {0: 'increasing', 1: 'decreasing'}.get(randint(0, 1))
         self.bpp = randint(0, 90)
 
-        if track.coords:
-            max_index = len(track.coords) - 1
-            self.coords = track.coords.values()[
+        if track.mileposts:
+            max_index = len(track.mileposts) - 1
+            self.coords = track.mileposts.values()[
                 randint(0, max_index)]
 
     def update(self,
@@ -259,8 +259,10 @@ class Track(object):
             Format: { LOCOID: LOCO_OBJECT }
         self.bases = A dict of radio base stations, used by locos to send msgs. 
             Format: { BASEID: BASE_OBJECT }
-        self.coords = A dict of all track locations
-            Format: { MP: MP_OBJECT }
+        self.mileposts = A dict of all track mileposts
+            Format: { MP: LOCATIONOBJECT }
+        self.mileposts_sorted = A list of all track mileposts, sorted by marker.
+            Format: [ LOCATIONOBJECT_1, ... , LOCATIONOBJECT_N ]
         self.marker_linear = A representation of the track in order of mps.
             Format: [ MP_1, ... , MP_n ], where MP1 < MPn
         self.marker_linear_rev = A represention the track in reverse order of mps.
@@ -278,7 +280,8 @@ class Track(object):
         """
         self.locos = {}
         self.bases = {}
-        self.coords = {}
+        self.mileposts = {}
+        self.mileposts_sorted = []
         self.marker_linear = []
         self.marker_linear_rev = []
         # self.restrictions = {}  # { AUTH_ID: ( START_MILEPOST, END_MILEPOST }
@@ -308,7 +311,7 @@ class Track(object):
                                        coverage_end,
                                        Location(mp, lat, lng))
 
-        # Populate location objects (self.coords) from track_file
+        # Populate milepost objects (self.mileposts) from track_file
         try:
             with open(track_file) as rail_data:
                 locations = loads(rail_data.read())
@@ -325,11 +328,14 @@ class Track(object):
             except KeyError:
                 raise Exception('Malformed ' + track_file + ': Key Error.')
 
-            self.coords[mp] = Location(mp, lat, lng)
+            self.mileposts[mp] = Location(mp, lat, lng)
 
-        for mp in sorted(self.coords.keys()):
-            self.marker_linear.append(mp)
+        # Build the other milepost lists/dicts from self.mileposts
+        self.marker_linear = [m for m in sorted(self.mileposts.keys())]
         self.marker_linear_rev = self.marker_linear[::-1]
+        sorted_objs = [m for m in 
+                       sorted(self.mileposts.values(), key=lambda x: x.marker)]
+        self.mileposts_sorted = sorted_objs
 
         # Populate Locomotive objects (self.locos) from locos_file
         try:
@@ -410,7 +416,7 @@ class Track(object):
     def get_location_at(self, mile):
         """ Returns the Location at distance (a float) iff one exists.
         """
-        return self.coords.get(mile, None)
+        return self.mileposts.get(mile, None)
 
 
 class Location:

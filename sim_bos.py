@@ -62,10 +62,14 @@ def home():
                            panel_map=panel_map)
 
 
-@bos_web.route('/_home_update', methods=['GET'])
-def _home_update():
+@bos_web.route('/_home_locotable_update', methods=['GET'])
+def _home_locotable_update():
     return jsonify(locos_table=locos_table)
 
+
+@bos_web.route('/_home_map_update', methods=['GET'])
+def _home_map_update():
+    return jsonify(panel_map.as_json())
 
 # @bos_web.route('/_home_select_loco', methods=['POST'])
 # def _home_select_loco():
@@ -128,13 +132,14 @@ class BOS(object):
             if msg:
                 try:
                     locoID = msg.payload['loco']
-                    location = Location(msg.payload['location'],
+                    location = Location(msg.payload['milepost'],
                                         msg.payload['lat'],
                                         msg.payload['long'])
                     active_conns = eval(msg.payload['conns'])  # evals to dict
                     # Reference (or instantiate) the loco object with given ID
                     loco = self.track.locos.get(locoID)
                     if not loco:
+                        print('+++ new loco: ' + locoID)
                         loco = Loco(locoID, self.track)
 
                     # Update the BOS's loco object with status msg params
@@ -145,7 +150,7 @@ class BOS(object):
                                 msg.payload['bpp'],
                                 active_conns)
 
-                    bos_log.info('Processed status msg for loco ' + loco.ID)
+                    bos_log.info('Processed status msg for loco ' + loco.ID + ' @ ' + str(loco.coords))
                 except KeyError:
                     bos_log.error('Malformed status msg: ' + str(msg.payload))
 

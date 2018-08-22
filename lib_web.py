@@ -85,6 +85,25 @@ def get_locos_table(track):
     return outter.html()
 
 
+def get_trackline(track):
+    """ Returns a polyline for the given track, based on its mileposts.
+    """
+
+    tracklines = []
+    for mp in track.mileposts_sorted:
+        line = {'lat': mp.lat,
+                'lng': mp.long}
+        tracklines.append(line)
+
+    polyline = {
+        'stroke_color': '#dfd005',  # Yellow
+        'stroke_opacity': 1.0,
+        'stroke_weight': 2,
+        'path': list(ln for ln in tracklines)
+    }
+
+    return polyline
+
 def get_status_map(track, loco_id=None):
     """ Gets the main panel map for the given track. Adds all track devices
         to the map, except locos. If loco_id (a string) is given, then:
@@ -93,7 +112,7 @@ def get_status_map(track, loco_id=None):
     """
     # Containers
     map_markers = []  # Map markers
-    coord_points = []  # All coord points added, (p1, p2), for centering map.
+    base_points = []  # All coord points added, (p1, p2), for centering map.
 
     # Define icons and html tags
     loco_grn = '/static/img/loco_ico_grn_sm.png'
@@ -114,7 +133,7 @@ def get_status_map(track, loco_id=None):
                   'lng': base.coords.long,
                   'infobox': status_tbl.html()}
         map_markers.append(marker)
-        coord_points.append((base.coords.lat, base.coords.long))
+        base_points.append((base.coords.lat, base.coords.long))
 
     # -- Loco(s), if given.
     if loco_id == 'ALL':
@@ -140,25 +159,19 @@ def get_status_map(track, loco_id=None):
                   'lng': loco.coords.long,
                   'infobox': status_tbl.html()}
         map_markers.append(marker)
-        coord_points.append((base.coords.lat, base.coords.long))
+        # print('*** ' + loco.name + ': ' + str(loco.coords) + ' @ ' + str(loco.speed))
 
-    # Determine where to center map
-    if len(locos) == 1:
-        # Center of map will be on loco, if only one given.
-        center = (loco.coords.lat, loco.coords.long)
-    else:
-        # Else, find the centroid of all pts, we'll center on that.
-        x, y = zip(*coord_points)
+    # Determine the centroid of all base pts, we'll center the map on that.
+        x, y = zip(*base_points)
         center = (max(x) + min(x)) / 2.0, (max(y) + min(y)) / 2.0
 
-    panel_map = Map(
-        identifier='panel_map',
-        varname='panel_map',
-        lat=center[0],
-        lng=center[1],
-        maptype='SATELLITE',
-        zoom='5',
-        markers=list(m for m in map_markers),
-        style="height:600px;width:755px;margin:0;")
-
+    panel_map = Map(identifier='panel_map',
+                    varname='panel_map',
+                    lat=center[0],
+                    lng=center[1],
+                    maptype='SATELLITE',
+                    zoom='6',
+                    markers=list(m for m in map_markers),
+                    style="height:600px;width:755px;margin:0;",
+                    polylines=[get_trackline(track)])
     return panel_map
