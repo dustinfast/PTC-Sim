@@ -28,7 +28,7 @@ while True:
         from flask import Flask, render_template, jsonify
         break
     except:
-        prompt = 'Flask is required, install it? (Y/n): '
+        prompt = 'Flask is required. Run "pip install flask"? (Y/n): '
         install_pip = raw_input(prompt)
 
         if install_pip == 'Y':

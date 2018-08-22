@@ -1,4 +1,24 @@
+""" PTC-Sim's web library.
+"""
 
+from subprocess import check_output
+
+# Attempt to import simplekml and prompt for install on fail
+while True:
+    try:
+        import simplekml
+        break
+    except:
+        prompt = 'Simple KML is required. Run "pip install simplekml"? (Y/n): '
+        install_pip = raw_input(prompt)
+
+        if install_pip == 'Y':
+            print('Installing... Please wait.')
+            result = check_output('pip install flask')
+            print('Success!')
+        else:
+            print('Exiting.')
+            exit()
 
 class WebTable:
     """ An HTML Table, with build methods.
@@ -76,12 +96,14 @@ def get_locos_table(track):
 
     return outter.html()
 
+
 def get_main_panels(track):
     """ Returns a dict of loco panels: { loco_id: panel }, where panel contains
         loco status/location via KML consisting of current track restrictions,
         bases, waysides, etc. Also contains a None key, corresponding to a
         panel for the track but with no locos.
     """
+
     return {None: 'Click a locomotive to view control panel.'}
 
 
