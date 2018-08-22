@@ -26,7 +26,7 @@ from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 # Attempt to import flask and prompt for install on fail
 while True:
     try:
-        from flask import Flask, render_template, jsonify, g
+        from flask import Flask, render_template, jsonify
         break
     except:
         prompt = 'Flask is required. Run "pip install flask"? (Y/n): '
@@ -49,37 +49,22 @@ while True:
 locos_table = '-1'
 panel_map = '-1'
 main_panels = {}  # { None: loco-free-panel, loco_id: panel, ... }
-curr_loco = None
+curr_loco = 'ALL'
 
-# Init Flask Web Handler
+# Init Flask Web Handler and Google Maps Flask module
 bos_web = Flask(__name__)
-
-# Init Flask Google Maps module 
 GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
+
 
 @bos_web.route('/' + APP_NAME)
 def home():
     return render_template('home.html',
-                           locos_table=locos_table,
                            panel_map=panel_map)
 
 
-@bos_web.route('/test')
-def test():
-    """ Returns a rendered version of the home.html template.
-    """
-    return render_template('home.html',
-                           locos_table=locos_table,
-                           panel_map=panel_map)
-
-# @bos_web.route('/_home_update', methods=['GET'])
-# def _home_update():
-#     try:
-#         main_panel = main_panels[curr_loco]
-#     except:
-#         main_panel = 'Error.'
-
-#     return jsonify(locos_table=locos_table, main_panel=main_panel)
+@bos_web.route('/_home_update', methods=['GET'])
+def _home_update():
+    return jsonify(locos_table=locos_table)
 
 
 # @bos_web.route('/_home_select_loco', methods=['POST'])
@@ -174,9 +159,9 @@ class BOS(object):
         global locos_table, panel_map
 
         while self.running:
-            # Update locos_table, the table of locomotives
+            # Update locos_table and main panel map
             locos_table = get_locos_table(self.track)
-            panel_map = get_status_map(self.track, 'ALL')
+            panel_map = get_status_map(self.track, curr_loco)
 
             sleep(REFRESH_TIME)
 

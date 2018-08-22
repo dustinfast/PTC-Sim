@@ -4,23 +4,22 @@
 	<div class="row">
 
 		<!-- Locomotives list/table -->
-		<div class="col">
-			<div class="panel panel-default" style="width: 300px;">
+		<div class="col-md-3">
+			<div class="panel panel-default" style="width: 250px;">
 				<div class="panel-heading">
-					<h3 style="display: inline; vertical-align: bottom;">Active Locomotives</h3>
+					<h4 style="display: inline; vertical-align: bottom;">Active Locomotives</h4>
 					<br>
 				</div>
 				<!-- Table goes here - populated dynamically via AJAX in main.js -->
-				<!-- <div id="locos_table"></div> -->
-				{{ loco_table }}
+				<div id="locos_table">&nbsp;&nbsp;Loading...</div>
 			</div>
 		</div>
 
 		<!-- Main map (w/selected loco's status/location, if one selected) -->
-		<div class="col">
+		<div class="col-md-9">
 			<div class="panel panel-default">
 				<div class="panel-heading">
-					<h3 style="display: inline; vertical-align: bottom;">Overview</h3>
+					<h4 style="display: inline; vertical-align: bottom;">Overview</h4>
 					<br>
 				</div>
 				<!-- Actual map/status content. Populated dynamically via AJAX in main.js -->
@@ -30,6 +29,6 @@
 	</div>
 </div>
 
-<!-- <script type="text/javascript">get_main_content_async();</script> -->
+<script type="text/javascript">get_home_content_async();</script>
 
 {% endblock %}

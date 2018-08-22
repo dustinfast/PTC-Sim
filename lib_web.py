@@ -20,7 +20,7 @@ class WebTable:
     def html(self):
         """ Returns an html representation of the table.
         """
-        default_head_tag = '<table border="1px" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
+        default_head_tag = '<table border="1px" style="font-size: 12px;" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
         if self._head_tag:
             html_table = self._head_tag
         else:
@@ -95,11 +95,11 @@ def get_status_map(track, loco_id=None):
     map_markers = []  # Map markers
     coord_points = []  # All coord points added, (p1, p2), for centering map.
 
-    # Define Icons
+    # Define icons and html tags
     loco_grn = '/static/img/loco_ico_grn_sm.png'
     loco_red = '/static/img/loco_ico_red_sm.png'
     base_grn = '/static/img/base_ico_grn_sm.png'
-    base_red = '/static/img/base_ico_red_sm.png'
+    base_red = '/static/img/base_ico_red_sm.png'    
 
     # -- Bases:
     for base in track.bases.values():
@@ -107,7 +107,7 @@ def get_status_map(track, loco_id=None):
         status_tbl.add_row([cell('Device'), cell(base.name)])
         status_tbl.add_row([cell('Status'), cell('OK')])
         status_tbl.add_row([cell('Location'), cell(str(base.coords))])
-        status_tbl.add_row([cell('NA')])
+        status_tbl.add_row([cell('Last Seen'), cell('NA')])
         
         marker = {'icon': base_grn,
                   'lat': base.coords.lat,
@@ -133,7 +133,7 @@ def get_status_map(track, loco_id=None):
         status_tbl.add_row([cell('Device'), cell(loco.name)])
         status_tbl.add_row([cell('Status'), cell('OK')])
         status_tbl.add_row([cell('Location'), cell(str(loco.coords))])
-        status_tbl.add_row([cell('NA')])
+        status_tbl.add_row([cell('Last Seen'), cell('NA')])
 
         marker = {'icon': loco_grn,
                   'lat': loco.coords.lat,
@@ -159,6 +159,6 @@ def get_status_map(track, loco_id=None):
         maptype='SATELLITE',
         zoom='5',
         markers=list(m for m in map_markers),
-        style="height:300px;width:600px;margin:0;")
+        style="height:600px;width:755px;margin:0;")
 
     return panel_map
