@@ -320,9 +320,9 @@ def get_6000_msg(loco):
                   'speed': loco.speed,
                   'heading': loco.heading,
                   'direction': loco.direction,
-                  'milepost': loco.milepost.marker,
-                  'lat': loco.milepost.lat,
-                  'long': loco.milepost.long,
+                  'milepost': loco.coords.marker,
+                  'lat': loco.coords.lat,
+                  'long': loco.coords.long,
                   'bpp': loco.bpp,
                   'conns': con_str}
 

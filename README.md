@@ -1,6 +1,6 @@
 # PTC-Sim - Positive Train Control Simulator
 
-This application is a demonstration of Positive Train Control (PTC) control applied to a simulated Track with virtual locomotives and communications infrastructure, such as 220 MHz radio base-stations, waysides, etc.. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's locomotive tracking solution. It contains no proprietary code, and is free under the MIT license.  
+This application is a demonstration of Positive Train Control (PTC) control applied to a simulated Track with virtual locomotives and communications infrastructure, such as 220 MHz radio base-stations, waysides, etc.. It is a work in progress based on my experience developing LocoTracker, the Alaska Railroad Corporation's locomotive tracking solution. It contains no proprietary code, and is free under the MIT license. Images obtained under the Creative Commons license. 
 
 PTC was mandated by congress in 2008 for all Class I or larger railroads with an implementation deadline of 2015. The deadline was later extended to 2018 after little progress was made due to technical challenges. 
 
@@ -41,9 +41,9 @@ Each component exists as a seperate entity:
 **sim_bos.py** - The Back Office Server (AKA "BOS", pronounced like "boss").  
 **sim_broker.py** - The Message Broker.  
 **sim_track.py** - The Track Simulator.  
-**track_bases.json** - JSON representation of the radio base stations facilitating locomotive communications. Each base station consists of a unique ID and the track mileposts it covers. Gaps in coverage area allowed, as are areas of overlapping coverage.  
+**track_bases.json** - JSON representation of the radio base stations facilitating locomotive communications. Each base station consists of a unique ID and the track locations it covers. Gaps in coverage area allowed, as are areas of overlapping coverage.  
 **track_locos.json** - NOT IMPLEMENTED  
-**track_rail.json** - JSON representation of the railroad track. Contains milepost markers and associated lat/long coordinates (in decimal degrees).
+**track_rail.json** - JSON representation of the railroad track. Contains location markers and associated lat/long coordinates (in decimal degrees).
 **track_waysides.json** - NOT IMPLEMENTED
 
 ### Unimplemented
@@ -60,11 +60,17 @@ Start the application with `./start.py`, then navigate to http://localhost:5000/
   
 Alternatively, the BOS, Message Broker, and Track Simulator may be started independently with `./sim_bos.py`, `./sim_broker.py`, and `./sim_track.py`, respectively.
 
+### Dependencies
+
+Flask, Jinja, Simple KML, JavaScript, AJAX, jQuery, GeoXML3, Google Maps Javascript API, 
+
+ 
+
 ## # TODO
 
+* Not gracefully quitting due to connection obj threads?
 * Web: logtail/console output, broker queue sizes  
 * Catch specific socket conn errors w/ except socket.error  
-* sim_track does not quit gracefully
 * Fictional track model
 * Better exception bubbling to start.py
 * TrackDevice.err(str)?

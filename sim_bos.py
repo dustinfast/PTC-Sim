@@ -14,10 +14,11 @@ from time import sleep
 from threading import Thread
 from subprocess import check_output
 
-from lib_web import get_locos_table, get_main_panels
+from flask_googlemaps import GoogleMaps
+from lib_web import get_locos_table, get_status_map
 from lib_app import bos_log
 from lib_msging import Client, Queue
-from lib_track import Track, Loco, Milepost
+from lib_track import Track, Loco, Location
 
 from lib_app import APP_NAME, REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
@@ -25,7 +26,7 @@ from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 # Attempt to import flask and prompt for install on fail
 while True:
     try:
-        from flask import Flask, render_template, jsonify
+        from flask import Flask, render_template, jsonify, g
         break
     except:
         prompt = 'Flask is required. Run "pip install flask"? (Y/n): '
@@ -46,27 +47,42 @@ while True:
 
 # Web state vars
 locos_table = '-1'
+panel_map = '-1'
 main_panels = {}  # { None: loco-free-panel, loco_id: panel, ... }
 curr_loco = None
 
-# Flask Web Handlers 
-web = Flask(__name__)
+# Init Flask Web Handler
+bos_web = Flask(__name__)
 
-@web.route('/' + APP_NAME)
+# Init Flask Google Maps module 
+GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
+
+@bos_web.route('/' + APP_NAME)
 def home():
-    return render_template('home.html')
-
-@web.route('/_home_update', methods=['GET'])
-def _home_update():
-    try:
-        main_panel = main_panels[curr_loco]
-    except:
-        main_panel = 'Error.'
-
-    return jsonify(locos_table=locos_table, main_panel=main_panel)
+    return render_template('home.html',
+                           locos_table=locos_table,
+                           panel_map=panel_map)
 
 
-# @web.route('/_home_select_loco', methods=['POST'])
+@bos_web.route('/test')
+def test():
+    """ Returns a rendered version of the home.html template.
+    """
+    return render_template('home.html',
+                           locos_table=locos_table,
+                           panel_map=panel_map)
+
+# @bos_web.route('/_home_update', methods=['GET'])
+# def _home_update():
+#     try:
+#         main_panel = main_panels[curr_loco]
+#     except:
+#         main_panel = 'Error.'
+
+#     return jsonify(locos_table=locos_table, main_panel=main_panel)
+
+
+# @bos_web.route('/_home_select_loco', methods=['POST'])
 # def _home_select_loco():
 #     curr_loco = 
 
@@ -99,7 +115,7 @@ class BOS(object):
         self.running = True
         self.status_watcher_thread.start()
         self.webupdate_thread.start()
-        web.run(debug=debug)  # Web interface, blocks until killed from console
+        bos_web.run(debug=debug)  # Web interface, blocks until killed from console
 
         # Do shutdown
         print('\nBOS Stopping... Please wait.')
@@ -127,7 +143,7 @@ class BOS(object):
             if msg:
                 try:
                     locoID = msg.payload['loco']
-                    milepost = Milepost(msg.payload['milepost'],
+                    location = Location(msg.payload['location'],
                                         msg.payload['lat'],
                                         msg.payload['long'])
                     active_conns = eval(msg.payload['conns'])  # evals to dict
@@ -140,7 +156,7 @@ class BOS(object):
                     loco.update(msg.payload['speed'],
                                 msg.payload['heading'],
                                 msg.payload['direction'],
-                                milepost,
+                                location,
                                 msg.payload['bpp'],
                                 active_conns)
 
@@ -155,12 +171,12 @@ class BOS(object):
             devices and updates the web output (HTML table, Google Earth/KMLs, 
             etc.) accordingly.
         """
-        global locos_table, main_panels
+        global locos_table, panel_map
 
         while self.running:
             # Update locos_table, the table of locomotives
             locos_table = get_locos_table(self.track)
-            main_panels = get_main_panels(self.track)
+            panel_map = get_status_map(self.track, 'ALL')
 
             sleep(REFRESH_TIME)
 

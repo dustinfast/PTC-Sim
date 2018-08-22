@@ -1,7 +1,10 @@
 """ PTC-Sim's web library.
 """
 
-from flask_googlemaps import Map, icons
+from flask_googlemaps import Map
+
+from lib_app import bos_log
+
 
 class WebTable:
     """ An HTML Table, with build methods.
@@ -82,51 +85,80 @@ def get_locos_table(track):
     return outter.html()
 
 
-def get_panel_map(track, loco=None):
-    """ Gets the main panel map for the given track and selected loco (if any). 
+def get_status_map(track, loco_id=None):
+    """ Gets the main panel map for the given track. Adds all track devices
+        to the map, except locos. If loco_id (a string) is given, then:
+        If loco_id == 'ALL', all locos are added to the map. Else only the
+        loco with the given ID is added.
     """
-    loco = track.locos.values()[0]
+    # Containers
+    map_markers = []  # Map markers
+    coord_points = []  # All coord points added, (p1, p2), for centering map.
+
+    # Define Icons
+    loco_grn = '/static/img/loco_ico_grn_sm.png'
+    loco_red = '/static/img/loco_ico_red_sm.png'
+    base_grn = '/static/img/base_ico_grn_sm.png'
+    base_red = '/static/img/base_ico_red_sm.png'
+
+    # -- Bases:
+    for base in track.bases.values():
+        status_tbl = WebTable()        
+        status_tbl.add_row([cell('Device'), cell(base.name)])
+        status_tbl.add_row([cell('Status'), cell('OK')])
+        status_tbl.add_row([cell('Location'), cell(str(base.coords))])
+        status_tbl.add_row([cell('NA')])
+        
+        marker = {'icon': base_grn,
+                  'lat': base.coords.lat,
+                  'lng': base.coords.long,
+                  'infobox': status_tbl.html()}
+        map_markers.append(marker)
+        coord_points.append((base.coords.lat, base.coords.long))
+
+    # -- Loco(s), if given.
+    if loco_id == 'ALL':
+        locos = track.locos.values()
+    elif loco_id:
+        try:
+            locos = track.locos[loco_id]
+        except KeyError:
+            bos_log.error('get_status_map Received an invalid loco: ' + loco_id)
+            locos = []
+    else:
+        locos = []
+    
+    for loco in locos:
+        status_tbl = WebTable()
+        status_tbl.add_row([cell('Device'), cell(loco.name)])
+        status_tbl.add_row([cell('Status'), cell('OK')])
+        status_tbl.add_row([cell('Location'), cell(str(loco.coords))])
+        status_tbl.add_row([cell('NA')])
+
+        marker = {'icon': loco_grn,
+                  'lat': loco.coords.lat,
+                  'lng': loco.coords.long,
+                  'infobox': status_tbl.html()}
+        map_markers.append(marker)
+        coord_points.append((base.coords.lat, base.coords.long))
+
+    # Determine where to center map
+    if len(locos) == 1:
+        # Center of map will be on loco, if only one given.
+        center = (loco.coords.lat, loco.coords.long)
+    else:
+        # Else, find the centroid of all pts, we'll center on that.
+        x, y = zip(*coord_points)
+        center = (max(x) + min(x)) / 2.0, (max(y) + min(y)) / 2.0
 
     panel_map = Map(
-        identifier="panel_map",
-        varname="panel_map",
-        lat=37.4419,
-        lng=-122.1419,
-        # maptype = "TERRAIN",
-        # zoom="5"
-        markers=[
-            {
-                'icon': '//maps.google.com/mapfiles/ms/icons/green-dot.png',
-                'lat': 37.4419,
-                'lng': -122.1419,
-                'infobox': "Hello I am <b style='color:green;'>GREEN</b>!"
-            },
-            {
-                'icon': '//maps.google.com/mapfiles/ms/icons/blue-dot.png',
-                'lat': 37.4300,
-                'lng': -122.1400,
-                'infobox': "Hello I am <b style='color:blue;'>BLUE</b>!"
-            },
-            {
-                'icon': icons.dots.yellow,
-                'title': 'Click Here',
-                'lat': 37.4500,
-                'lng': -122.1350,
-                'infobox': (
-                    "Hello I am <b style='color:#ffcc00;'>YELLOW</b>!"
-                    "<h2>It is HTML title</h2>"
-                    "<img src='//placehold.it/50'>"
-                    "<br>Images allowed!"
-                )
-            }
-        ],
-    )
+        identifier='panel_map',
+        varname='panel_map',
+        lat=center[0],
+        lng=center[1],
+        maptype='SATELLITE',
+        zoom='5',
+        markers=list(m for m in map_markers),
+        style="height:300px;width:600px;margin:0;")
 
     return panel_map
-
-
-if __name__ == '__main__':
-    print('Printing test table:\n')
-    t = WebTable()
-    t.add_row([cell('Hello'), cell('World!')])
-    print(t.html())

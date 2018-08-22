@@ -72,15 +72,15 @@ class TrackDevice(object):
         real-time activity and communications simulation for testing and
         demonstration purposes.
     """
-    def __init__(self, ID, device_type, milepost=None):
+    def __init__(self, ID, device_type, location=None):
         """ self.ID         : (str) The Device's unique identifier
-            self.milepost   : (Milepost) The devices location, as a Milepost
+            self.coords   : (Location) The devices location, as a Location
             self.conns      : (dict) Connection objects - { ID: Connection }
             self.sim        : The device's simulation. Start w/self.sim.start()
         """
         self.ID = ID
         self.name = device_type + ' ' + self.ID
-        self.milepost = milepost
+        self.coords = location
         self.conns = {}
         self.sim = None
 
@@ -114,7 +114,7 @@ class Loco(TrackDevice):
             self.speed      : (float) Current speed
             self.heading    : (float) Current compass bearing
             self.direction  : (str) Either 'increasing' or 'decreasing'
-            self.milepost   : (Milepost) Current location, as a Milepost
+            self.coords   : (Location) Current location, as a Location
             self.bpp        : (float) Brake pipe pressure. Affects braking.
             self.bases_inrange: (list) Base objects within communication range
         """
@@ -125,7 +125,7 @@ class Loco(TrackDevice):
         self.speed = None
         self.heading = None
         self.direction = None
-        self.milepost = None
+        self.coords = None
         self.bpp = None
         self.bases_inrange = []
         self.bases = []
@@ -142,22 +142,22 @@ class Loco(TrackDevice):
         self.direction = {0: 'increasing', 1: 'decreasing'}.get(randint(0, 1))
         self.bpp = randint(0, 90)
 
-        if track.mileposts:
-            max_index = len(track.mileposts) - 1
-            self.milepost = track.mileposts.values()[
+        if track.coords:
+            max_index = len(track.coords) - 1
+            self.coords = track.coords.values()[
                 randint(0, max_index)]
 
     def update(self,
                speed=None,
                heading=None,
                direction=None,
-               milepost=None,
+               location=None,
                bpp=None,
                bases=None):
         """ speed: A float, locos current speed.
             heading: A float, locos current compass bearing.
             direction: Either 'increasing', or 'decreasing'.
-            milepost: A Milepost denoting Locos current location.
+            location: A Location denoting Locos current location.
             bpp: A float, denoting current brake pipe pressure.
             bases: A dict denoting current base connections. Is of the 
                    format: { ConnectionLabel: base_ID }
@@ -168,8 +168,8 @@ class Loco(TrackDevice):
             self.heading = heading
         if direction is not None:
             self.direction = direction
-        if milepost is not None:
-            self.milepost = milepost
+        if location is not None:
+            self.coords = location
         if bpp is not None:
             self.bpp = bpp
         if bases is not None:
@@ -188,20 +188,22 @@ class Base(TrackDevice):
     """ An abstraction of a 220 MHz base station, including it's coverage area.
         Includes a realtime simulation of its activity/communications.
     """
-    def __init__(self, ID, coverage_start, coverage_end):
+    def __init__(self, ID, coverage_start, coverage_end, location):
         """ self.ID = (String) The base station's unique identifier
-            self.coverage_start = (float) Coverage start milepost
-            self.coverage_end = (float) Coverage end milepost
+            self.cov_start = (float) Coverage start location
+            self.cov_end = (float) Coverage end location
+            self.coords = (Location) Location of this base station
         """
         TrackDevice.__init__(self, ID, 'Base')
         self.cov_start = coverage_start
         self.cov_end = coverage_end
+        self.coords = location
 
-    def covers_milepost(self, milepost):
-        """ Given a milepost, returns True if this base provides 
-            coverage at that milepost, else returns False.
+    def covers_location(self, location):
+        """ Given a location, returns True if this base provides 
+            coverage at that location, else returns False.
         """
-        return milepost.marker >= self.cov_start and milepost.marker <= self.cov_end
+        return location.marker >= self.cov_start and location.marker <= self.cov_end
 
 
 class Wayside(TrackDevice):
@@ -209,9 +211,9 @@ class Wayside(TrackDevice):
         activity/communications.
     """
 
-    def __init__(self, ID, milepost, children={}):
+    def __init__(self, ID, location, children={}):
         """ self.ID      : (str) The waysides unique ID/address
-            self.milepost: (Milepost) The waysides location as a Milepost
+            self.coords: (Location) The waysides location as a Location
             self.children: (dict) Child devices { CHILD_ID: CHILD_OBJECT }
         """
         raise NotImplementedError
@@ -231,7 +233,7 @@ class TrackSwitch(TrackDevice):
         Includes a realtime simulation of its activity/communications.
     """
 
-    def __init__(self, ID, milepost):
+    def __init__(self, ID, location):
         """
         """
         raise NotImplementedError
@@ -250,14 +252,14 @@ class TrackSwitch(TrackDevice):
 
 
 class Track(object):
-    """ A representation of the track, including its mileposts and radio base 
+    """ A representation of the track, including its locations and radio base 
         stations.
     
         self.locos = A dict of locootives.
             Format: { LOCOID: LOCO_OBJECT }
         self.bases = A dict of radio base stations, used by locos to send msgs. 
             Format: { BASEID: BASE_OBJECT }
-        self.mileposts = A dict of all track mileposts
+        self.coords = A dict of all track locations
             Format: { MP: MP_OBJECT }
         self.marker_linear = A representation of the track in order of mps.
             Format: [ MP_1, ... , MP_n ], where MP1 < MPn
@@ -276,7 +278,7 @@ class Track(object):
         """
         self.locos = {}
         self.bases = {}
-        self.mileposts = {}
+        self.coords = {}
         self.marker_linear = []
         self.marker_linear_rev = []
         # self.restrictions = {}  # { AUTH_ID: ( START_MILEPOST, END_MILEPOST }
@@ -293,21 +295,27 @@ class Track(object):
                 base_id = str(base['id'])
                 coverage_start = float(base['coverage'][0])
                 coverage_end = float(base['coverage'][1])
+                mp = base_id  # base ids denote location
+                lat = float(base['lat'])
+                lng = float(base['long'])
             except ValueError:
                 raise ValueError('Conversion error in ' + bases_file + '.')
             except KeyError:
                 raise Exception('Malformed ' + bases_file + ': Key Error.')
 
-            self.bases[base_id] = Base(base_id, coverage_start, coverage_end)
+            self.bases[base_id] = Base(base_id, 
+                                       coverage_start,
+                                       coverage_end,
+                                       Location(mp, lat, lng))
 
-        # Populate milepost objects (self.mileposts) from track_file
+        # Populate location objects (self.coords) from track_file
         try:
             with open(track_file) as rail_data:
-                mileposts = loads(rail_data.read())
+                locations = loads(rail_data.read())
         except Exception as e:
             raise Exception('Error reading ' + track_file + ': ' + str(e))
 
-        for marker in mileposts:
+        for marker in locations:
             try:
                 mp = float(marker['milemarker'])
                 lat = float(marker['lat'])
@@ -317,9 +325,9 @@ class Track(object):
             except KeyError:
                 raise Exception('Malformed ' + track_file + ': Key Error.')
 
-            self.mileposts[mp] = Milepost(mp, lat, lng)
+            self.coords[mp] = Location(mp, lat, lng)
 
-        for mp in sorted(self.mileposts.keys()):
+        for mp in sorted(self.coords.keys()):
             self.marker_linear.append(mp)
         self.marker_linear_rev = self.marker_linear[::-1]
 
@@ -342,7 +350,7 @@ class Track(object):
             curr_mp + distance. Also returns any difference not accounted
             for.
             Accepts:
-                curr_mp  = Curr location (a Milepost)
+                curr_mp  = Curr location (a Location)
                 distance = Distance in miles (neg dist denotes decreasing DOT)
             Returns:
                 next_mp   = nearest mp for curr_mp + distance without going over
@@ -360,7 +368,7 @@ class Track(object):
         dist_diff = 0
         next_mp = None
 
-        # Set the milepost object list to iterate, depending on direction
+        # Set the location object list to iterate, depending on direction
         if distance > 0:
             mps = self.marker_linear
         elif distance < 0:
@@ -385,9 +393,9 @@ class Track(object):
             return
 
         # Get mp object associated with next_mp
-        next_mp_obj = self.get_milepost_at(next_mp)
+        next_mp_obj = self.get_location_at(next_mp)
         if not next_mp_obj:
-            debug_str = '_get_next_mp failed to find a next milepost from: '
+            debug_str = '_get_next_mp failed to find a next location from: '
             debug_str += str(mps) + '\n'
             debug_str += 'cur_mp: ' + str(mp) + '\n'
             debug_str += 'moved : ' + str(distance) + '\n'
@@ -399,28 +407,30 @@ class Track(object):
 
         return next_mp_obj, dist_diff
 
-    def get_milepost_at(self, mile):
-        """ Returns the Milepost at distance (a float) iff one exists.
+    def get_location_at(self, mile):
+        """ Returns the Location at distance (a float) iff one exists.
         """
-        return self.mileposts.get(mile, None)
+        return self.coords.get(mile, None)
 
 
-class Milepost:
-    """ An abstraction of a milepost.
+class Location:
+    """ An abstraction of a location.
     """
     def __init__(self, marker, latitude, longitude):
-        """ self.marker = (float) The numeric milepost marker
-            self.lat = (float) Latitude of milepost
-            self.long = (float) Longitude of milepost
+        """ self.marker = (float) The numeric location marker
+            self.lat = (float) Latitude of location
+            self.long = (float) Longitude of location
         """
         self.marker = marker
         self.lat = latitude
         self.long = longitude
 
     def __str__(self):
-        """ Returns a string representation of the milepost.
-         """
-        return str(self.marker)
+        """ Returns a string representation of the location.
+        """
+        coord_str = str(self.marker)
+        coord_str += ' (' + str(self.lat) + ',' + str(self.long) + ')'
+        return coord_str
 
 
 ##############################
@@ -455,7 +465,7 @@ def loco_movement(loco):
 
     # Start of locomotive simulator
     makeup_dist = 0
-    if not loco.direction or not loco.milepost or loco.speed is None:
+    if not loco.direction or not loco.coords or loco.speed is None:
         raise ValueError('Cannot simulate an unintialized Locomotive.')
 
     while loco.sim.running:
@@ -473,20 +483,20 @@ def loco_movement(loco):
             if loco.direction == 'decreasing':
                 dist *= -1
 
-            # Get next milepost and any makeup distance
-            new_mp, dist = loco.track._get_next_mp(loco.milepost, dist)
+            # Get next location and any makeup distance
+            new_mp, dist = loco.track._get_next_mp(loco.coords, dist)
             if not new_mp:
                 err_str = ' - At end of track. Reversing.'
                 track_log.info(loco.name + err_str)
                 loco.direction *= -1
             else:
-                _set_heading(loco.milepost, new_mp)
-                loco.milepost = new_mp
+                _set_heading(loco.coords, new_mp)
+                loco.coords = new_mp
                 makeup_dist = dist
 
                 # Determine base stations in range of current position
                 loco.bases_inrange = [b for b in loco.track.bases.values()
-                                      if b.covers_milepost(loco.milepost)]
+                                      if b.covers_location(loco.coords)]
 
 
 def loco_messaging(loco):

@@ -61,7 +61,8 @@ class TrackSim(object):
         while self.running:
             for l in ptctrack.locos.values():
                 status_str = 'Loco ' + l.ID + ': '
-                status_str += str(l.speed) + ' @ ' + str(l.milepost.marker)
+                status_str += str(l.speed) + ' @ ' + str(l.coords.marker)
+                status_str += ' (' + str(l.coords.long) + ',' + str(l.coords.lat) + ')'
                 status_str += '. Bases in range: '
                 status_str += ', '.join([b.ID for b in l.bases_inrange])
                 status_str += ' Conns: '
