@@ -1,24 +1,7 @@
 """ PTC-Sim's web library.
 """
 
-from subprocess import check_output
-
-# Attempt to import simplekml and prompt for install on fail
-while True:
-    try:
-        import simplekml
-        break
-    except:
-        prompt = 'Simple KML is required. Run "pip install simplekml"? (Y/n): '
-        install_pip = raw_input(prompt)
-
-        if install_pip == 'Y':
-            print('Installing... Please wait.')
-            result = check_output('pip install flask')
-            print('Success!')
-        else:
-            print('Exiting.')
-            exit()
+from flask_googlemaps import Map, icons
 
 class WebTable:
     """ An HTML Table, with build methods.
@@ -77,6 +60,7 @@ def cell(content, css_class=None):
 def get_locos_table(track):
     """ Given a track object, returns the locos html table for web display.
     """
+    # The loco table is one outter table consisting of an inner table for each loco.
     select_loco_btn = ' -> '  # Temp
     outter = WebTable(col_headers=[' ID', ' Status', ' + '])  # Outter table
     for loco in track.locos.values():
@@ -87,6 +71,7 @@ def get_locos_table(track):
             else:
                 conn_values.append(c.connected_to.ID)
 
+        # Build inner table and insert it into the outter
         inner_headers = [c for c in loco.conns.keys()]
         inner = WebTable(col_headers=inner_headers)  # Inner table
         inner.add_row([cell(c) for c in conn_values])
@@ -97,14 +82,47 @@ def get_locos_table(track):
     return outter.html()
 
 
-def get_main_panels(track):
-    """ Returns a dict of loco panels: { loco_id: panel }, where panel contains
-        loco status/location via KML consisting of current track restrictions,
-        bases, waysides, etc. Also contains a None key, corresponding to a
-        panel for the track but with no locos.
+def get_panel_map(track, loco=None):
+    """ Gets the main panel map for the given track and selected loco (if any). 
     """
+    loco = track.locos.values()[0]
 
-    return {None: 'Click a locomotive to view control panel.'}
+    panel_map = Map(
+        identifier="panel_map",
+        varname="panel_map",
+        lat=37.4419,
+        lng=-122.1419,
+        # maptype = "TERRAIN",
+        # zoom="5"
+        markers=[
+            {
+                'icon': '//maps.google.com/mapfiles/ms/icons/green-dot.png',
+                'lat': 37.4419,
+                'lng': -122.1419,
+                'infobox': "Hello I am <b style='color:green;'>GREEN</b>!"
+            },
+            {
+                'icon': '//maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                'lat': 37.4300,
+                'lng': -122.1400,
+                'infobox': "Hello I am <b style='color:blue;'>BLUE</b>!"
+            },
+            {
+                'icon': icons.dots.yellow,
+                'title': 'Click Here',
+                'lat': 37.4500,
+                'lng': -122.1350,
+                'infobox': (
+                    "Hello I am <b style='color:#ffcc00;'>YELLOW</b>!"
+                    "<h2>It is HTML title</h2>"
+                    "<img src='//placehold.it/50'>"
+                    "<br>Images allowed!"
+                )
+            }
+        ],
+    )
+
+    return panel_map
 
 
 if __name__ == '__main__':
