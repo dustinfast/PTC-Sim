@@ -1,41 +1,48 @@
-var home_selected_locoID = ''
+var selected_loco = '';
 
-// Sets the home_selected_locoID variable, then calls the getmap func.
-// If the select locoID matches the previous locoID, home_selected_loco is reset.
+// Sets selected_loco, updates loco table border, and refreshes status map
+var old_border;
 function home_loco_select(locoID) {
-    if (home_selected_locoID == locoID) {
-        home_selected_locoID = '';
-        // TODO: highlight locotable row
-    } else {
-        home_selected_locoID = locoID;
-        // TODO: un-highlight locotable row
+    if (selected_loco != '') {
+        document.getElementById(selected_loco).style.border = old_border;
     }
-    console.log('Selected loco: ' + home_selected_locoID);
+    old_border = document.getElementById(locoID).style.border;
+
+    if (selected_loco == locoID) {
+        selected_loco = '';
+    } else {
+        selected_loco = locoID;
+        document.getElementById(selected_loco).style.border = "thick solid";
+    }
+    
+    console.log('Selected loco: ' + selected_loco);
     home_get_map_async();
 }
 
 // Updates home.locos_table 
 function home_get_locotable_async() {
-    $.getJSON($SCRIPT_ROOT + '/_home_get_locotable',
+    $.getJSON(
+        $SCRIPT_ROOT + '/_home_get_locotable',
         function (data) {
             $('#locos_table').html(data.locos_table);
         });
     }
     
-// Requests a status map for the loco specified by home_selected_locoID.
-// If home_selected_locoID = '', requests a generic status map with all locos.
+// Requests a status map for the loco specified by selected_loco.
+// If selected_loco = '', requests a generic status map with all locos.
 function home_get_map_async() {
     $.ajax({
         url: $SCRIPT_ROOT + '/_home_get_statusmap',
         type: 'POST',
         contentType: 'application/json;charset=UTF-8',
-        data: JSON.stringify({ 'locoID': home_selected_locoID }),
+        data: JSON.stringify({ 'locoID': selected_loco }),
 
         success: function (data) {
             if (data == 'error') {
                 console.error('Error returned fetching status map.')
                 return;
             }
+
             // Clear markers from existing map
             for (var i = 0; i < panel_map_markers.length; i++) {
                 panel_map_markers[i].setMap(null);
@@ -54,6 +61,8 @@ function home_get_map_async() {
                 });
                 panel_map_markers.push(marker);
             });
+
+            // TODO: recenter map
             console.log('success');
         }
     });

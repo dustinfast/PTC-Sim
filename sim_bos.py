@@ -76,31 +76,15 @@ def _home_get_statusmap():
         specified, returns status map with all locos.
     """
     try:
-        print(request)
         locoID = request.json['locoID']
 
         if locoID:
-            print('!!! ID:' + str(locoID) + ' !!')
             return jsonify(status_map=g_status_maps[locoID].as_json())
         else:
-            print('*** No ID **')
             return jsonify(status_map=g_status_maps[None].as_json())
     except Exception as e:
         bos_log.error(e)
-        print(e)
         return 'error' 
-
-
-# Working POST function
-# @bos_web.route('/_home_select_loco', methods=['POST'])
-# def _home_select_loco():
-#     global g_curr_loco
-
-#     if request.method == "POST":
-#         print(str(request.json['locoID']))
-#     else:
-#         print(request.method)
-#     return jsonify({'status': 'success'})
 
 
 #############

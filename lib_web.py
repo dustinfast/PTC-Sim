@@ -33,7 +33,7 @@ class WebTable:
     """
     _default_head_tag = TABLE_TAG
     
-    def __init__(self, head_tag=None, col_headers=[], onclick=None):
+    def __init__(self, head_tag=None, col_headers=[]):
         """ num_columns: Number of table columns
             col_headers: A list of strings representing table column headings
         """
@@ -41,13 +41,6 @@ class WebTable:
         self._header = ''.join(['<th>' + h + '</th>' for h in col_headers])
         self._footer = '</table>'
         self._rows = []
-
-        if onclick:
-            old_head = self._head_tag
-            self._head_tag = '<div onclick="' + onclick + '"'
-            self._head_tag += ' style="cursor:pointer">'
-            self._head_tag += old_head
-            self._footer = self._footer + '</div>'
 
     def html(self):
         """ Returns an html representation of the table.
@@ -66,12 +59,14 @@ class WebTable:
 
         return html_table
 
-    def add_row(self, cells, style=None, onclick=None):
+    def add_row(self, cells, style=None, onclick=None, row_id=None):
         """ Adds a row of the given cells (a list of cells) and html properties.
             Ex usage: add_row([Cell('hello'), Cell('world')], onclick=DoHello())
         """
         row_str = '<tr'
         
+        if row_id:
+            row_str += ' id="' + row_id + '"'
         if not style:
             style = ''
         if onclick:
@@ -153,7 +148,9 @@ def get_locos_table(track):
         inner.add_row([Cell('<b>Last Seen Milepost/Time</b>', colspan=2)])
         inner.add_row([Cell(lastseen, colspan=2)])          # Last seen row
 
-        outter.add_row([Cell(loco.ID), Cell(inner.html())], onclick=loco_click)
+        outter.add_row([Cell(loco.ID), Cell(inner.html())], 
+                       onclick=loco_click,
+                       row_id=loco.ID)
 
     return outter.html()
 
@@ -189,12 +186,11 @@ def get_status_map(track, tracklines, loco=None):
         If not loco, all locos are added to the map. Else only the loco
         having the given ID is added.
     """
-    # Containers
     map_markers = []  # Map markers, for the Google.map.markers property.
     base_points = []  # All base station points, (p1, p2). For map centering.   
 
     # Append markers to map_markers for --
-    # -- Loco(s), if given.
+    # -- Loco(s).
     if not loco:
         locos = track.locos.values()
     else:
