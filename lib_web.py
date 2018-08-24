@@ -66,12 +66,17 @@ class WebTable:
 
         return html_table
 
-    def add_row(self, cells, style=None):
-        """ Adds a row of the given cells (a list of cells) and css class.
-            Ex usage: add_row([Cell('hello'), Cell('world')])
+    def add_row(self, cells, style=None, onclick=None):
+        """ Adds a row of the given cells (a list of cells) and html properties.
+            Ex usage: add_row([Cell('hello'), Cell('world')], onclick=DoHello())
         """
         row_str = '<tr'
         
+        if not style:
+            style = ''
+        if onclick:
+            row_str += ' onclick="' + onclick + '"'
+            style = 'cursor:pointer;' + style
         if style:
             row_str += ' style="' + style + '"'
 
@@ -85,12 +90,12 @@ class WebTable:
 class Cell(object):
     """ An HTML table cell.
     """
-    def __init__(self, content, colspan=None, style=None, onclick=None):
+    def __init__(self, content, colspan=None, style=None):
         """ content: (str) The cell's inner content. Ex: Hello World!
             colspan: (int) HTML colspan tag content.
             style  : (str) HTML style tag content.
         """
-        # Build the cell before assigning it to this objects only member variable
+        # Build the cell's HTML before assigning it to self
         cell_str = '<td'
 
         if colspan:
@@ -98,12 +103,7 @@ class Cell(object):
         if style:
             cell_str += ' style="' + style + '"'
 
-        cell_str += '>' 
-        
-        if onclick:
-            cell_str += '<div onclick="' + onclick + '">' + content + '</div></td>'
-        else:
-            cell_str += content + '</td>'
+        cell_str += '>' + content + '</td>'
         
         self.cell = cell_str
 
@@ -124,7 +124,7 @@ def webtime(datetime_obj):
 def get_locos_table(track):
     """ Given a track object, returns the locos html table for web display.
     """
-    # Table is an outter table consisting of inner tables for each loco
+    # Locos table is an outter table consisting of inner tables for each loco.
     outter = WebTable(col_headers=[' ID', ' Status'])
 
     for loco in track.locos.values():
@@ -145,20 +145,24 @@ def get_locos_table(track):
             lastseen += ' @ ' + webtime(lastseentime)
 
         # Individual loco table onclick handler
-        loco_onlick = "home_loco_select('" + loco.ID + "')"
+        loco_click = "home_loco_select('" + loco.ID + "')"
 
-        # Build inner table and insert it into the outter
-        inner_headers = [c for c in loco.conns.keys()]      
-        inner = WebTable(col_headers=inner_headers, onclick=loco_onlick)
+        # Build inner table
+        inner = WebTable(col_headers=[c for c in loco.conns.keys()])
         inner.add_row([Cell(c) for c in conn_values])       # Radio status row
-        inner.add_row([Cell('<b>Last Seen (Milepost @ Time)</b>', colspan=2)])
+        inner.add_row([Cell('<b>Last Seen Milepost/Time</b>', colspan=2)])
         inner.add_row([Cell(lastseen, colspan=2)])          # Last seen row
 
-        outter.add_row([Cell(loco.ID, onclick=loco_onlick),
-                        Cell(inner.html())])
+        outter.add_row([Cell(loco.ID), Cell(inner.html())], onclick=loco_click)
 
     return outter.html()
 
+
+def get_loco_connline(track, loco_id):
+    """ Given a track object and locomotive id string, returns a polyline
+        between the locos position and connected base stations.
+    """
+    pass
 
 def get_trackline(track):
     """ Returns a polyline for the given track, based on its mileposts.
