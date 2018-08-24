@@ -190,9 +190,13 @@ def get_status_map(track, loco_id=None):
                   'lng': loco.coords.long,
                   'infobox': status_tbl.html()}
         map_markers.append(marker)
-        # print('*** ' + loco.name + ': ' + str(loco.coords) + ' @ ' + str(loco.speed))
 
-    # Determine the centroid of all base pts, we'll center the map on that.
+    # Determine where to center map
+    if len(locos) == 1:
+        # Center map on the loco given by loco_id param, if given.
+        center = (loco.coords.lat, loco.coords.long)
+    else:
+        # Else, center on the centroid of all base station pts.
         x, y = zip(*base_points)
         center = (max(x) + min(x)) / 2.0, (max(y) + min(y)) / 2.0
 
