@@ -20,8 +20,6 @@ MAP_BASE_RED = '/static/img/base_ico_red.png'
 MAP_BASE_GRN_SEL = '/static/img/base_ico_grn.png'
 MAP_BASE_RED_SEL = '/static/img/base_ico_red.png'
 
-# HTML Class constants
-
 # HTML Color constants
 GRN = ''
 RED = ''
@@ -157,13 +155,14 @@ def get_locos_table(track):
 
 def get_loco_connline(track, loco_id):
     """ Given a track object and locomotive id string, returns a polyline
-        between the loco's position and connected base stations.
+        between the loco and connected base stations.
     """
     raise NotImplementedError
 
     
 def get_trackline(track):
-    """ Returns a polyline for the given track, based on its mileposts.
+    """ Returns a polyline representation of the given track, based on its
+        mileposts.
     """
     tracklines = []
     for mp in track.mileposts_sorted:

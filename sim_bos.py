@@ -97,7 +97,7 @@ class BOS(object):
         addition to the web interface.
     """
     def __init__(self):
-        self.track = Track()    # Track object instance
+        self.track = Track()
 
         # Messaging client
         self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)
@@ -115,6 +115,7 @@ class BOS(object):
         self.running = True
         self.msg_watcher_thread.start()
         self.webupdate_thread.start()
+        sleep(.5)  # Ample time to ensure all threads did one iteration
 
         bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL+C
 
@@ -148,10 +149,10 @@ class BOS(object):
                                         msg.payload['lat'],
                                         msg.payload['long'])
                     active_conns = eval(msg.payload['conns'])  # evals to dict
-                    # Reference (or instantiate) the loco object with given ID
+
+                    # Eiter reference or instantiate loco with the given ID
                     loco = self.track.locos.get(locoID)
                     if not loco:
-                        print('+++ new loco: ' + locoID)
                         loco = Loco(locoID, self.track)
 
                     # Update the BOS's loco object with status msg params
@@ -191,7 +192,6 @@ class BOS(object):
             for loco in self.track.locos.values():
                 maps[loco.ID] = get_status_map(self.track, tracklines, loco)
             maps[None] = get_status_map(self.track, tracklines)
-
             g_status_maps = maps
 
             sleep(REFRESH_TIME)
