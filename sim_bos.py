@@ -47,8 +47,8 @@ while True:
 #################
 
 # Web state vars
-locos_table = '-1'
-panel_map = '-1'
+locos_table = 'Error populating table.'
+panel_map = 'Error populating overview.'
 main_panels = {}  # { None: loco-free-panel, loco_id: panel, ... }
 curr_loco = 'ALL'
 

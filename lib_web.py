@@ -1,12 +1,16 @@
 """ PTC-Sim's web library.
 """
 
+from datetime import datetime
+
 from flask_googlemaps import Map
 
 from lib_app import bos_log
 
-# HTML tag constants
-HOME_SELECT_LOCO = ' Select -> '
+# HTML constants
+TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
+WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 MAP_LOCO_GRN = '/static/img/loco_ico_grn_sm.png'
 MAP_LOCO_RED = '/static/img/loco_ico_red_sm.png'
 MAP_LOCO_GRN_SEL = '/static/img/loco_ico_grn_sm.png'
@@ -17,32 +21,39 @@ MAP_BASE_GRN_SEL = '/static/img/base_ico_grn.png'
 MAP_BASE_RED_SEL = '/static/img/base_ico_red.png'
 
 # HTML Class constants
+
+# HTML Color constants
 GRN = ''
 RED = ''
 YELLOW = '#dfd005'
 
-WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class WebTable:
     """ An HTML Table, with build methods.
     """
-    def __init__(self, head_tag=None, col_headers=[]):
+    _default_head_tag = TABLE_TAG
+    
+    def __init__(self, head_tag=None, col_headers=[], onclick=None):
         """ num_columns: Number of table columns
             col_headers: A list of strings representing table column headings
         """
-        self._head_tag = head_tag
+        self._head_tag = {None: self._default_head_tag}.get(head_tag, head_tag)
         self._header = ''.join(['<th>' + h + '</th>' for h in col_headers])
+        self._footer = '</table>'
         self._rows = []
+
+        if onclick:
+            old_head = self._head_tag
+            self._head_tag = '<div onclick="' + onclick + '"'
+            self._head_tag += ' style="cursor:pointer">'
+            self._head_tag += old_head
+            self._footer = self._footer + '</div>'
 
     def html(self):
         """ Returns an html representation of the table.
         """
-        default_head_tag = '<table border="1px" style="font-size: 12px;" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
-        if self._head_tag:
-            html_table = self._head_tag
-        else:
-            html_table = default_head_tag
-        
+        html_table = self._head_tag
+
         if self._header:
             html_table += '<thead><tr>'
             html_table += self._header
@@ -51,40 +62,63 @@ class WebTable:
         html_table += '<tbody>'
         html_table += ''.join([r for r in self._rows])
         html_table += '</tbody>'
-        html_table += '</table>'
+        html_table += self._footer
 
         return html_table
 
-    def add_row(self, cells, css_class=None):
+    def add_row(self, cells, style=None):
         """ Adds a row of the given cells (a list of cells) and css class.
-            Ex usage: add_row([cell('hello'), cell('world')])
+            Ex usage: add_row([Cell('hello'), Cell('world')])
         """
-        if css_class:
-            rowstr = '<tr class="' + css_class + '">' 
-        else:
-            rowstr = '<tr>'
-        rowstr += ''.join(cells)
-        rowstr += '</tr>'
+        row_str = '<tr'
+        
+        if style:
+            row_str += ' style="' + style + '"'
 
-        self._rows.append(rowstr)
+        row_str += '>'
+        row_str += ''.join([str(c) for c in cells])
+        row_str += '</tr>'
+        
+        self._rows.append(row_str)
 
 
-def cell(content, css_class=None, colspan=1):
-    """ Returns an html table cell with the given content and class (strs).
+class Cell(object):
+    """ An HTML table cell.
     """
-    td = '<td colspan=' + str(colspan) + ' '
-    if css_class:
-        cell = td + 'class="' + css_class + '">' + content
-    cell = td + '>' + content
+    def __init__(self, content, colspan=None, style=None, onclick=None):
+        """ content: (str) The cell's inner content. Ex: Hello World!
+            colspan: (int) HTML colspan tag content.
+            style  : (str) HTML style tag content.
+        """
+        # Build the cell before assigning it to this objects only member variable
+        cell_str = '<td'
 
-    return cell + '</td>'
+        if colspan:
+            cell_str += ' colspan=' + str(colspan)
+        if style:
+            cell_str += ' style="' + style + '"'
+
+        cell_str += '>' 
+        
+        if onclick:
+            cell_str += '<div onclick="' + onclick + '">' + content + '</div></td>'
+        else:
+            cell_str += content + '</td>'
+        
+        self.cell = cell_str
+
+    def __str__(self):
+        """ Returns a string representation of the cell's HTML.
+        """
+        return self.cell
 
 
 def webtime(datetime_obj):
     """ Given a datetime object, returns a string representation formatted
         according to WEBTIME_FORMAT.
     """
-    return datetime_obj.strftime(WEBTIME_FORMAT)
+    if type(datetime_obj) is datetime:
+        return datetime_obj.strftime(WEBTIME_FORMAT)
 
 
 def get_locos_table(track):
@@ -110,15 +144,18 @@ def get_locos_table(track):
             lastseen = str(loco.coords.marker)
             lastseen += ' @ ' + webtime(lastseentime)
 
-        # Build inner table and insert it into the outter
-        inner_headers = [c for c in loco.conns.keys()]      # Inner table head
-        inner = WebTable(col_headers=inner_headers)         # Inner table
-        inner.add_row([cell(c) for c in conn_values])       # Radio status row
-        inner.add_row([cell('<b>Last Seen (Milepost @ Time)</b>', colspan=2)])
-        inner.add_row([cell(lastseen, colspan=2)])          # Last seen row
+        # Individual loco table onclick handler
+        loco_onlick = "home_loco_select('" + loco.ID + "')"
 
-        outter.add_row([cell(loco.ID),
-                        cell(inner.html())])
+        # Build inner table and insert it into the outter
+        inner_headers = [c for c in loco.conns.keys()]      
+        inner = WebTable(col_headers=inner_headers, onclick=loco_onlick)
+        inner.add_row([Cell(c) for c in conn_values])       # Radio status row
+        inner.add_row([Cell('<b>Last Seen (Milepost @ Time)</b>', colspan=2)])
+        inner.add_row([Cell(lastseen, colspan=2)])          # Last seen row
+
+        outter.add_row([Cell(loco.ID, onclick=loco_onlick),
+                        Cell(inner.html())])
 
     return outter.html()
 
@@ -148,16 +185,17 @@ def get_status_map(track, loco_id=None):
         loco with the given ID is added.
     """
     # Containers
-    map_markers = []  # Map markers
-    base_points = []  # All coord points added, (p1, p2), for centering map.   
+    map_markers = []  # Map markers, for the Google.map.markers property.
+    base_points = []  # All base station points, (p1, p2). For map centering.   
 
+    # Append markers to map_markers for
     # -- Bases:
     for base in track.bases.values():
         status_tbl = WebTable()        
-        status_tbl.add_row([cell('Device'), cell(base.name)])
-        status_tbl.add_row([cell('Status'), cell('OK')])
-        status_tbl.add_row([cell('Location'), cell(str(base.coords))])
-        status_tbl.add_row([cell('Last Seen'), cell('NA')])
+        status_tbl.add_row([Cell('Device'), Cell(base.name)])
+        status_tbl.add_row([Cell('Status'), Cell('OK')])
+        status_tbl.add_row([Cell('Location'), Cell(str(base.coords))])
+        status_tbl.add_row([Cell('Last Seen'), Cell('NA')])
         
         marker = {'icon': MAP_BASE_GRN,
                   'lat': base.coords.lat,
@@ -180,10 +218,10 @@ def get_status_map(track, loco_id=None):
     
     for loco in locos:
         status_tbl = WebTable()
-        status_tbl.add_row([cell('Device'), cell(loco.name)])
-        status_tbl.add_row([cell('Status'), cell('OK')])
-        status_tbl.add_row([cell('Location'), cell(str(loco.coords))])
-        status_tbl.add_row([cell('Last Seen'), cell('NA')])
+        status_tbl.add_row([Cell('Device'), Cell(loco.name)])
+        status_tbl.add_row([Cell('Status'), Cell('OK')])
+        status_tbl.add_row([Cell('Location'), Cell(str(loco.coords))])
+        status_tbl.add_row([Cell('Last Seen'), Cell('NA')])
 
         marker = {'icon': MAP_LOCO_GRN,
                   'lat': loco.coords.lat,

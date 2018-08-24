@@ -4,6 +4,7 @@ function get_home_locotable_async() {
         function (data) {
             $("#locos_table").html(data.locos_table);
         });
+        // TODO: Success functions
     }
 
     
@@ -47,7 +48,6 @@ function update_home_content_async() {
         get_home_map_async();
     }, 60000);
 }
-
 // End Home Content Updater
 
 // Loco table -> Select Loco Handler
