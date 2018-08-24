@@ -160,10 +160,11 @@ def get_locos_table(track):
 
 def get_loco_connline(track, loco_id):
     """ Given a track object and locomotive id string, returns a polyline
-        between the locos position and connected base stations.
+        between the loco's position and connected base stations.
     """
-    pass
+    raise NotImplementedError
 
+    
 def get_trackline(track):
     """ Returns a polyline for the given track, based on its mileposts.
     """
