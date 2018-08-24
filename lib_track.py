@@ -565,7 +565,7 @@ def loco_messaging(loco):
         for conn in conns:
             try:
                 conn.send(status_msg)
-                info_str = ' -  Sent status msg over ' + conn.connected_to.name
+                info_str = ' - Sent status msg over ' + conn.connected_to.name
                 track_log.info(loco.name + info_str)
             except Exception as e:
                 track_log.warn(loco.name + ' send failed: ' + str(e))

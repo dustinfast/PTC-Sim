@@ -59,7 +59,7 @@ class WebTable:
 
     def add_row(self, cells, style=None, onclick=None, row_id=None):
         """ Adds a row of the given cells (a list of cells) and html properties.
-            Ex usage: add_row([Cell('hello'), Cell('world')], onclick=DoHello())
+            Ex usage: add_row([cell('hello'), cell('world')], onclick=DoHello())
         """
         row_str = '<tr'
         
@@ -74,36 +74,28 @@ class WebTable:
             row_str += ' style="' + style + '"'
 
         row_str += '>'
-        row_str += ''.join([str(c) for c in cells])
+        row_str += ''.join([c for c in cells])
         row_str += '</tr>'
         
         self._rows.append(row_str)
 
 
-class Cell(object):
-    """ An HTML table cell.
+def cell( content, colspan=None, style=None):
+    """ Returns the given parameters as a well-formed HTML table cell tag.
+        content: (str) The cell's inner content. Ex: Hello World!
+        colspan: (int) HTML colspan tag content.
+        style  : (str) HTML style tag content.
     """
-    def __init__(self, content, colspan=None, style=None):
-        """ content: (str) The cell's inner content. Ex: Hello World!
-            colspan: (int) HTML colspan tag content.
-            style  : (str) HTML style tag content.
-        """
-        # Build the cell's HTML before assigning it to self
-        cell_str = '<td'
+    cell_str = '<td'
 
-        if colspan:
-            cell_str += ' colspan=' + str(colspan)
-        if style:
-            cell_str += ' style="' + style + '"'
+    if colspan:
+        cell_str += ' colspan=' + str(colspan)
+    if style:
+        cell_str += ' style="' + style + '"'
 
-        cell_str += '>' + content + '</td>'
-        
-        self.cell = cell_str
-
-    def __str__(self):
-        """ Returns a string representation of the cell's HTML.
-        """
-        return self.cell
+    cell_str += '>' + content + '</td>'
+    
+    return cell_str
 
 
 def webtime(datetime_obj):
@@ -142,11 +134,11 @@ def get_locos_table(track):
 
         # Build inner table
         inner = WebTable(col_headers=[c for c in loco.conns.keys()])
-        inner.add_row([Cell(c) for c in conn_values])       # Radio status row
-        inner.add_row([Cell('<b>Last Seen Milepost/Time</b>', colspan=2)])
-        inner.add_row([Cell(lastseen, colspan=2)])          # Last seen row
+        inner.add_row([cell(c) for c in conn_values])       # Radio status row
+        inner.add_row([cell('<b>Last Seen Milepost/Time</b>', colspan=2)])
+        inner.add_row([cell(lastseen, colspan=2)])          # Last seen row
 
-        outter.add_row([Cell(loco.ID), Cell(inner.html())], 
+        outter.add_row([cell(loco.ID), cell(inner.html())], 
                        onclick=loco_click,
                        row_id=loco.ID)
 
@@ -201,10 +193,10 @@ def get_status_map(track, tracklines, loco=None):
 
     for l in locos:
         status_tbl = WebTable()
-        status_tbl.add_row([Cell('Device'), Cell(l.name)])
-        status_tbl.add_row([Cell('Status'), Cell('OK')])
-        status_tbl.add_row([Cell('Location'), Cell(str(l.coords))])
-        status_tbl.add_row([Cell('Last Seen'), Cell('NA')])
+        status_tbl.add_row([cell('Device'), cell(l.name)])
+        status_tbl.add_row([cell('Status'), cell('OK')])
+        status_tbl.add_row([cell('Location'), cell(str(l.coords))])
+        status_tbl.add_row([cell('Last Seen'), cell('NA')])
 
         marker = {'icon': MAP_LOCO_GRN,
                   'lat': l.coords.lat,
@@ -215,10 +207,10 @@ def get_status_map(track, tracklines, loco=None):
     # -- Bases:
     for base in track.bases.values():
         status_tbl = WebTable()
-        status_tbl.add_row([Cell('Device'), Cell(base.name)])
-        status_tbl.add_row([Cell('Status'), Cell('OK')])
-        status_tbl.add_row([Cell('Location'), Cell(str(base.coords))])
-        status_tbl.add_row([Cell('Last Seen'), Cell('NA')])
+        status_tbl.add_row([cell('Device'), cell(base.name)])
+        status_tbl.add_row([cell('Status'), cell('OK')])
+        status_tbl.add_row([cell('Location'), cell(str(base.coords))])
+        status_tbl.add_row([cell('Last Seen'), cell('NA')])
 
         marker = {'icon': MAP_BASE_GRN,
                   'lat': base.coords.lat,

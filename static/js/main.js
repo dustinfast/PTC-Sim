@@ -1,15 +1,18 @@
-var selected_loco = '';
+// State vars
+var selected_loco = null;
+var old_border = null;
+var open_infobox = null;
+var open_infobox_marker = null;
 
 // Sets selected_loco, updates loco table border, and refreshes status map
-var old_border;
 function home_loco_select(locoID) {
-    if (selected_loco != '') {
+    if (selected_loco) {
         document.getElementById(selected_loco).style.border = old_border;
     }
     old_border = document.getElementById(locoID).style.border;
 
     if (selected_loco == locoID) {
-        selected_loco = '';
+        selected_loco = null;
     } else {
         selected_loco = locoID;
         document.getElementById(selected_loco).style.border = "thick solid";
@@ -43,26 +46,44 @@ function home_get_map_async() {
                 return;
             }
 
-            // Clear markers from existing map
-            for (var i = 0; i < panel_map_markers.length; i++) {
-                panel_map_markers[i].setMap(null);
-            }
+            // Remove existing map markers
+            panel_map_markers.forEach(function (marker) {
+                    marker.setMap(null);
+                });
             panel_map_markers = []
 
             // Add new markers to map
             $.each(data.status_map.markers, function (i) {
+                var infowindow = new google.maps.InfoWindow({
+                    content: data.status_map.markers[i].infobox
+                });
+                google.maps.event.addListener(infowindow, 'closeclick', function () {
+                    open_infobox_marker = null;  // infowindow closed
+                });
                 var marker = new google.maps.Marker({
                     position: new google.maps.LatLng(
-                        data.status_map.markers[i].lat, 
+                        data.status_map.markers[i].lat,
                         data.status_map.markers[i].lng
                     ),
                     icon: data.status_map.markers[i].icon,
-                    map: panel_map,
+                    title: i.toString(), // TODO: Not going to be unqiue
+                    map: panel_map
+                });
+                marker.addListener('click', function () {
+                    infowindow.open(panel_map, marker);
+                    open_infobox_marker = marker;  // infowindow opened
                 });
                 panel_map_markers.push(marker);
+                
+                // Open the infobox for this marker, if it was previously open
+                if (open_infobox_marker && open_infobox_marker.title == marker.title) {
+                    infowindow.open(panel_map, marker);
+                }
+
             });
 
-            // TODO: recenter map
+
+            // TODO: recenter map. panel_map.center?
             console.log('success');
         }
     });
@@ -75,7 +96,7 @@ function home_update_content_async() {
     setInterval(function () {
         home_get_locotable_async();
         home_get_map_async();
-    }, 60000);
+    }, 5000);
 }
 
 // Working AJAX GET
