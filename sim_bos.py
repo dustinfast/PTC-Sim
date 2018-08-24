@@ -12,12 +12,11 @@
 
 from time import sleep
 from threading import Thread
-from json import loads, dumps
 from subprocess import check_output
 
 from flask_googlemaps import GoogleMaps
 
-from lib_web import get_locos_table, get_status_map
+from lib_web import get_locos_table, get_status_map, get_trackline
 from lib_app import bos_log
 from lib_msging import Client, Queue
 from lib_track import Track, Loco, Location
@@ -49,8 +48,7 @@ while True:
 
 # Global web state vars
 g_locos_table = 'Error populating table.'
-g_panel_map = 'Error populating overview.'
-g_panel_maps = {}  # { None: loco-free-panel, loco_id: panel, ... }
+g_status_maps = {}  # { None: all_locos_statusmap, loco_id: loco_statusmap }
 g_curr_loco = 'ALL'
 
 # Init Flask Web Handler and Google Maps Flask module
@@ -60,29 +58,49 @@ GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
 
 @bos_web.route('/' + APP_NAME)
 def home():
-    return render_template('home.html', panel_map=g_panel_map)
+    """ Serves the "home" page.
+    """
+    return render_template('home.html', panel_map=g_status_maps[None])
 
 
-@bos_web.route('/_home_locotable_update', methods=['GET'])
-def _home_locotable_update():
+@bos_web.route('/_home_get_locotable', methods=['GET'])
+def _home_get_locotable():
+    """ Serves the locos table.
+    """
     return jsonify(locos_table=g_locos_table)
 
 
-@bos_web.route('/_home_map_update', methods=['GET'])
-def _home_map_update():
-    return jsonify(status_map=g_panel_map.as_json())
+@bos_web.route('/_home_get_statusmap', methods=['POST'])
+def _home_get_statusmap():
+    """ Serves the status map for the loco specified in the request. If none
+        specified, returns status map with all locos.
+    """
+    try:
+        print(request)
+        locoID = request.json['locoID']
+
+        if locoID:
+            print('!!! ID:' + str(locoID) + ' !!')
+            return jsonify(status_map=g_status_maps[locoID].as_json())
+        else:
+            print('*** No ID **')
+            return jsonify(status_map=g_status_maps[None].as_json())
+    except Exception as e:
+        bos_log.error(e)
+        print(e)
+        return 'error' 
 
 
-@bos_web.route('/_home_select_loco', methods=['GET', 'POST'])
-def _home_select_loco():
-    global g_curr_loco
+# Working POST function
+# @bos_web.route('/_home_select_loco', methods=['POST'])
+# def _home_select_loco():
+#     global g_curr_loco
 
-    if request.method == "POST":
-        print(str(request.json['locoID']))
-        print('*****post reqs')
-    else:
-        print(request.method)
-    return jsonify({'status': 'success'})
+#     if request.method == "POST":
+#         print(str(request.json['locoID']))
+#     else:
+#         print(request.method)
+#     return jsonify({'status': 'success'})
 
 
 #############
@@ -176,12 +194,21 @@ class BOS(object):
             devices and updates the web output (HTML table, Google Earth/KMLs, 
             etc.) accordingly.
         """
-        global g_locos_table, g_panel_map
+        global g_locos_table, g_status_maps
 
         while self.running:
             # Update g_locos_table and main panel map
             g_locos_table = get_locos_table(self.track)
-            g_panel_map = get_status_map(self.track, g_curr_loco)
+
+            # Updateg_status_maps, the dict of status maps by loco.
+            tracklines = get_trackline(self.track)
+            maps = {}  # Temporary container, so we never serve incomplete map
+
+            for loco in self.track.locos.values():
+                maps[loco.ID] = get_status_map(self.track, tracklines, loco)
+            maps[None] = get_status_map(self.track, tracklines)
+
+            g_status_maps = maps
 
             sleep(REFRESH_TIME)
 

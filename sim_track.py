@@ -72,7 +72,7 @@ class TrackSim(object):
             sleep(REFRESH_TIME)
 
         # Stop each device's sim thread.
-        print('Stopping sims...')
+        print('Stopping sims... Please wait.')
         for l in ptctrack.locos.values():
             l.sim.stop()
 

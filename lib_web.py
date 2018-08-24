@@ -127,7 +127,7 @@ def get_locos_table(track):
     # Locos table is an outter table consisting of inner tables for each loco.
     outter = WebTable(col_headers=[' ID', ' Status'])
 
-    for loco in track.locos.values():
+    for loco in sorted(track.locos.values(), key=lambda x: x.ID):
         # Connection interface row values
         conn_values = []
         for c in loco.conns.values():
@@ -183,25 +183,48 @@ def get_trackline(track):
 
     return polyline
 
-def get_status_map(track, loco_id=None):
-    """ Gets the main panel map for the given track. Adds all track devices
-        to the map, except locos. If loco_id (a string) is given, then:
-        If loco_id == 'ALL', all locos are added to the map. Else only the
-        loco with the given ID is added.
+
+def get_status_map(track, tracklines, loco=None):
+    """ Gets the main status map for the given track.
+        If not loco, all locos are added to the map. Else only the loco
+        having the given ID is added.
     """
     # Containers
     map_markers = []  # Map markers, for the Google.map.markers property.
     base_points = []  # All base station points, (p1, p2). For map centering.   
 
-    # Append markers to map_markers for
+    # Append markers to map_markers for --
+    # -- Loco(s), if given.
+    if not loco:
+        locos = track.locos.values()
+    else:
+        try:
+            locos = [loco]  # Put in list form, so we can still iterate
+        except KeyError:
+            bos_log.error('get_status_map Received an invalid loco: ' + loco.ID)
+            locos = []
+
+    for l in locos:
+        status_tbl = WebTable()
+        status_tbl.add_row([Cell('Device'), Cell(l.name)])
+        status_tbl.add_row([Cell('Status'), Cell('OK')])
+        status_tbl.add_row([Cell('Location'), Cell(str(l.coords))])
+        status_tbl.add_row([Cell('Last Seen'), Cell('NA')])
+
+        marker = {'icon': MAP_LOCO_GRN,
+                  'lat': l.coords.lat,
+                  'lng': l.coords.long,
+                  'infobox': status_tbl.html()}
+        map_markers.append(marker)
+
     # -- Bases:
     for base in track.bases.values():
-        status_tbl = WebTable()        
+        status_tbl = WebTable()
         status_tbl.add_row([Cell('Device'), Cell(base.name)])
         status_tbl.add_row([Cell('Status'), Cell('OK')])
         status_tbl.add_row([Cell('Location'), Cell(str(base.coords))])
         status_tbl.add_row([Cell('Last Seen'), Cell('NA')])
-        
+
         marker = {'icon': MAP_BASE_GRN,
                   'lat': base.coords.lat,
                   'lng': base.coords.long,
@@ -209,33 +232,8 @@ def get_status_map(track, loco_id=None):
         map_markers.append(marker)
         base_points.append((base.coords.lat, base.coords.long))
 
-    # -- Loco(s), if given.
-    if loco_id == 'ALL':
-        locos = track.locos.values()
-    elif loco_id:
-        try:
-            locos = track.locos[loco_id]
-        except KeyError:
-            bos_log.error('get_status_map Received an invalid loco: ' + loco_id)
-            locos = []
-    else:
-        locos = []
-    
-    for loco in locos:
-        status_tbl = WebTable()
-        status_tbl.add_row([Cell('Device'), Cell(loco.name)])
-        status_tbl.add_row([Cell('Status'), Cell('OK')])
-        status_tbl.add_row([Cell('Location'), Cell(str(loco.coords))])
-        status_tbl.add_row([Cell('Last Seen'), Cell('NA')])
-
-        marker = {'icon': MAP_LOCO_GRN,
-                  'lat': loco.coords.lat,
-                  'lng': loco.coords.long,
-                  'infobox': status_tbl.html()}
-        map_markers.append(marker)
-
     # Determine where to center map
-    if len(locos) == 1:
+    if loco:
         # Center map on the loco given by loco_id param, if given.
         center = (loco.coords.lat, loco.coords.long)
     else:
@@ -251,5 +249,5 @@ def get_status_map(track, loco_id=None):
                     zoom='6',
                     markers=list(m for m in map_markers),
                     style="height:600px;width:755px;margin:0;",
-                    polylines=[get_trackline(track)])
+                    polylines=[tracklines])
     return panel_map
