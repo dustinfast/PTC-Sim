@@ -1,16 +1,22 @@
 // State vars
-var selected_loco = null;
-var old_border = null;
-var open_infobox = null;
-var open_infobox_marker = null;
+selected_loco = null;
+selected_loco_border = null;
+open_infobox_marker = null;
 
 // Sets selected_loco, updates loco table border, and refreshes status map
 function home_loco_select(locoID) {
+    // Reset currently selected locos border
     if (selected_loco) {
-        document.getElementById(selected_loco).style.border = old_border;
+        document.getElementById(selected_loco).style.border = selected_loco_border;
     }
-    old_border = document.getElementById(locoID).style.border;
+    selected_loco_border = document.getElementById(locoID).style.border;
 
+    // If an open infobox is not for this loco, we don't need to reopen it
+    // if (locoID != open_infobox_marker.title) {
+    //     open_infobox_marker = null;
+    // } // TODO: need to use loco name as locoID for this to work.
+
+    // Either toggle the selected loco on/off, or set selected loco to new id
     if (selected_loco == locoID) {
         selected_loco = null;
     } else {
@@ -66,7 +72,7 @@ function home_get_map_async() {
                         data.status_map.markers[i].lng
                     ),
                     icon: data.status_map.markers[i].icon,
-                    title: i.toString(), // TODO: Not going to be unqiue
+                    title: data.status_map.markers[i].title,
                     map: panel_map
                 });
                 marker.addListener('click', function () {
@@ -76,6 +82,7 @@ function home_get_map_async() {
                 panel_map_markers.push(marker);
                 
                 // Open the infobox for this marker, if it was previously open
+                // TODO: Handle multiple open markers
                 if (open_infobox_marker && open_infobox_marker.title == marker.title) {
                     infowindow.open(panel_map, marker);
                 }

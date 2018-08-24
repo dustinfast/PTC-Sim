@@ -198,7 +198,8 @@ def get_status_map(track, tracklines, loco=None):
         status_tbl.add_row([cell('Location'), cell(str(l.coords))])
         status_tbl.add_row([cell('Last Seen'), cell('NA')])
 
-        marker = {'icon': MAP_LOCO_GRN,
+        marker = {'title': l.name,
+                  'icon': MAP_LOCO_GRN,
                   'lat': l.coords.lat,
                   'lng': l.coords.long,
                   'infobox': status_tbl.html()}
@@ -212,7 +213,8 @@ def get_status_map(track, tracklines, loco=None):
         status_tbl.add_row([cell('Location'), cell(str(base.coords))])
         status_tbl.add_row([cell('Last Seen'), cell('NA')])
 
-        marker = {'icon': MAP_BASE_GRN,
+        marker = {'title': base.name,
+                  'icon': MAP_BASE_GRN,
                   'lat': base.coords.lat,
                   'lng': base.coords.long,
                   'infobox': status_tbl.html()}
