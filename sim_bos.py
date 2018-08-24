@@ -76,14 +76,15 @@ def _home_get_statusmap():
         specified, returns status map with all locos.
     """
     try:
-        locoID = request.json['locoID']
+        loco_name = request.json['loco_name']
 
-        if locoID:
-            return jsonify(status_map=g_status_maps[locoID].as_json())
+        if loco_name:
+            return jsonify(status_map=g_status_maps[loco_name].as_json())
         else:
             return jsonify(status_map=g_status_maps[None].as_json())
     except Exception as e:
         bos_log.error(e)
+        print('e')
         return 'error' 
 
 
@@ -190,7 +191,7 @@ class BOS(object):
             maps = {}  # Temporary container, so we never serve incomplete map
 
             for loco in self.track.locos.values():
-                maps[loco.ID] = get_status_map(self.track, tracklines, loco)
+                maps[loco.name] = get_status_map(self.track, tracklines, loco)
             maps[None] = get_status_map(self.track, tracklines)
             g_status_maps = maps
 

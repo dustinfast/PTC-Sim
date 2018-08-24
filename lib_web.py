@@ -109,7 +109,7 @@ def webtime(datetime_obj):
 def get_locos_table(track):
     """ Given a track object, returns the locos html table for web display.
     """
-    # Locos table is an outter table consisting of inner tables for each loco.
+    # Locos table is an outter table consisting of an inner table for each loco
     outter = WebTable(col_headers=[' ID', ' Status'])
 
     for loco in sorted(track.locos.values(), key=lambda x: x.ID):
@@ -129,8 +129,8 @@ def get_locos_table(track):
             lastseen = str(loco.coords.marker)
             lastseen += ' @ ' + webtime(lastseentime)
 
-        # Individual loco table onclick handler
-        loco_click = "home_loco_select('" + loco.ID + "')"
+        # This inner tables onclick handler function call
+        loco_onclick_str = "home_loco_select('" + loco.name + "')"
 
         # Build inner table
         inner = WebTable(col_headers=[c for c in loco.conns.keys()])
@@ -139,8 +139,8 @@ def get_locos_table(track):
         inner.add_row([cell(lastseen, colspan=2)])          # Last seen row
 
         outter.add_row([cell(loco.ID), cell(inner.html())], 
-                       onclick=loco_click,
-                       row_id=loco.ID)
+                       onclick=loco_onclick_str,
+                       row_id=loco.name)
 
     return outter.html()
 
@@ -188,7 +188,7 @@ def get_status_map(track, tracklines, loco=None):
         try:
             locos = [loco]  # Put in list form, so we can still iterate
         except KeyError:
-            bos_log.error('get_status_map Received an invalid loco: ' + loco.ID)
+            bos_log.error('get_status_map received an invalid loco: ' + loco.ID)
             locos = []
 
     for l in locos:

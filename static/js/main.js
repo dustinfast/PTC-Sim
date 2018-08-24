@@ -1,30 +1,33 @@
-// State vars
-selected_loco = null;
-selected_loco_border = null;
-open_infobox_marker = null;
+// Formatting vars
+var selected_border = "thick solid";
 
-// Sets selected_loco, updates loco table border, and refreshes status map
-function home_loco_select(locoID) {
+// State vars
+var sel_loco_name = null;
+var sel_loco_border = null;
+var open_infobox_marker = null;  // TODO: Open infoboxes
+
+// Sets sel_loco_name, updates loco table border, and refreshes status map
+function home_loco_select(loco_name) {
     // Reset currently selected locos border
-    if (selected_loco) {
-        document.getElementById(selected_loco).style.border = selected_loco_border;
+    if (sel_loco_name) {
+        document.getElementById(sel_loco_name).style.border = sel_loco_border;
     }
-    selected_loco_border = document.getElementById(locoID).style.border;
+    sel_loco_border = document.getElementById(loco_name).style.border;
 
     // If an open infobox is not for this loco, we don't need to reopen it
-    // if (locoID != open_infobox_marker.title) {
+    // if (loco_name != open_infobox_marker.title) {
     //     open_infobox_marker = null;
-    // } // TODO: need to use loco name as locoID for this to work.
+    // } 
 
     // Either toggle the selected loco on/off, or set selected loco to new id
-    if (selected_loco == locoID) {
-        selected_loco = null;
+    if (sel_loco_name == loco_name) {
+        sel_loco_name = null;
     } else {
-        selected_loco = locoID;
-        document.getElementById(selected_loco).style.border = "thick solid";
+        sel_loco_name = loco_name;
+        document.getElementById(sel_loco_name).style.border = selected_border;
     }
     
-    console.log('Selected loco: ' + selected_loco);
+    console.log('Selected : ' + sel_loco_name);
     home_get_map_async();
 }
 
@@ -37,14 +40,14 @@ function home_get_locotable_async() {
         });
     }
     
-// Requests a status map for the loco specified by selected_loco.
-// If selected_loco = '', requests a generic status map with all locos.
+// Requests a status map for the loco specified by sel_loco_name.
+// If sel_loco_name = null, requests a generic status map with all locos.
 function home_get_map_async() {
     $.ajax({
         url: $SCRIPT_ROOT + '/_home_get_statusmap',
         type: 'POST',
         contentType: 'application/json;charset=UTF-8',
-        data: JSON.stringify({ 'locoID': selected_loco }),
+        data: JSON.stringify({ 'loco_name': sel_loco_name }),
 
         success: function (data) {
             if (data == 'error') {
