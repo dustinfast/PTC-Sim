@@ -9,6 +9,7 @@ from time import sleep
 from json import loads
 from random import randint
 from threading import Thread
+from datetime import datetime
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
@@ -79,6 +80,7 @@ class TrackDevice(object):
             self.sim        : The device's simulation. Start w/self.sim.start()
         """
         self.ID = ID
+        self.devtype = device_type
         self.name = device_type + ' ' + self.ID
         self.coords = location
         self.conns = {}
@@ -278,8 +280,13 @@ class Track(object):
             locos_file: Locos JSON representation
             bases_file: Base stations JSON representation
         """
+        # On-Track device properties
         self.locos = {}
         self.bases = {}
+        self.last_seen = {}     # Last msg recv time, by device. Format:
+                                # { DeviceType: { ID: DateTime } }
+
+        # Track properties
         self.mileposts = {}
         self.mileposts_sorted = []
         self.marker_linear = []
@@ -414,9 +421,25 @@ class Track(object):
         return next_mp_obj, dist_diff
 
     def get_location_at(self, mile):
-        """ Returns the Location at distance (a float) iff one exists.
+        """ Returns the Location at the given track mile (a float) iff exists.
         """
         return self.mileposts.get(mile, None)
+
+    def set_lastseen(self, device):
+        """ Given a TrackDevice, updates the Track.last_seen with the current
+            datetime for that device.
+        """
+        if not self.last_seen.get(device.devtype):
+            self.last_seen[device.devtype] = {}
+        self.last_seen[device.devtype][device.ID] = datetime.now()
+
+    def get_lastseen(self, device):
+        """ Returns last comms time (datetime) for the given device iff exists.
+        """
+        try:
+            return self.last_seen[device.devtype][device.ID]
+        except:
+            pass
 
 
 class Location:
@@ -542,7 +565,7 @@ def loco_messaging(loco):
         for conn in conns:
             try:
                 conn.send(status_msg)
-                info_str = ' -  Sent status msg over ' + conn.connected_to.ID
+                info_str = ' -  Sent status msg over ' + conn.connected_to.name
                 track_log.info(loco.name + info_str)
             except Exception as e:
                 track_log.warn(loco.name + ' send failed: ' + str(e))

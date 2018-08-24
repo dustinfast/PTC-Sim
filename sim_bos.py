@@ -15,6 +15,7 @@ from threading import Thread
 from subprocess import check_output
 
 from flask_googlemaps import GoogleMaps
+
 from lib_web import get_locos_table, get_status_map
 from lib_app import bos_log
 from lib_msging import Client, Queue
@@ -86,14 +87,14 @@ class BOS(object):
         addition to the web interface.
     """
     def __init__(self):
-        self.track = Track()  # Track object instance
+        self.track = Track()    # Track object instance
 
         # Messaging client
         self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)
 
-        # Threads
+        # Threading
         self.running = False  # Thread kill flag
-        self.status_watcher_thread = Thread(target=self._statuswatcher)
+        self.msg_watcher_thread = Thread(target=self._statuswatcher)
         self.webupdate_thread = Thread(target=self._webupdater)
 
     def start(self, debug=False):
@@ -102,7 +103,7 @@ class BOS(object):
         bos_log.info('BOS Starting.')
         
         self.running = True
-        self.status_watcher_thread.start()
+        self.msg_watcher_thread.start()
         self.webupdate_thread.start()
 
         bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL+C
@@ -110,7 +111,7 @@ class BOS(object):
         # Do shutdown
         print('\nBOS Stopping... Please wait.')
         self.running = False
-        self.status_watcher_thread.join(timeout=REFRESH_TIME)
+        self.msg_watcher_thread.join(timeout=REFRESH_TIME)
         self.webupdate_thread.join(timeout=REFRESH_TIME)
         bos_log.info('BOS stopped.')
 
@@ -130,7 +131,7 @@ class BOS(object):
 
             # Process loco status msg. Msg should be of form given in 
             # docs/app_messaging_spec.md, Msg ID 6000.
-            if msg:
+            if msg and msg.msg_type == 6000:
                 try:
                     locoID = msg.payload['loco']
                     location = Location(msg.payload['milepost'],
@@ -151,10 +152,15 @@ class BOS(object):
                                 msg.payload['bpp'],
                                 active_conns)
 
-                    bos_log.info('Processed status msg for loco ' + loco.ID + ' @ ' + str(loco.coords))
+                    # Update the last seen time for this loco
+                    self.track.set_lastseen(loco)
+                    
+                    bos_log.info('Processed status msg for ' + loco.name)
                 except KeyError:
                     bos_log.error('Malformed status msg: ' + str(msg.payload))
-
+            elif msg:
+                bos_log.error('Fetched unhandled msg type: ' + str(msg.msg_type))
+                
             sleep(REFRESH_TIME)
         
     def _webupdater(self):

@@ -5,6 +5,23 @@ from flask_googlemaps import Map
 
 from lib_app import bos_log
 
+# HTML tag constants
+HOME_SELECT_LOCO = ' Select -> '
+MAP_LOCO_GRN = '/static/img/loco_ico_grn_sm.png'
+MAP_LOCO_RED = '/static/img/loco_ico_red_sm.png'
+MAP_LOCO_GRN_SEL = '/static/img/loco_ico_grn_sm.png'
+MAP_LOCO_RED_SEL = '/static/img/loco_ico_red_sm.png'
+MAP_BASE_GRN = '/static/img/base_ico_grn.png'
+MAP_BASE_RED = '/static/img/base_ico_red.png'
+MAP_BASE_GRN_SEL = '/static/img/base_ico_grn.png'
+MAP_BASE_RED_SEL = '/static/img/base_ico_red.png'
+
+# HTML Class constants
+GRN = ''
+RED = ''
+YELLOW = '#dfd005'
+
+WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class WebTable:
     """ An HTML Table, with build methods.
@@ -52,21 +69,32 @@ class WebTable:
         self._rows.append(rowstr)
 
 
-def cell(content, css_class=None):
+def cell(content, css_class=None, colspan=1):
     """ Returns an html table cell with the given content and class (strs).
     """
+    td = '<td colspan=' + str(colspan) + ' '
     if css_class:
-        return '<td class='' + str(css_class) + ''>' + content + '</td>'
-    return '<td>' + content + '</td>'
+        cell = td + 'class="' + css_class + '">' + content
+    cell = td + '>' + content
+
+    return cell + '</td>'
+
+
+def webtime(datetime_obj):
+    """ Given a datetime object, returns a string representation formatted
+        according to WEBTIME_FORMAT.
+    """
+    return datetime_obj.strftime(WEBTIME_FORMAT)
 
 
 def get_locos_table(track):
     """ Given a track object, returns the locos html table for web display.
     """
-    # The loco table is one outter table consisting of an inner table for each loco.
-    select_loco_btn = ' -> '  # Temp
-    outter = WebTable(col_headers=[' ID', ' Status', ' + '])  # Outter table
+    # Table is an outter table consisting of inner tables for each loco
+    outter = WebTable(col_headers=[' ID', ' Status'])
+
     for loco in track.locos.values():
+        # Connection interface row values
         conn_values = []
         for c in loco.conns.values():
             if not c.connected_to:
@@ -74,13 +102,23 @@ def get_locos_table(track):
             else:
                 conn_values.append(c.connected_to.ID)
 
+        # Last seen row value
+        lastseentime = track.get_lastseen(loco)
+        if not lastseentime:
+            lastseen = 'N/A'
+        else:
+            lastseen = str(loco.coords.marker)
+            lastseen += ' @ ' + webtime(lastseentime)
+
         # Build inner table and insert it into the outter
-        inner_headers = [c for c in loco.conns.keys()]
-        inner = WebTable(col_headers=inner_headers)  # Inner table
-        inner.add_row([cell(c) for c in conn_values])
+        inner_headers = [c for c in loco.conns.keys()]      # Inner table head
+        inner = WebTable(col_headers=inner_headers)         # Inner table
+        inner.add_row([cell(c) for c in conn_values])       # Radio status row
+        inner.add_row([cell('<b>Last Seen (Milepost @ Time)</b>', colspan=2)])
+        inner.add_row([cell(lastseen, colspan=2)])          # Last seen row
+
         outter.add_row([cell(loco.ID),
-                        cell(inner.html()),
-                        cell(select_loco_btn)])
+                        cell(inner.html())])
 
     return outter.html()
 
@@ -88,7 +126,6 @@ def get_locos_table(track):
 def get_trackline(track):
     """ Returns a polyline for the given track, based on its mileposts.
     """
-
     tracklines = []
     for mp in track.mileposts_sorted:
         line = {'lat': mp.lat,
@@ -96,7 +133,7 @@ def get_trackline(track):
         tracklines.append(line)
 
     polyline = {
-        'stroke_color': '#dfd005',  # Yellow
+        'stroke_color': YELLOW,
         'stroke_opacity': 1.0,
         'stroke_weight': 2,
         'path': list(ln for ln in tracklines)
@@ -112,13 +149,7 @@ def get_status_map(track, loco_id=None):
     """
     # Containers
     map_markers = []  # Map markers
-    base_points = []  # All coord points added, (p1, p2), for centering map.
-
-    # Define icons and html tags
-    loco_grn = '/static/img/loco_ico_grn_sm.png'
-    loco_red = '/static/img/loco_ico_red_sm.png'
-    base_grn = '/static/img/base_ico_grn.png'
-    base_red = '/static/img/base_ico_red.png'    
+    base_points = []  # All coord points added, (p1, p2), for centering map.   
 
     # -- Bases:
     for base in track.bases.values():
@@ -128,7 +159,7 @@ def get_status_map(track, loco_id=None):
         status_tbl.add_row([cell('Location'), cell(str(base.coords))])
         status_tbl.add_row([cell('Last Seen'), cell('NA')])
         
-        marker = {'icon': base_grn,
+        marker = {'icon': MAP_BASE_GRN,
                   'lat': base.coords.lat,
                   'lng': base.coords.long,
                   'infobox': status_tbl.html()}
@@ -154,7 +185,7 @@ def get_status_map(track, loco_id=None):
         status_tbl.add_row([cell('Location'), cell(str(loco.coords))])
         status_tbl.add_row([cell('Last Seen'), cell('NA')])
 
-        marker = {'icon': loco_grn,
+        marker = {'icon': MAP_LOCO_GRN,
                   'lat': loco.coords.lat,
                   'lng': loco.coords.long,
                   'infobox': status_tbl.html()}
