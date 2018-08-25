@@ -11,19 +11,20 @@ from lib_app import bos_log
 TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
 WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-MAP_LOCO_GRN = '/static/img/loco_ico_grn_sm.png'
+MAP_LOCO_GRN = '/static/img/loco_ico_grn_0.png'
 MAP_LOCO_RED = '/static/img/loco_ico_red_sm.png'
 MAP_LOCO_GRN_SEL = '/static/img/loco_ico_grn_sm.png'
 MAP_LOCO_RED_SEL = '/static/img/loco_ico_red_sm.png'
-MAP_BASE_GRN = '/static/img/base_ico_grn.png'
+MAP_BASE_GRN = '/static/img/base_ico_gr.png'
 MAP_BASE_RED = '/static/img/base_ico_red.png'
 MAP_BASE_GRN_SEL = '/static/img/base_ico_grn.png'
 MAP_BASE_RED_SEL = '/static/img/base_ico_red.png'
 
 # HTML Color constants
-GRN = ''
-RED = ''
+GREEN = '#33cc33'
+RED = '#ff0000'
 YELLOW = '#dfd005'
+GRAY = '#7a7a52'
 
 
 class WebTable:
@@ -116,10 +117,10 @@ def get_locos_table(track):
         # Connection interface row values
         conn_values = []
         for c in loco.conns.values():
-            if not c.connected_to:
+            if not c.conn_to:
                 conn_values.append('N/A')
             else:
-                conn_values.append(c.connected_to.ID)
+                conn_values.append(c.conn_to.ID)
 
         # Last seen row value
         lastseentime = track.get_lastseen(loco)
@@ -152,24 +153,57 @@ def get_loco_connline(track, loco_id):
     raise NotImplementedError
 
     
-def get_trackline(track):
-    """ Returns a polyline representation of the given track, based on its
-        mileposts.
+def get_tracklines(track):
+    """ Returns a list of polylines representating the given track, based on
+        its mileposts and colored according to radio coverage.
     """
+    # Build tracklines
     tracklines = []
     for mp in track.mileposts_sorted:
-        line = {'lat': mp.lat,
-                'lng': mp.long}
-        tracklines.append(line)
+        tracklines.append({'lat': mp.lat, 'lng': mp.long})
 
+    # Build loco to base connection lines
+    loco_connlines = []
+    for loco in [l for l in track.locos.values() if l.is_online()]:
+        for conn in [c for c in loco.conns.values() if c.connected()]:
+            linepath = []
+            linepath.append({'lat': loco.coords.lat, 'lng': loco.coords.long})
+            linepath.append({'lat': conn.conn_to.coords.lat, 
+                             'lng': conn.conn_to.coords.long})
+            loco_connlines.append(linepath)
+
+    # Build the polylines from the lists of lines we just populated
+    polylines = []
+
+    # -- track lines
     polyline = {
         'stroke_color': YELLOW,
         'stroke_opacity': 1.0,
         'stroke_weight': 2,
         'path': list(ln for ln in tracklines)
     }
+    polylines.append(polyline)
 
-    return polyline
+    # -- loco conn lines
+    for lines in loco_connlines:
+        polyline = {
+            'stroke_color': GREEN,
+            'stroke_opacity': 1.0,
+            'map': 'panel_map',
+            'stroke_weight': .8,
+            'path': list(ln for ln in lines),
+            'icons': [{
+                'icon': {
+                    'path': 'M 0,-1 0,1',
+                    'strokeOpacity': 1,
+                    'scale': 4},
+                'offset': '0',
+                'repeat': '20px'
+            }]
+        }
+        polylines.append(polyline)
+
+    return polylines
 
 
 def get_status_map(track, tracklines, loco=None):
@@ -238,5 +272,5 @@ def get_status_map(track, tracklines, loco=None):
                     zoom='6',
                     markers=list(m for m in map_markers),
                     style="height:600px;width:755px;margin:0;",
-                    polylines=[tracklines])
+                    polylines=tracklines)
     return panel_map

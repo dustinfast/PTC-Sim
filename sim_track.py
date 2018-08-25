@@ -66,7 +66,7 @@ class TrackSim(object):
                 status_str += '. Bases in range: '
                 status_str += ', '.join([b.ID for b in l.bases_inrange])
                 status_str += ' Conns: '
-                status_str += ', '.join([c.connected_to.ID for c in l.conns.values() if c.connected_to])
+                status_str += ', '.join([c.conn_to.ID for c in l.conns.values() if c.conn_to])
                 track_log.info(status_str)
 
             sleep(REFRESH_TIME)

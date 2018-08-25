@@ -98,7 +98,7 @@ class TrackDevice(object):
     def is_online(self):
         """ Returns True iff at least one of the device's connections is active.
         """
-        if [c for c in self.conns if c.active]:
+        if [c for c in self.conns.values() if c.connected()]:
             return True
 
 
@@ -325,17 +325,18 @@ class Track(object):
         except Exception as e:
             raise Exception('Error reading ' + track_file + ': ' + str(e))
 
-        for marker in locations:
-            try:
-                mp = float(marker['milemarker'])
-                lat = float(marker['lat'])
-                lng = float(marker['long'])
-            except ValueError:
-                raise ValueError('Conversion error in ' + track_file + '.')
-            except KeyError:
-                raise Exception('Malformed ' + track_file + ': Key Error.')
+        for i, marker in enumerate(locations):
+            if i % 200 == 0:  # debug, for perf testing
+                try:
+                    mp = float(marker['milemarker'])
+                    lat = float(marker['lat'])
+                    lng = float(marker['long'])
+                except ValueError:
+                    raise ValueError('Conversion error in ' + track_file + '.')
+                except KeyError:
+                    raise Exception('Malformed ' + track_file + ': Key Error.')
 
-            self.mileposts[mp] = Location(mp, lat, lng)
+                self.mileposts[mp] = Location(mp, lat, lng)
 
         # Build the other milepost lists/dicts from self.mileposts
         self.marker_linear = [m for m in sorted(self.mileposts.keys())]
@@ -539,13 +540,13 @@ def loco_messaging(loco):
         # in-range connections
         lconns = loco.conns.values()
         for conn in [c for c in lconns if c.connected() is True]:
-            if conn.connected_to not in loco.bases_inrange:
+            if conn.conn_to not in loco.bases_inrange:
                 conn.disconnect()
             else:
                 conn.keep_alive()
 
         open_conns = [c for c in lconns if c.connected() is False]
-        used_bases = [c.connected_to for c in lconns if c.connected() is True]
+        used_bases = [c.conn_to for c in lconns if c.connected() is True]
         for i, conn in enumerate(open_conns):
             try:
                 if loco.bases_inrange[i] not in used_bases:
@@ -565,7 +566,7 @@ def loco_messaging(loco):
         for conn in conns:
             try:
                 conn.send(status_msg)
-                info_str = ' - Sent status msg over ' + conn.connected_to.name
+                info_str = ' - Sent status msg over ' + conn.conn_to.name
                 track_log.info(loco.name + info_str)
             except Exception as e:
                 track_log.warn(loco.name + ' send failed: ' + str(e))

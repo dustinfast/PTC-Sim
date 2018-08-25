@@ -10,7 +10,11 @@ var SEL_BORDERSTYLE = 'solid thick';
 var curr_loco_name = null;     // Currently selected loco in the locos table
 var may_persist_loco = null;  // Loco w/infobox to persist bteween refreshes
 var open_infobox_markers = {}; // Markers w/infoboxes to persist btwn refreshes
-
+var linesymbol = {
+    'path': 'M 0,-1 0,1',
+    'strokeOpacity': 1,
+    'scale': 4
+}
 // Locos table loco click handler - If selecting same loco as prev selected, 
 // toggles selection off, else sets the selected loco as the new selection.
 function loco_select_onclick(loco_name) {

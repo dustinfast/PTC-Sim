@@ -157,7 +157,7 @@ class Connection(object):
             self.last_activity  : (datetime) Time of last activity
             self.client         : (Client) The interfaces messaging client
             self.Receiver       : (Receiver) Incoming TCP/IP connection watcher
-            self.connected_to   : (TrackDevice) Active connection partner
+            self.conn_to   : (TrackDevice) Active connection partner
 
             self._timeout_seconds: (int) Seconds of inactivity before timeout
             self._timeout_watcher: A thread. Updates self.active on timeout
@@ -168,7 +168,7 @@ class Connection(object):
         # TODO: self.transport_class. i.e. radio, etc.
 
         # Interface
-        self.connected_to = None
+        self.conn_to = None
         self.client = Client()
         self.receiver = Receiver()
 
@@ -208,20 +208,20 @@ class Connection(object):
         """ Establishes the connection (nominally, at this point), to the
             given TrackDevice.
         """
-        self.connected_to = obj
+        self.conn_to = obj
         self.keep_alive()
 
     def connected(self):
         """ Returns True if connection is connected, else returns False
         """
-        if self.connected_to:
+        if self.conn_to:
             return True
         return False
 
     def disconnect(self):
         """ "Terminates" the nominal connection
         """
-        self.connected_to = None
+        self.conn_to = None
 
     def _timeoutwatcher(self):
         """ Resets the connections 'active' flag if timeout elapses
@@ -312,7 +312,7 @@ class Receiver(object):
 def get_6000_msg(loco):
         """ Returns a well-formed 6000 (loco status) msg for the given loco.
         """
-        con_str = str({k: v.connected_to.ID for (k, v)
+        con_str = str({k: v.conn_to.ID for (k, v)
                        in loco.conns.iteritems()
                        if v.connected() is True})
                        

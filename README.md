@@ -42,7 +42,7 @@ Each component exists as a seperate entity:
 **sim_track.py** - The Track Simulator.  
 **track_bases.json** - JSON representation of the radio base stations facilitating locomotive communications. Each base station consists of a unique ID and the track locations it covers. Gaps in coverage area allowed, as are areas of overlapping coverage.  
 **track_locos.json** - JSON representation of a railroads locomotives.
-**track_rail.json** - JSON representation of the track rails. Contains location markers and associated lat/long coordinates (in decimal degrees). In this demonstration instance, the track is a model of the Alaska Railroad Corporation's main branch, with data obtained via Google's Map API.
+**track_rail.json** - JSON representation of the track rails. Contains location markers and associated lat/long coordinates (in decimal degrees). In this demonstration instance, the track is a model of the Alaska Railroad Corporation's main branch, with data obtained via Google's Map API (Base station, etc., locations are fictional)
 **track_waysides.json** - NOT IMPLEMENTED
 
 ### Unimplemented
@@ -66,15 +66,16 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 ## # TODO
 
 * Connection timeout watcher causes no graceful quit
-* Web Output: logs and broker queue sizes
+* Web Output: logs and broker monitor
 * Better exception bubbling to start.py
 * Trackline legend: No 220 coverage, restricted, etc.
 * Broker queue msg expire time
   
+* Allow other track models to be easily loaded via Google Earth
 * Move JSON data to SQL
 * Ensure PEP8 for file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members
-* Readme screenshots and high-level images
+* Readme screenshots and high-level PTC images
 * Move to py3 - config = configparser.ConfigParser()
 * Track Circuits, to aid col avoidance.  
 * Use multiprocessing instead of threading where reasonable

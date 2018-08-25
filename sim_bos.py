@@ -16,10 +16,10 @@ from subprocess import check_output
 
 from flask_googlemaps import GoogleMaps
 
-from lib_web import get_locos_table, get_status_map, get_trackline
 from lib_app import bos_log
 from lib_msging import Client, Queue
 from lib_track import Track, Loco, Location
+from lib_web import get_locos_table, get_status_map, get_tracklines
 
 from lib_app import APP_NAME, REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
@@ -183,7 +183,7 @@ class BOS(object):
             g_locos_table = get_locos_table(self.track)
 
             # Updateg_status_maps, the dict of status maps by loco.
-            tracklines = get_trackline(self.track)
+            tracklines = get_tracklines(self.track)
             maps = {}  # Temporary container, so we never serve incomplete map
 
             for loco in self.track.locos.values():
