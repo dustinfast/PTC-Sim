@@ -15,8 +15,10 @@ YELLOW = '#dfd005'
 ORANGE =  '#fe9e60'
 GRAY = '#7a7a52'
 
+TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="'
+TABLE_TAG += 'table-condensed table table-striped table-bordered no-footer" '
+TABLE_TAG += 'width="95%" cellspacing="0">'
 WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
 IMAGE_PATH = '/static/img/'
 
 MAP_LOCO_UP = IMAGE_PATH + 'loco_ico_up.png'
@@ -326,7 +328,7 @@ def get_status_map(track, tracklines, curr_loco=None):
                     maptype='SATELLITE',
                     zoom='6.5',
                     markers=list(m for m in map_markers),
-                    style="height:600px;width:755px;margin:0;",
+                    style="height:600px;width:795px;margin:0;",
                     polylines=tracklines,
                     fit_markers_to_bounds=True)
     return panel_map

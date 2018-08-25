@@ -3,14 +3,14 @@
 
 <script type="text/javascript" src="{{ url_for('static', filename='js/home.js') }}"></script>
 
-<div class="container-fluid">
+<div class="container">
 	<div class="row">
 
 		<!-- Locos table - A list of selectable locos for status map display -->
-		<div class="col-md-3">
-			<div class="panel panel-default" style="width: 250px;">
+		<div class="col-xs-3 col-sm-3 col-md-3 col-lg-3" style="display: block; overflow-x: scroll;">
+			<div class="panel panel-default" style="overflow-x: hidden; display: inline-block; width: 230px;">
 				<div class="panel-heading">
-					<h4 style="display: inline; vertical-align: bottom;">
+					<h4 style="display: block;">
 						Active Locomotives
 					</h4>
 					<h6>Click a locomotive for details.</h6>
@@ -21,10 +21,10 @@
 		</div>
 
 		<!-- Status map - A googlemaps of the track and its realtime devices -->
-		<div class="col-md-9">
-			<div class="panel panel-default">
+		<div class="col-xs-9 col-sm-9 col-md-9 col-lg-9" style="display: block; overflow-x: scroll;">
+			<div class="panel panel-default" style="overflow-x: hidden; display: inline-block;">
 				<div class="panel-heading">
-					<h4 style="display: inline; vertical-align: bottom;">Overview</h4>
+					<h4 style="display: block;">Overview</h4>
 					<h6>Click a device, locomotive, or track section for details. </h6>
 				</div>
 				<!--The status map placeholder, Populated via AJAX in home.js -->

@@ -12,7 +12,7 @@
         <script type=text/javascript>$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};</script>
     </head>
 
-    <body style="background: #4b4b49">
+    <body style="background: #4b4b49;">
         <div class="container body-content">
             <div class="navbar navbar-inverse">
 
@@ -29,7 +29,7 @@
                 </div>
             </div>
 
-            <div class="jumbotron" style="white-space:nowrap; padding-top: 20px;">
+            <div class="jumbotron" style="white-space:nowrap;">
                 {% block content %}
                 {% endblock %}
                 <h5>&copy;2018 - Dustin Fast - <a href="http://github.com/dustinfast/PTC-Sim">http://github.com/dustinfast/PTC-Sim</a></h5>

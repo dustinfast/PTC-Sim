@@ -160,7 +160,7 @@ function home_get_content_async() {
 }
 
 // Refreshes locos table & status map immediately, then again at given interval.
-function home_update_content_async(refresh_interval=5000) {
+function home_update_content_async(refresh_interval=500000) {
     home_get_content_async();
     setInterval(function () {
         home_get_content_async();
