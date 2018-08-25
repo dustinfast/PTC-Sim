@@ -19,7 +19,7 @@ from flask_googlemaps import GoogleMaps
 from lib_app import bos_log
 from lib_msging import Client, Queue
 from lib_track import Track, Loco, Location
-from lib_web import get_locos_table, get_status_map, get_tracklines
+from lib_web import get_locos_table, get_status_map, get_tracklines, get_connlines
 
 from lib_app import APP_NAME, REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
@@ -49,6 +49,8 @@ while True:
 # Global web state vars
 g_locos_table = 'Error populating table.'
 g_status_maps = {}  # { None: all_locos_statusmap, loco.name: loco_statusmap }
+g_conn_lines = {}  # { TrackDevice.name: loco_statusmap }
+
 g_curr_loco = 'ALL'
 
 # Init Flask Web Handler and Google Maps Flask module
@@ -74,7 +76,7 @@ def _home_get_async_content():
         if loco_name:
             return jsonify(status_map=g_status_maps[loco_name].as_json(),
                            locos_table=g_locos_table,
-                           loco_name=loco_name,)
+                           loco_connlines=g_conn_lines.get(loco_name))
         else:
             return jsonify(status_map=g_status_maps[None].as_json(),
                            locos_table=g_locos_table)
@@ -176,19 +178,21 @@ class BOS(object):
             devices and updates the web output (HTML table, Google Earth/KMLs, 
             etc.) accordingly.
         """
-        global g_locos_table, g_status_maps
+        global g_locos_table, g_status_maps, g_conn_lines
 
         while self.running:
             # Update g_locos_table and main panel map
             g_locos_table = get_locos_table(self.track)
 
-            # Updateg_status_maps, the dict of status maps by loco.
+            # Get updated map lines
             tracklines = get_tracklines(self.track)
+            g_conn_lines = get_connlines(self.track)
             maps = {}  # Temporary container, so we never serve incomplete map
 
             for loco in self.track.locos.values():
                 maps[loco.name] = get_status_map(self.track, tracklines, loco)
-            maps[None] = get_status_map(self.track, tracklines)
+            maps[None] = get_status_map(self.track, tracklines)  
+
             g_status_maps = maps
 
             sleep(REFRESH_TIME)

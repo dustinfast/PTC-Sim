@@ -5,16 +5,19 @@
 
 // Constants
 var SEL_BORDERSTYLE = 'solid thick';
+var LOCO_CONNLINE = {
+    path: 'M 0,-1 0,1',
+    strokeOpacity: .6,
+    strokeColor: '#99ff66',
+    scale: 2
+};
 
 // Page state vars
 var curr_loco_name = null;     // Currently selected loco in the locos table
 var may_persist_loco = null;  // Loco w/infobox to persist bteween refreshes
 var open_infobox_markers = {}; // Markers w/infoboxes to persist btwn refreshes
-var linesymbol = {
-    'path': 'M 0,-1 0,1',
-    'strokeOpacity': 1,
-    'scale': 4
-}
+var curr_polylines = [];
+
 // Locos table loco click handler - If selecting same loco as prev selected, 
 // toggles selection off, else sets the selected loco as the new selection.
 function loco_select_onclick(loco_name) {
@@ -60,22 +63,38 @@ function home_get_content_async() {
             }
             start_time = performance.now();  // debug
 
-            /// Set new locos_table content and update selection border
-            $('#locos_table').html(data.locos_table);
-            if (curr_loco_name) {
-                console.log(document.getElementById(curr_loco_name).style.border);
-                document.getElementById(curr_loco_name).style.border = SEL_BORDERSTYLE;
-            }
             
-            // Remove all existing status map markers // TODO: Rem all existing lines
+            
+            // Remove all existing map markers and polylines
             panel_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
             panel_map_markers = []
 
-            // Add new markers to the status map, based on received data.
+            curr_polylines.forEach(function (pline) {
+                pline.setMap(null);
+            });
+            curr_polylines = []
+
+            // Set map's loco connection lines as polylines, if any
+            $.each(data.loco_connlines, function (i) {
+                console.log(data.loco_connlines[i])
+                var line = new google.maps.Polyline({
+                    path: data.loco_connlines[i],
+                    strokeOpacity: 0,
+                    icons: [{
+                        icon: LOCO_CONNLINE,
+                        offset: '0px',
+                        repeat: '10px'
+                    }],
+                    map: panel_map
+                });
+                curr_polylines.push(line)
+            });
+            
+            // Set maps markers
             $.each(data.status_map.markers, function (i) {
-                // Note that marker titles match the devices's inner table ID.
+                // Note that marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
 
                 // Init the marker object
@@ -111,8 +130,6 @@ function home_get_content_async() {
                 // Handle infobox persistence, based on open_infobox_markers
                if (open_infobox_markers.hasOwnProperty(marker_title)) {
                     is_loco = marker_title.includes('Loco ')
-                    // if (is_loco && (marker_title == may_persist_loco ||
-                    //                 marker_title == curr_loco_name)) {
                    if (is_loco && marker_title == may_persist_loco) {
                         // It's the persisting loco
                         infowindow.open(panel_map, marker);
@@ -126,6 +143,12 @@ function home_get_content_async() {
                     }
                 }
             });
+
+            // Set new locos_table content and update selection border
+            $('#locos_table').html(data.locos_table);
+            if (curr_loco_name) {
+                document.getElementById(curr_loco_name).style.border = SEL_BORDERSTYLE;
+            }
 
             duration = performance.now() - start_time;
             console.log('Content Refreshed - client side took: ' + duration);

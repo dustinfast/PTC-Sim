@@ -11,7 +11,7 @@ from lib_app import bos_log
 TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
 WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-MAP_LOCO_GRN = '/static/img/loco_ico_grn_0.png'
+MAP_LOCO_GRN = '/static/img/loco_ico_grn.png'
 MAP_LOCO_RED = '/static/img/loco_ico_red_sm.png'
 MAP_LOCO_GRN_SEL = '/static/img/loco_ico_grn_sm.png'
 MAP_LOCO_RED_SEL = '/static/img/loco_ico_red_sm.png'
@@ -152,7 +152,42 @@ def get_loco_connline(track, loco_id):
     """
     raise NotImplementedError
 
-    
+
+def get_connlines(track):
+    """ Returns a dict of lines, by TrackDevice.name, representing the 
+        devices connections to each other.
+        Currently only handles loco to base stations connections.
+    """
+    # Build loco to base connection lines
+    loco_connlines = {}  # { loco.name: [ linepath, ... ] }
+    for loco in [l for l in track.locos.values() if l.is_online()]:
+        for conn in [c for c in loco.conns.values() if c.connected()]:
+            linepath = []
+            linepath.append({'lat': loco.coords.lat + 0.2,  # TODO: scale offset
+                             'lng': loco.coords.long})
+            linepath.append({'lat': conn.conn_to.coords.lat,
+                             'lng': conn.conn_to.coords.long})
+
+            if not loco_connlines.get(loco.name):
+                loco_connlines[loco.name] = []
+            loco_connlines[loco.name].append(linepath)
+
+    # Build the dict of polylines from the loco_connlines
+    # polylines = {k: [] for (k, v) in loco_connlines}
+
+    # for name, lines in loco_connlines.iteritems():
+    #     polyline = {
+    #         'stroke_color': GREEN,
+    #         'stroke_opacity': 1.0,
+    #         'map': 'panel_map',
+    #         'stroke_weight': .8,
+    #         'path': list(ln for ln in lines)
+    #     }
+    #     polylines[name].append(polyline)
+
+    return loco_connlines
+
+
 def get_tracklines(track):
     """ Returns a list of polylines representating the given track, based on
         its mileposts and colored according to radio coverage.
@@ -162,48 +197,15 @@ def get_tracklines(track):
     for mp in track.mileposts_sorted:
         tracklines.append({'lat': mp.lat, 'lng': mp.long})
 
-    # Build loco to base connection lines
-    loco_connlines = []
-    for loco in [l for l in track.locos.values() if l.is_online()]:
-        for conn in [c for c in loco.conns.values() if c.connected()]:
-            linepath = []
-            linepath.append({'lat': loco.coords.lat, 'lng': loco.coords.long})
-            linepath.append({'lat': conn.conn_to.coords.lat, 
-                             'lng': conn.conn_to.coords.long})
-            loco_connlines.append(linepath)
-
-    # Build the polylines from the lists of lines we just populated
-    polylines = []
-
-    # -- track lines
+    # Build the polyline consisting of the tracklines
     polyline = {
         'stroke_color': YELLOW,
         'stroke_opacity': 1.0,
         'stroke_weight': 2,
         'path': list(ln for ln in tracklines)
     }
-    polylines.append(polyline)
-
-    # -- loco conn lines
-    for lines in loco_connlines:
-        polyline = {
-            'stroke_color': GREEN,
-            'stroke_opacity': 1.0,
-            'map': 'panel_map',
-            'stroke_weight': .8,
-            'path': list(ln for ln in lines),
-            'icons': [{
-                'icon': {
-                    'path': 'M 0,-1 0,1',
-                    'strokeOpacity': 1,
-                    'scale': 4},
-                'offset': '0',
-                'repeat': '20px'
-            }]
-        }
-        polylines.append(polyline)
-
-    return polylines
+    
+    return [polyline]  # Note: only one item in this list
 
 
 def get_status_map(track, tracklines, loco=None):
@@ -233,9 +235,10 @@ def get_status_map(track, tracklines, loco=None):
         status_tbl.add_row([cell('Last Seen'), cell('NA')])
 
         marker = {'title': l.name,
-                  'icon': MAP_LOCO_GRN,
+                  'icon': {'url': MAP_LOCO_GRN},  # TODO: rotate (add to polyline) and animate: https://developers.google.com/maps/documentation/javascript/symbols
                   'lat': l.coords.lat,
                   'lng': l.coords.long,
+                  'animation': 'google.maps.Animation.BOUNCE',
                   'infobox': status_tbl.html()}
         map_markers.append(marker)
 
