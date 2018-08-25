@@ -331,7 +331,7 @@ class Track(object):
             raise Exception('Error reading ' + track_file + ': ' + str(e))
 
         for i, marker in enumerate(locations):
-            if i % 200 == 0:  # debug, for perf testing
+            if i % 2 == 0:  # debug, for perf testing
                 try:
                     mp = float(marker['milemarker'])
                     lat = float(marker['lat'])
@@ -341,10 +341,10 @@ class Track(object):
                 except KeyError:
                     raise Exception('Malformed ' + track_file + ': Key Error.')
 
-                self.mileposts[mp] = Location(mp, lat, lng)
-                coverage = [b for b in self.bases.values() 
-                            if b.covers_location(self.mileposts[mp])]
-                self.mileposts[mp].covered_by = coverage
+            self.mileposts[mp] = Location(mp, lat, lng)
+            coverage = [b for b in self.bases.values() 
+                        if b.covers_location(self.mileposts[mp])]
+            self.mileposts[mp].covered_by = coverage
 
         # Build the other milepost lists/dicts from self.mileposts
         self.marker_linear = [m for m in sorted(self.mileposts.keys())]

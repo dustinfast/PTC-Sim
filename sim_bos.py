@@ -19,7 +19,7 @@ from flask_googlemaps import GoogleMaps
 from lib_app import bos_log
 from lib_msging import Client, Queue
 from lib_track import Track, Loco, Location
-from lib_web import get_locos_table, get_status_map, get_tracklines, get_connlines
+from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_connlines
 
 from lib_app import APP_NAME, REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
@@ -85,7 +85,6 @@ def _home_get_async_content():
                            locos_table=g_locos_table)
     except Exception as e:
         bos_log.error(e)
-        print('e')
         return 'error' 
 
 
@@ -189,7 +188,7 @@ class BOS(object):
 
             # Get updated map lines
             tracklines = get_tracklines(self.track)
-            g_conn_lines = get_connlines(self.track)
+            g_conn_lines = get_loco_connlines(self.track)
             maps = {}  # Temporary container, so we never serve incomplete map
 
             for loco in self.track.locos.values():

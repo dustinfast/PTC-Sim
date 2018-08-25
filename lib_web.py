@@ -9,21 +9,27 @@ from lib_app import bos_log
 from lib_track import CONN_TIMEOUT
 
 # HTML tag, path, style, etc., constants
-TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
-WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-MAP_LOCO_UP = '/static/img/loco_ico_up.png'
-MAP_LOCO_DOWN = '/static/img/loco_ico_down.png'
-MAP_LOCO_WARN = '/static/img/loco_ico_warn.png'
-MAP_BASE_UP = '/static/img/base_ico_up.png'
-MAP_BASE_DOWN = '/static/img/base_ico_down.png'
-MAP_BASE_WARN = '/static/img/base_ico_warn.png'
-
 GREEN = '#a0f26d;'
 RED = '#e60000'
 YELLOW = '#dfd005'
 ORANGE =  '#fe9e60'
 GRAY = '#7a7a52'
+
+WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="table-condensed compact nowrap table table-striped table-bordered HTMLTable no-footer" width="100%" cellspacing="0">'
+IMAGE_PATH = '/static/img/'
+
+MAP_LOCO_UP = IMAGE_PATH + 'loco_ico_up.png'
+MAP_LOCO_DOWN = IMAGE_PATH + 'loco_ico_down.png'
+MAP_LOCO_WARN = IMAGE_PATH + 'loco_ico_warn.png'
+
+MAP_BASE_UP = IMAGE_PATH + 'base_ico_up.png'
+MAP_BASE_DOWN = IMAGE_PATH + 'base_ico_down.png'
+MAP_BASE_WARN = IMAGE_PATH + 'base_ico_warn.png'
+
+MAP_TRACKLINE_OK = GREEN
+MAP_TRACKLINE_WARN = ORANGE
+MAP_TRACKLINE_DOWN = RED
 
 UP = 'background-color: ' + GREEN
 WARN = 'background-color: ' + ORANGE
@@ -168,10 +174,8 @@ def get_locos_table(track):
     return outter.html()
 
 
-def get_connlines(track):
-    """ Returns a dict of lines, by TrackDevice.name, representing the 
-        devices connections to each other.
-        Currently only handles loco to base stations connections.
+def get_loco_connlines(track):
+    """ Returns a dict of lines representing each locos base connections.
     """
     # Build loco to base connection lines
     loco_connlines = {}  # { loco.name: [ linepath, ... ] }
@@ -190,24 +194,58 @@ def get_connlines(track):
     return loco_connlines
 
 
+class Polyline(object):
+    """
+    """
+    def __init__(self, path, line_color, line_opacity=1.0, line_wt=2.0):
+        self.path = path
+        self.color = line_color
+        self.opacity = line_opacity
+        self.wt = line_wt
+
+    def repr(self):
+        """ Returns a dict representation of the polyline.
+        """
+        return {'stroke_color': self.color,
+                'stroke_opacity': self.opacity,
+                'stroke_weight': self.wt,
+                'path': list(ln for ln in self.path)}
+
+
 def get_tracklines(track):
     """ Returns a list of polylines representating the given track, based on
         its mileposts and colored according to radio coverage.
     """
-    # Build tracklines
-    tracklines = []
-    for mp in track.mileposts_sorted:
-        tracklines.append({'lat': mp.lat, 'lng': mp.long})
-
-    # Build the polyline consisting of the tracklines
-    polyline = {
-        'stroke_color': YELLOW,
-        'stroke_opacity': 1.0,
-        'stroke_weight': 2,
-        'path': list(ln for ln in tracklines)
-    }
+    lines = []      # A list of tuples: [ (path, color), ... ]
+    templines = []  # Temp container of lines: [ line, ... ]
+    mps = track.mileposts_sorted  # For convenience
     
-    return [polyline]  # Note: only one item in this list
+    # Aggregate mps in order, building a line for each "connected" track section
+    num_mps = len(mps) - 1
+    prev_conn_level = None
+    for i, mp in enumerate(mps):
+        conn_level = len(mp.covered_by)
+
+        # If next item is OOB or of different level, push aggregation to lines
+        if i == num_mps or len(mps[i + 1].covered_by) != conn_level:
+            if prev_conn_level == 0:
+                line_color = MAP_TRACKLINE_DOWN
+            elif prev_conn_level == 1:
+                line_color = MAP_TRACKLINE_WARN
+            else:
+                line_color = MAP_TRACKLINE_OK
+            lines.append((templines, line_color))
+            templines = []
+        else:
+            prev_conn_level = conn_level
+            templines.append({'lat': mp.lat, 'lng': mp.long})
+
+    # Build polylines from lines
+    polylines = []
+    for tup in lines:
+        polylines.append(Polyline(tup[0], tup[1]).repr())
+    
+    return polylines  # Note: only one item in this list
 
 
 def get_status_map(track, tracklines, curr_loco=None):

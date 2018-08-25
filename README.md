@@ -70,6 +70,7 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 * Web Output: logs and broker monitor
 * Better exception bubbling to start.py
 * Trackline legend: No 220 coverage, restricted, etc.
+* Tracklines dont update if changed serverside
   
 * Allow other track models to be easily loaded via Google Earth
 * Move JSON data to SQL

@@ -89,7 +89,6 @@ function home_get_content_async() {
 
             // Set map's loco connection lines as polylines, if any
             $.each(data.loco_connlines, function (i) {
-                console.log(data.loco_connlines[i])
                 var line = new google.maps.Polyline({
                     path: data.loco_connlines[i],
                     strokeOpacity: 0,
@@ -98,7 +97,6 @@ function home_get_content_async() {
                         offset: '0px',
                         repeat: '10px'
                     }],
-                    zIndex: -1,
                     map: panel_map
                 });
                 curr_polylines.push(line)
@@ -147,7 +145,6 @@ function home_get_content_async() {
                         infowindow.open(panel_map, marker);
                     } else if (is_loco) {
                         // Ditch ref so no reopen of unselected loco infoboxes
-                        console.log('removing: ' + marker_title);
                         delete open_infobox_markers[marker_title]
                     } else if (!is_loco) {
                         // We reopen all other device type infoboxes
@@ -157,17 +154,15 @@ function home_get_content_async() {
             });
 
             duration = performance.now() - start_time;
-            console.log('Content Refreshed - client side took: ' + duration);
+            console.log('Home Refreshed - client side took: ' + duration);
         }
     });
 }
 
 // Refreshes locos table & status map immediately, then again at given interval.
 function home_update_content_async(refresh_interval=5000) {
-    // home_get_locotable_async();
     home_get_content_async();
     setInterval(function () {
-        // home_get_locotable_async();
         home_get_content_async();
     }, refresh_interval);
 }
