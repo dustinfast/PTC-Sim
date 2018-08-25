@@ -1,112 +1,144 @@
-// Formatting vars
-var selected_border = "thick solid";
+/* The javascript library for PTC-Sim's "Home" page.
+ * 
+ * Author: Dustin Fast, 2018
+*/
 
-// State vars
-var sel_loco_name = null;
-var sel_loco_border = null;
-var open_infobox_marker = null;  // TODO: Open infoboxes
+// Constants
+var SEL_BORDERSTYLE = 'solid thick';
 
-// Sets sel_loco_name, updates loco table border, and refreshes status map
-function home_loco_select(loco_name) {
-    // Reset currently selected locos border
-    if (sel_loco_name) {
-        document.getElementById(sel_loco_name).style.border = sel_loco_border;
-    }
-    sel_loco_border = document.getElementById(loco_name).style.border;
+// Page state vars
+var curr_loco_name = null;     // Currently selected loco (in the locos table)
+var open_infobox_markers = {}; // Markers w/infoboxes to persist btwn refreshes
 
-    // If an open infobox is not for this loco, we don't need to reopen it
-    // if (loco_name != open_infobox_marker.title) {
-    //     open_infobox_marker = null;
-    // } 
+// TODO: main.js to bos_web_home.js, main.js to bos_web.js
 
-    // Either toggle the selected loco on/off, or set selected loco to new id
-    if (sel_loco_name == loco_name) {
-        sel_loco_name = null;
+// Locos table loco click handler - If selecting same loco as prev selected, 
+// toggles selection off, else sets the selected loco as the new selection.
+function loco_select_onclick(loco_name) {
+    if (curr_loco_name == loco_name) {
+        curr_loco_name = null;
     } else {
-        sel_loco_name = loco_name;
-        document.getElementById(sel_loco_name).style.border = selected_border;
+        curr_loco_name = loco_name;
     }
-    
-    console.log('Selected : ' + sel_loco_name);
-    home_get_map_async();
+    home_get_statusmap_async(); // Refresh the content
 }
 
-// Updates home.locos_table 
-function home_get_locotable_async() {
-    $.getJSON(
-        $SCRIPT_ROOT + '/_home_get_locotable',
-        function (data) {
-            $('#locos_table').html(data.locos_table);
-        });
-    }
+// Updates the locos table
+// function home_get_locotable_async() {
+//     $.getJSON(
+//         $SCRIPT_ROOT + '/_home_get_locotable',
+//         function (table_data) {
+//             // Update locos_table div from received data
+//             $('#locos_table').html(table_data.locos_table);
+//         });
+//     // Update currently selected loco's table border 
+//     if (curr_loco_name) {
+//         console.log(document.getElementById(curr_loco_name).style.border);
+//         document.getElementById(curr_loco_name).style.border = SEL_BORDERSTYLE;
+//     }
+//     }
     
-// Requests a status map for the loco specified by sel_loco_name.
-// If sel_loco_name = null, requests a generic status map with all locos.
-function home_get_map_async() {
+// Refresh the status/overview map, including all bases, lines, etc. Further, if 
+// curr_loco_name is null, all locos are included in the refreshed map. Else,
+// only that loco is included in the refreshed version.
+// Note: Can't seem to get JQuery shorthand working here (trashes the JSON).
+function home_get_statusmap_async() {
     $.ajax({
-        url: $SCRIPT_ROOT + '/_home_get_statusmap',
+        url: $SCRIPT_ROOT + '/_home_get_async_content',
         type: 'POST',
         contentType: 'application/json;charset=UTF-8',
-        data: JSON.stringify({ 'loco_name': sel_loco_name }),
+        data: JSON.stringify({ 'loco_name': curr_loco_name }),
 
         success: function (data) {
             if (data == 'error') {
-                console.error('Error returned fetching status map.')
+                console.error('Server returned error fetching status map.')
                 return;
             }
+            start_time = performance.now();  // debug
 
-            // Remove existing map markers
+            /// Set new locos_table content and update selection border
+            $('#locos_table').html(data.locos_table);
+            if (curr_loco_name) {
+                console.log(document.getElementById(curr_loco_name).style.border);
+                document.getElementById(curr_loco_name).style.border = SEL_BORDERSTYLE;
+            }
+            
+            // Remove all existing status map markers // TODO: Rem all existing lines
             panel_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
             panel_map_markers = []
 
-            // Add new markers to map
+            // Add new markers to the status map, based on received data.
             $.each(data.status_map.markers, function (i) {
-                var infowindow = new google.maps.InfoWindow({
-                    content: data.status_map.markers[i].infobox
-                });
-                google.maps.event.addListener(infowindow, 'closeclick', function () {
-                    open_infobox_marker = null;  // infowindow closed
-                });
+                // Note that marker titles match the devices's inner table ID.
+                var marker_title = data.status_map.markers[i].title
+
+                // Init the marker object
                 var marker = new google.maps.Marker({
                     position: new google.maps.LatLng(
                         data.status_map.markers[i].lat,
                         data.status_map.markers[i].lng
                     ),
                     icon: data.status_map.markers[i].icon,
-                    title: data.status_map.markers[i].title,
-                    map: panel_map
+                    title: marker_title,
+                    map: panel_map  // TODO: status_map
                 });
+                
+                // Marker's infobox. Note that it is never explicitly attached.
+                var infowindow = new google.maps.InfoWindow({
+                    content: data.status_map.markers[i].infobox
+                });
+                
+                // Marker's infobox "onopen" handler
                 marker.addListener('click', function () {
                     infowindow.open(panel_map, marker);
-                    open_infobox_marker = marker;  // infowindow opened
+                    open_infobox_markers[marker_title] = marker;  // set persist
                 });
+
+                // Marker's infobox "onclose" handler
+                google.maps.event.addListener(infowindow, 'closeclick', function () {
+                    delete open_infobox_markers[marker_title]; // unset persist
+                });
+
+                // Push the new marker to the map's list of markers
                 panel_map_markers.push(marker);
                 
-                // Open the infobox for this marker, if it was previously open
-                // TODO: Handle multiple open markers
-                if (open_infobox_marker && open_infobox_marker.title == marker.title) {
-                    infowindow.open(panel_map, marker);
+                // Handle infobox persistence, based on open_infobox_markers
+                if (open_infobox_markers.hasOwnProperty(marker_title)) {
+                    is_loco = marker_title.includes('Loco ')
+                    if (is_loco && marker_title == curr_loco_name) {
+                        console.log('is loco')
+                        // It's the currently selected loco
+                        infowindow.open(panel_map, marker);
+                    } else if (is_loco) {
+                        // Ditch ref so no reopen of unselected loco infoboxes
+                        console.log('removing: ' + marker_title);
+                        delete open_infobox_markers[marker_title]
+                    } else if (!is_loco) {
+                        console.log('not loco')
+                        // We reopen all other device type infoboxes
+                        infowindow.open(panel_map, marker);
+                    }
                 }
-
             });
 
-
             // TODO: recenter map. panel_map.center?
-            console.log('success');
+
+            duration = performance.now() - start_time;
+            console.log('Content Refreshed - client side took: ' + duration);
         }
     });
 }
 
-// Updates the home page locos table and panel map at the given interval
-function home_update_content_async() {
-    home_get_locotable_async();
-    home_get_map_async();
+// Refreshes locos table & status map immediately, then again at given interval.
+function home_update_content_async(refresh_interval=60000) {
+    // home_get_locotable_async();
+    home_get_statusmap_async();
     setInterval(function () {
-        home_get_locotable_async();
-        home_get_map_async();
-    }, 5000);
+        // home_get_locotable_async();
+        home_get_statusmap_async();
+    }, refresh_interval);
 }
 
 // Working AJAX GET
@@ -130,5 +162,4 @@ function home_update_content_async() {
 //         }
 //     });
 // }
-
 

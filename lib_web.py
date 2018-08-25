@@ -80,7 +80,7 @@ class WebTable:
         self._rows.append(row_str)
 
 
-def cell( content, colspan=None, style=None):
+def cell(content, colspan=None, style=None):
     """ Returns the given parameters as a well-formed HTML table cell tag.
         content: (str) The cell's inner content. Ex: Hello World!
         colspan: (int) HTML colspan tag content.
@@ -130,7 +130,7 @@ def get_locos_table(track):
             lastseen += ' @ ' + webtime(lastseentime)
 
         # This inner tables onclick handler function call
-        loco_onclick_str = "home_loco_select('" + loco.name + "')"
+        loco_onclick_str = "loco_select_onclick('" + loco.name + "')"
 
         # Build inner table
         inner = WebTable(col_headers=[c for c in loco.conns.keys()])

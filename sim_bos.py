@@ -63,15 +63,15 @@ def home():
     return render_template('home.html', panel_map=g_status_maps[None])
 
 
-@bos_web.route('/_home_get_locotable', methods=['GET'])
-def _home_get_locotable():
-    """ Serves the locos table.
-    """
-    return jsonify(locos_table=g_locos_table)
+# @bos_web.route('/_home_get_locotable', methods=['GET'])
+# def _home_get_locotable():
+#     """ Serves the locos table.
+#     """
+#     return jsonify(locos_table=g_locos_table)
 
 
-@bos_web.route('/_home_get_statusmap', methods=['POST'])
-def _home_get_statusmap():
+@bos_web.route('/_home_get_async_content', methods=['POST'])
+def _home_get_async_content():
     """ Serves the status map for the loco specified in the request. If none
         specified, returns status map with all locos.
     """
@@ -79,9 +79,12 @@ def _home_get_statusmap():
         loco_name = request.json['loco_name']
 
         if loco_name:
-            return jsonify(status_map=g_status_maps[loco_name].as_json())
+            return jsonify(status_map=g_status_maps[loco_name].as_json(),
+                           locos_table=g_locos_table,
+                           loco_name=loco_name,)
         else:
-            return jsonify(status_map=g_status_maps[None].as_json())
+            return jsonify(status_map=g_status_maps[None].as_json(),
+                           locos_table=g_locos_table)
     except Exception as e:
         bos_log.error(e)
         print('e')
