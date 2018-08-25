@@ -95,11 +95,16 @@ class TrackDevice(object):
         """
         self.conns[connection.ID] = connection
 
-    def is_online(self):
+    def connected(self):
         """ Returns True iff at least one of the device's connections is active.
         """
         if [c for c in self.conns.values() if c.connected()]:
             return True
+
+    def disconnect(self):
+        """ Sets all the devices connections to an unconnected status.
+        """
+        [c.disconnect() for c in self.conns.values()]
 
 
 #################
@@ -337,6 +342,9 @@ class Track(object):
                     raise Exception('Malformed ' + track_file + ': Key Error.')
 
                 self.mileposts[mp] = Location(mp, lat, lng)
+                coverage = [b for b in self.bases.values() 
+                            if b.covers_location(self.mileposts[mp])]
+                self.mileposts[mp].covered_by = coverage
 
         # Build the other milepost lists/dicts from self.mileposts
         self.marker_linear = [m for m in sorted(self.mileposts.keys())]
@@ -446,14 +454,16 @@ class Track(object):
 class Location:
     """ An abstraction of a location.
     """
-    def __init__(self, marker, latitude, longitude):
+    def __init__(self, marker, latitude, longitude, covered_by=[]):
         """ self.marker = (float) The numeric location marker
             self.lat = (float) Latitude of location
             self.long = (float) Longitude of location
+            self.covered_by = (list) Bases covering this location
         """
         self.marker = marker
         self.lat = latitude
         self.long = longitude
+        self.covered_by = covered_by
 
     def __str__(self):
         """ Returns a string representation of the location.

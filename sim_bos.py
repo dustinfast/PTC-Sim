@@ -25,6 +25,7 @@ from lib_app import APP_NAME, REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 
 # Attempt to import flask and prompt for install on fail
+# TODO: Move to lib_app
 while True:
     try:
         from flask import Flask, render_template, jsonify, request
@@ -55,7 +56,9 @@ g_curr_loco = 'ALL'
 
 # Init Flask Web Handler and Google Maps Flask module
 bos_web = Flask(__name__)
-GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
+GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")  # prodkey
+# GoogleMaps(bos_web, key="AIzaSyDHanPwylzEFdXCP8Dg1gYCYMxnfplo9LQ")  # devkey
+
 
 
 @bos_web.route('/' + APP_NAME)

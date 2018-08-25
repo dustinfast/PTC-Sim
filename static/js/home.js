@@ -6,17 +6,24 @@
 // Constants
 var SEL_BORDERSTYLE = 'solid thick';
 var LOCO_CONNLINE = {
+    path: 'M 0, -2 1, 1',
+    strokeOpacity: .6,
+    strokeColor: '#99ff66', // Green
+    scale: 2
+};
+
+var LOCO_NO_CONNLINE = {
     path: 'M 0,-1 0,1',
     strokeOpacity: .6,
-    strokeColor: '#99ff66',
+    strokeColor: '#ff0000', // Red
     scale: 2
 };
 
 // Page state vars
 var curr_loco_name = null;     // Currently selected loco in the locos table
-var may_persist_loco = null;  // Loco w/infobox to persist bteween refreshes
+var may_persist_loco = null;   // Loco w/infobox to persist bteween refreshes
 var open_infobox_markers = {}; // Markers w/infoboxes to persist btwn refreshes
-var curr_polylines = [];
+var curr_polylines = [];       // A list of all visible status map polylines
 
 // Locos table loco click handler - If selecting same loco as prev selected, 
 // toggles selection off, else sets the selected loco as the new selection.
@@ -63,8 +70,12 @@ function home_get_content_async() {
             }
             start_time = performance.now();  // debug
 
-            
-            
+            // Refresh locos table and update selection border if needed
+            $('#locos_table').html(data.locos_table);
+            if (curr_loco_name) {
+                document.getElementById(curr_loco_name).style.border = SEL_BORDERSTYLE;
+            }
+
             // Remove all existing map markers and polylines
             panel_map_markers.forEach(function (marker) {
                     marker.setMap(null);
@@ -87,6 +98,7 @@ function home_get_content_async() {
                         offset: '0px',
                         repeat: '10px'
                     }],
+                    zIndex: -1,
                     map: panel_map
                 });
                 curr_polylines.push(line)
@@ -144,12 +156,6 @@ function home_get_content_async() {
                 }
             });
 
-            // Set new locos_table content and update selection border
-            $('#locos_table').html(data.locos_table);
-            if (curr_loco_name) {
-                document.getElementById(curr_loco_name).style.border = SEL_BORDERSTYLE;
-            }
-
             duration = performance.now() - start_time;
             console.log('Content Refreshed - client side took: ' + duration);
         }
@@ -157,7 +163,7 @@ function home_get_content_async() {
 }
 
 // Refreshes locos table & status map immediately, then again at given interval.
-function home_update_content_async(refresh_interval=60000) {
+function home_update_content_async(refresh_interval=5000) {
     // home_get_locotable_async();
     home_get_content_async();
     setInterval(function () {

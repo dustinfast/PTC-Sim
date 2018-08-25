@@ -65,11 +65,11 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 
 ## # TODO
 
+* Broker queue msg expire time
 * Connection timeout watcher causes no graceful quit
 * Web Output: logs and broker monitor
 * Better exception bubbling to start.py
 * Trackline legend: No 220 coverage, restricted, etc.
-* Broker queue msg expire time
   
 * Allow other track models to be easily loaded via Google Earth
 * Move JSON data to SQL
