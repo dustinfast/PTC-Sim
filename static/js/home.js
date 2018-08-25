@@ -11,35 +11,29 @@ var curr_loco_name = null;     // Currently selected loco in the locos table
 var may_persist_loco = null;  // Loco w/infobox to persist bteween refreshes
 var open_infobox_markers = {}; // Markers w/infoboxes to persist btwn refreshes
 
-// TODO: main.js to bos_web_home.js, main.js to bos_web.js
-
 // Locos table loco click handler - If selecting same loco as prev selected, 
 // toggles selection off, else sets the selected loco as the new selection.
 function loco_select_onclick(loco_name) {
-
-    // Handle moving from no loco to the next or one loc
+    // Handle updating the persist var
     old_may_persist = may_persist_loco;
     if (!may_persist_loco && !curr_loco_name) {
         may_persist_loco = loco_name;
-        console.log('set persist1: ' + may_persist_loco);
+        // console.log('set persist1: ' + may_persist_loco);
     } else if (curr_loco_name && may_persist_loco != curr_loco_name) {
         may_persist_loco = null;
-        console.log('set persist2: ' + may_persist_loco);
+        // console.log('set persist2: ' + may_persist_loco);
     } else if (curr_loco_name) {
         may_persist_loco = curr_loco_name;
-        console.log('set persist3: ' + may_persist_loco);
+        // console.log('set persist3: ' + may_persist_loco);
     }
 
     if (curr_loco_name == loco_name) {
         curr_loco_name = null;
-        console.log('set curr1: ' + curr_loco_name)
-
+        // console.log('set curr1: ' + curr_loco_name)
     } else {
         curr_loco_name = loco_name;
-        console.log('set curr2: ' + curr_loco_name)
+        // console.log('set curr2: ' + curr_loco_name)
     }
-
-
 
     home_get_content_async(); // Refresh the content
 }
@@ -129,8 +123,6 @@ function home_get_content_async() {
                 }
             });
 
-            // TODO: recenter map. panel_map.center?
-
             duration = performance.now() - start_time;
             console.log('Content Refreshed - client side took: ' + duration);
         }
@@ -147,7 +139,7 @@ function home_update_content_async(refresh_interval=60000) {
     }, refresh_interval);
 }
 
-// Working AJAX GET
+// AJAX GET
 // function home_get_map_async() {
 //     $.getJSON($SCRIPT_ROOT + '/_home_map_update',
 //         function (data) {
@@ -156,7 +148,7 @@ function home_update_content_async(refresh_interval=60000) {
 //         });
 // }
 
-// Working AJAX POST
+// AJAX POST
 // function home_loco_select(locoID) {
 //     $.ajax({
 //         url: $SCRIPT_ROOT + '/_home_select_loco',

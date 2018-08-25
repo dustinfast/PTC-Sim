@@ -1,28 +1,33 @@
 {% extends "layout.html" %}
 {% block content %}
+
+<script type="text/javascript" src="{{ url_for('static', filename='js/home.js') }}"></script>
+
 <div class="container-fluid">
 	<div class="row">
 
-		<!-- Locomotives list/table -->
+		<!-- Locos table - A list of selectable locos for status map display -->
 		<div class="col-md-3">
 			<div class="panel panel-default" style="width: 250px;">
 				<div class="panel-heading">
-					<h4 style="display: inline; vertical-align: bottom;">Active Locomotives</h4>
+					<h4 style="display: inline; vertical-align: bottom;">
+						Active Locomotives
+					</h4>
 					<h6>Click a locomotive for details.</h6>
 				</div>
-				<!-- Table goes here - populated dynamically via AJAX in main.js -->
+				<!-- The locos table div - populated via AJAX in home.js -->
 				<div id="locos_table">&nbsp;&nbsp;Loading...</div>
 			</div>
 		</div>
 
-		<!-- Main map (w/selected loco's status/location, if one selected) -->
+		<!-- Status map - A googlemaps of the track and its realtime devices -->
 		<div class="col-md-9">
 			<div class="panel panel-default">
 				<div class="panel-heading">
 					<h4 style="display: inline; vertical-align: bottom;">Overview</h4>
 					<h6>Click a device, locomotive, or track section for details. </h6>
 				</div>
-				<!-- Status map content. Populated dynamically via AJAX in main.js -->
+				<!--The status map placeholder, Populated via AJAX in home.js -->
 				<link rel="stylesheet" href=""> {{panel_map.js}} {{ panel_map.html }}
 			</div>
 		</div>

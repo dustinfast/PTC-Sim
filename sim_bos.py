@@ -48,7 +48,7 @@ while True:
 
 # Global web state vars
 g_locos_table = 'Error populating table.'
-g_status_maps = {}  # { None: all_locos_statusmap, loco_id: loco_statusmap }
+g_status_maps = {}  # { None: all_locos_statusmap, loco.name: loco_statusmap }
 g_curr_loco = 'ALL'
 
 # Init Flask Web Handler and Google Maps Flask module
@@ -61,14 +61,7 @@ def home():
     """ Serves the "home" page.
     """
     return render_template('home.html', panel_map=g_status_maps[None])
-
-
-# @bos_web.route('/_home_get_locotable', methods=['GET'])
-# def _home_get_locotable():
-#     """ Serves the locos table.
-#     """
-#     return jsonify(locos_table=g_locos_table)
-
+    
 
 @bos_web.route('/_home_get_async_content', methods=['POST'])
 def _home_get_async_content():
