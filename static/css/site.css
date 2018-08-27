@@ -1,22 +1,35 @@
-﻿/* Move down content because we have a fixed navbar that is 50px tall */
+﻿/* *************************** */
+/* ** Site Specific Styling ** */
+
 body {
     padding-top: 20px;
     padding-bottom: 20px;
-}
-
-/* Wrapping element */
-/* Set some basic padding to keep content from hitting the edges */
-.body-content {
-    padding-left: 15px;
     padding-right: 15px;
+    padding-left: 15px;
 }
 
-/* Responsive: Portrait tablets and up */
-@media screen and (min-width: 768px) {
-    .jumbotron {
-        margin-top: 20px;
-    }
-    .body-content {
-        padding: 0;
-    }
+/* ********************************** */
+/* ** Application Specific Styling ** */
+
+.main-panel {
+  padding: 15px !important;
+  margin-bottom: 15px !important;
 }
+
+.clickable{
+    cursor:pointer;
+}
+
+/* Display status highlights */
+.up {
+    background-color: #a0f26d !important;;
+}
+
+.down {
+    background-color: #e60000 !important;;
+}
+
+.warn {
+    background-color: #fe9e60 !important;;
+}
+

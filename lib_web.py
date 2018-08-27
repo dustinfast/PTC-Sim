@@ -8,7 +8,7 @@ from flask_googlemaps import Map
 from lib_app import bos_log
 from lib_track import CONN_TIMEOUT
 
-# HTML tag, path, style, etc., constants
+# HTML constants
 GREEN = '#a0f26d;'
 RED = '#e60000'
 YELLOW = '#dfd005'
@@ -18,24 +18,24 @@ GRAY = '#7a7a52'
 TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="'
 TABLE_TAG += 'table-condensed table table-striped table-bordered no-footer" '
 TABLE_TAG += 'width="95%" cellspacing="0">'
+
 WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 IMAGE_PATH = '/static/img/'
 
 MAP_LOCO_UP = IMAGE_PATH + 'loco_ico_up.png'
 MAP_LOCO_DOWN = IMAGE_PATH + 'loco_ico_down.png'
 MAP_LOCO_WARN = IMAGE_PATH + 'loco_ico_warn.png'
-
 MAP_BASE_UP = IMAGE_PATH + 'base_ico_up.png'
 MAP_BASE_DOWN = IMAGE_PATH + 'base_ico_down.png'
 MAP_BASE_WARN = IMAGE_PATH + 'base_ico_warn.png'
-
 MAP_TRACKLINE_OK = GREEN
 MAP_TRACKLINE_WARN = ORANGE
 MAP_TRACKLINE_DOWN = RED
 
-UP = 'background-color: ' + GREEN
-WARN = 'background-color: ' + ORANGE
-DOWN = 'background-color: ' + RED
+# CSS class name constants
+UP = 'up'
+WARN = 'warn'
+DOWN = 'down'
 
 
 class WebTable:
@@ -69,7 +69,7 @@ class WebTable:
 
         return html_table
 
-    def add_row(self, cells, style=None, onclick=None, row_id=None):
+    def add_row(self, cells, css=None, onclick=None, row_id=None):
         """ Adds a row of the given cells (a list of cells) and html properties.
             Ex usage: add_row([cell('hello'), cell('world')], onclick=DoHello())
         """
@@ -77,13 +77,13 @@ class WebTable:
         
         if row_id:
             row_str += ' id="' + row_id + '"'
-        if not style:
-            style = ''
+        if not css:
+            css = ''
         if onclick:
             row_str += ' onclick="' + onclick + '"'
-            style = 'cursor:pointer;' + style
-        if style:
-            row_str += ' style="' + style + '"'
+            css = 'clickable ' + css
+        if css:
+            row_str += ' class="' + css + '"'
 
         row_str += '>'
         row_str += ''.join([c for c in cells])
@@ -92,18 +92,18 @@ class WebTable:
         self._rows.append(row_str)
 
 
-def cell(content, colspan=None, style=None):
+def cell(content, colspan=None, css=None):
     """ Returns the given parameters as a well-formed HTML table cell tag.
         content: (str) The cell's inner content. Ex: Hello World!
         colspan: (int) HTML colspan tag content.
-        style  : (str) HTML style tag content.
+        css  : (str) HTML css class.
     """
     cell_str = '<td'
 
     if colspan:
         cell_str += ' colspan=' + str(colspan)
-    if style:
-        cell_str += ' style="' + style + '"'
+    if css:
+        cell_str += ' class="' + css + '"'
 
     cell_str += '>' + content + '</td>'
     
@@ -134,13 +134,13 @@ def get_locos_table(track):
             lastseen += ' @ ' + webtime(lastseentime)
 
             if delta < timenow - lastseentime:
-                lastseen_style = DOWN
+                lastseen_css = DOWN
                 loco.disconnect()  # TODO: Move timeout into sim
             else:
-                lastseen_style = UP
+                lastseen_css = UP
         else:
             lastseen = 'N/A'
-            lastseen_style = DOWN
+            lastseen_css = DOWN
 
         # Connection interface row values
         one_flag = False  # denotes at least one conn up
@@ -167,7 +167,7 @@ def get_locos_table(track):
 
         # -- Last seen row (colspan=all cols of connection status row)
         inner.add_row([cell('<b>Last Seen Milepost/Time</b>', colspan=2)])
-        inner.add_row([cell(lastseen, max_colspan, lastseen_style)])
+        inner.add_row([cell(lastseen, max_colspan, lastseen_css)])
 
         outter.add_row([cell(loco.ID), cell(inner.html())], 
                        onclick="loco_select_onclick('" + loco.name + "')",
