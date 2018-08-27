@@ -14,12 +14,12 @@ from time import sleep
 from threading import Thread
     
 from lib_app import bos_log, dep_install
-from lib_msging import Client, Queue
+from lib_messaging import Client, Queue
 from lib_track import Track, Loco, Location
 from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_connlines
 
 from lib_app import APP_NAME, REFRESH_TIME
-from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
+from lib_messaging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 
 # Attempt to import 3rd party modules and prompt for install on fail
 try:

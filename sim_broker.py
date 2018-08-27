@@ -16,10 +16,10 @@ import socket
 from threading import Thread
 
 from lib_app import Prompt, broker_log
-from lib_msging import Queue, Message
+from lib_messaging import Queue, Message
 
 from lib_app import APP_NAME, REFRESH_TIME
-from lib_msging import BROKER, SEND_PORT, FETCH_PORT, MAX_MSG_SIZE
+from lib_messaging import BROKER, SEND_PORT, FETCH_PORT, MAX_MSG_SIZE
 
 
 class Broker(object):

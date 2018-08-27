@@ -43,7 +43,6 @@ Each component exists as a seperate entity:
 **track_bases.json** - JSON representation of the radio base stations facilitating locomotive communications. Each base station consists of a unique ID and the track locations it covers. Gaps in coverage area allowed, as are areas of overlapping coverage.  
 **track_locos.json** - JSON representation of a railroads locomotives.
 **track_rail.json** - JSON representation of the track rails. Contains location markers and associated lat/long coordinates (in decimal degrees). In this demonstration instance, the track is a model of the Alaska Railroad Corporation's main branch, with data obtained via Google's Map API (Base station, etc., locations are fictional)
-**track_waysides.json** - NOT IMPLEMENTED
 
 ### Unimplemented
 
@@ -66,11 +65,9 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 ## # TODO
 
 * Broker queue msg expire time
-* Connection timeout watcher causes no graceful quit
 * Web Output: logs and broker monitor
 * Better exception bubbling to start.py
 * Trackline legend: No 220 coverage, restricted, etc.
-* Tracklines dont update if changed serverside
   
 * Allow other track models to be easily loaded via Google Earth
 * Move JSON data to SQL

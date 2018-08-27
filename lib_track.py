@@ -14,7 +14,7 @@ from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
 from lib_app import track_log
-from lib_msging import Connection, Queue, get_6000_msg
+from lib_messaging import Connection, Queue, get_6000_msg
 
 # Init conf
 config = RawConfigParser()
