@@ -14,7 +14,7 @@ from time import sleep
 from threading import Thread
     
 from lib_app import bos_log, dep_install
-from lib_messaging import Client, Queue
+from lib_messaging import Client, queue
 from lib_track import Track, Loco, Location
 from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_connlines
 
@@ -118,7 +118,7 @@ class BOS(object):
             msg = None
             try:
                 msg = self.msg_client.fetch_next_msg(BOS_EMP)
-            except Queue.Empty:
+            except queue.Empty:
                 bos_log.info('Msg queue empty.')
             except Exception:
                 bos_log.warn('Could not connect to broker.')

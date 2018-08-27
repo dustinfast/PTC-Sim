@@ -9,7 +9,19 @@
 from time import sleep
 import multiprocessing
 
-from lib_app import APP_NAME
+from lib_app import APP_NAME, dep_install
+
+# Attempt to import 3rd party modules and prompt for install on fail. These
+# modules aren't used here, but the processes we start here do and the user
+# will never be prompted to install them otherwise when starting this way.
+try:
+    from flask import Flask, render_template, jsonify, request
+except:
+    dep_install('Flask')
+try:
+    from flask_googlemaps import GoogleMaps
+except:
+    dep_install('flask_googlemaps')
 
 
 class _process(multiprocessing.Process):
@@ -28,7 +40,7 @@ class _process(multiprocessing.Process):
         """
         expr = 'from ' + self.module_name
         expr += ' import ' + self.class_name + ' as mod'
-        exec(expr)
+        exec(expr, globals())
         mod().start()  # Linter error ignorable here; linter it can't see def.
 
 
@@ -54,7 +66,7 @@ if __name__ == '__main__':
     # Allow graceful quit with 'exit'.
     while True:
         try:
-            uinput = raw_input('')
+            uinput = input('')
         except KeyboardInterrupt:
             uinput = None
 

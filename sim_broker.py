@@ -13,10 +13,11 @@
 """
 
 import socket
+from binascii import hexlify
 from threading import Thread
 
 from lib_app import Prompt, broker_log
-from lib_messaging import Queue, Message
+from lib_messaging import queue, Message
 
 from lib_app import APP_NAME, REFRESH_TIME
 from lib_messaging import BROKER, SEND_PORT, FETCH_PORT, MAX_MSG_SIZE
@@ -29,7 +30,7 @@ class Broker(object):
                         serves msgs as appropriate.
     """
     def __init__(self):
-        # Dict of outgoing msg queues, by dest address: { ADDRESS: Queue }
+        # Dict of outgoing msg queues, by dest address: { ADDRESS: queue }
         self.outgoing_queues = {}
 
         # Threading
@@ -85,26 +86,26 @@ class Broker(object):
 
             # Receive the msg from sender, responding with either OK or FAIL
             log_str = 'Incoming msg from ' + str(client[0]) + ' gave: '
-            try:
-                raw_msg = conn.recv(MAX_MSG_SIZE).decode()
-                msg = Message(raw_msg.decode('hex'))
-                conn.send('OK'.encode())
-                conn.close()
-            except Exception as e:
-                log_str += 'Msg recv failed due to ' + str(e)
-                broker_log.error(log_str)
+            # try:
+            raw_msg = conn.recv(MAX_MSG_SIZE)
+            msg = Message(raw_msg)
+            conn.send('OK'.encode())
+            conn.close()
+            # except Exception as e:
+            #     log_str += 'Msg recv failed due to ' + str(e)
+            #     broker_log.error(log_str)
 
-                try:
-                    conn.send('FAIL'.encode())
-                except:
-                    pass
+            #     try:
+            #         conn.send('FAIL'.encode())
+            #     except:
+            #         pass
 
-                conn.close()
-                continue
+            #     conn.close()
+            #     continue
 
             # Add msg to outgoing queue dict, keyed by dest_addr
             if not self.outgoing_queues.get(msg.dest_addr):
-                self.outgoing_queues[msg.dest_addr] = Queue.Queue()
+                self.outgoing_queues[msg.dest_addr] = queue.Queue()
             self.outgoing_queues[msg.dest_addr].put(msg)
             log_str = 'Fetch success - ' + msg.sender_addr + ' '
             log_str += 'to ' + msg.dest_addr
@@ -143,7 +144,7 @@ class Broker(object):
                     conn.send('EMPTY'.encode())
                 
                 if msg:
-                    conn.send(msg.raw_msg.encode('hex'))  # Send msg
+                    conn.send(hexlify(msg.raw_msg.encode))  # Send msg
                     log_str += 'Msg served.'
 
                 broker_log.info(log_str)

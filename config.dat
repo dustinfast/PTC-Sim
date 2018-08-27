@@ -1,32 +1,71 @@
-; config.dat - PTC-Sim's global configuration file.
-; 
-; Author: Dustin Fast, 2018
+# config.dat - PTC-Sim's global configuration file.
+# 
+# Author: Dustin Fast, 2018
 
 [application]
-app_name = PTC-Sim                  ; Web and terminal display name. URL compatible chars only.
-refresh_time = 5                    ; Thread & loop sleep seconds between iterations
+# Web and terminal display name. URL compatible chars only.
+app_name = PTC-Sim
+
+# Seconds between thread and loop iterations. ower number = higher resolution
+refresh_time = 5
                                     
 [track]
-track_rails = track/rails.json      ; Track model file
-track_locos = track/locos.json      ; File containing list of locomotives
-track_bases = track/bases.json      ; File containing list of base stations
-speed_units = mph                   ; mph or kmh
-component_timeout = 30              ; Seconds before a track componenent is "offline"
+# Track model file
+track_rails = track/rails.json
+
+# File containing list of locomotives
+track_locos = track/locos.json
+
+# File containing list of base stations
+track_bases = track/bases.json
+
+# mph or kmh
+speed_units = mph
+
+# Seconds before a track componenent is "offline"
+component_timeout = 30
 
 [messaging]
-broker = localhost                  ; Message Broker IP address/hostname
-send_port = 18181                   ; Broker-side "msg receive" listener port
-fetch_port = 18182                  ; Broker-side "fetch" listener port
-bos_emp_addr = sim.bos              ; The Back Office Server's EMP address
-loco_emp_prefix = sim.l.            ; Locomotive EMP address prefix
-base_emp_prefix = sim.b.            ; Base station EMP address prefix
-wayside_emp_prefix = sim.w.         ; Wayside EMP address prefix
-msg_expire_time = 30                ; Seconds msgs sit in broker queue before expiring
-max_msg_size = 1024                 ; Max allowed EMP message size, in bytes
-msg_interval = 5                    ; Status message send interval, in seconds
-network_timeout = 2                 ; Socket timeout, in seconds
+# Message Broker IP address/hostname
+broker = localhost
+
+# Broker-side "msg receive" listener port
+send_port = 18181
+
+# Broker-side "fetch" listener port
+fetch_port = 18182
+
+ # The Back Office Server's EMP address
+bos_emp_addr = sim.bos
+
+# Locomotive EMP address prefix
+loco_emp_prefix = sim.l.
+
+# Base station EMP address prefix
+base_emp_prefix = sim.b.
+
+# Wayside EMP address prefix
+wayside_emp_prefix = sim.w.
+
+# Seconds msgs sit in broker queue before expiring
+msg_expire_time = 30
+
+# Max allowed EMP message size, in bytes
+max_msg_size = 1024
+
+# Status message send interval, in seconds
+msg_interval = 5
+
+# Socket timeout, in seconds
+network_timeout = 2
 
 [logging]
-level = 10                          ; 10 = DEBUG, 20 = INFO, 30 = WARN
-num_files = 1                       ; Max number of rotating logfiles
-max_file_size = 1000000             ; Max log size before rotation, in bytes
+
+# 10 = DEBUG, 20 = INFO, 30 = WARN
+level = 10
+
+# Max number of rotating logfiles
+num_files = 1
+
+# Max log size before rotation, in bytes
+max_file_size = 1000000

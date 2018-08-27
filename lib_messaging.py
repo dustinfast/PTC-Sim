@@ -5,19 +5,19 @@
     Author: Dustin Fast, 2018
 """
 
-import Queue
+import queue
 import socket
 import datetime
 from time import sleep
-from binascii import crc32
+from binascii import crc32, hexlify, unhexlify
 from threading import Thread
 from struct import pack, unpack
-from ConfigParser import RawConfigParser
+from configparser import ConfigParser
 
 from lib_app import REFRESH_TIME
 
 # Init conf
-config = RawConfigParser()
+config = ConfigParser()
 config.read('config.dat')
 
 # Import messaging conf data
@@ -48,9 +48,9 @@ class Message(object):
                 )
                 Note: All other EMP fields are static in this implementation.
         """
-        if type(msg_content) == str:
-            self.raw_msg = msg_content
-            msg_content = self._to_tuple(msg_content)
+        if type(msg_content) == bytes:
+            self.raw_msg = hexlify(msg_content).decode
+            msg_content = self._to_tuple(self.raw_msg)
         else:
             if type(msg_content) != tuple or len(msg_content) != 4:
                 raise Exception('Msg content is an unexpected type or length.')
@@ -83,29 +83,29 @@ class Message(object):
         #   H = unsigned short, 16 bits
         #   I = unsigned int, 32 bits
         #   i = signed int, 32 bits
-        try:
+        # try:
             # Pack EMP "Common Header"
-            raw_msg = pack(">B", 4)  # 8 bit EMP header version
-            raw_msg += pack(">H", msg_type)  # 16 bit message type/ID
-            raw_msg += pack(">B", 1)  # 8 bit message version
-            raw_msg += pack(">B", 0)  # 8 bit flag, all zeroes here.
-            raw_msg += pack(">I", body_size)[1:]  # 24 bit msg body size
+        raw_msg = pack(">B", 4)  # 8 bit EMP header version
+        raw_msg += pack(">H", msg_type)  # 16 bit message type/ID
+        raw_msg += pack(">B", 1)  # 8 bit message version
+        raw_msg += pack(">B", 0)  # 8 bit flag, all zeroes here.
+        raw_msg += pack(">I", body_size)[1:]  # 24 bit msg body size
 
-            # Pack EMP "Variable Header"
-            # 8 bit variable header size
-            raw_msg += pack(">B", var_headsize)
-            raw_msg += pack(">H", 120)  # 16 bit network TTL (seconds)
-            raw_msg += pack(">H", 0)  # 16 bit QoS, 0 = no preference
-            raw_msg += sender_addr  # 64 byte (max) msg source addr string
-            raw_msg += '\x00'  # null terminate msg source address
-            raw_msg += dest_addr  # 64 byte (max) msg dest addr string
-            raw_msg += '\x00'  # null terminate destination address
+        # Pack EMP "Variable Header"
+        # 8 bit variable header size
+        raw_msg += pack(">B", var_headsize)
+        raw_msg += pack(">H", 120)  # 16 bit network TTL (seconds)
+        raw_msg += pack(">H", 0)  # 16 bit QoS, 0 = no preference
+        raw_msg += sender_addr.encode()  # 64 byte (max) msg source addr
+        raw_msg += b'\x00'  # null terminate msg source address
+        raw_msg += dest_addr.encode()  # 64 byte (max) msg dest addr
+        raw_msg += b'\x00'  # null terminate destination address
 
-            # Pack msg body
-            raw_msg += payload_str  # Variable size
-            raw_msg += pack(">i", crc32(raw_msg))  # 32 bit CRC
-        except:
-            raise Exception("Msg format is invalid")
+        # Pack msg body
+        raw_msg += payload_str.encode()  # Variable size
+        raw_msg += pack(">I", crc32(raw_msg))  # 32 bit CRC
+        # except:
+        #     raise Exception("Msg format is invalid")
 
         return raw_msg
 
@@ -118,11 +118,12 @@ class Message(object):
             raise Exception("Invalid message format")
 
         # Ensure good CRC
-        msg_crc = unpack(">i", raw_msg[-4::])[0]  # last 4 bytes
+        msg_crc = unpack(">I", raw_msg[-4::])[0]  # last 4 bytes
         raw_crc = crc32(raw_msg[:-4])
 
         if msg_crc != raw_crc:
-            raise Exception("CRC Mismatch - message may be corrupt.")
+            # raise Exception("CRC Mismatch - message may be corrupt.")
+            print("** CRC Mismatch - message may be corrupt.")
 
         # Unpack msg fields, noting that unpack returns results as a tuple
         msg_type = unpack('>H', raw_msg[1:3])[0]  # bytes 1-2
@@ -131,7 +132,8 @@ class Message(object):
         # Extract sender, destination, and playload based on var header size
         vhead_end = 13 + vhead_size
         vhead = raw_msg[13:vhead_end]
-        vhead = vhead.split('\x00')  # split on terminators for easy extract
+        vhead = vhead.split(b'\x00')  # split on terminators for easy extract
+        print(vhead)
         sender_addr = vhead[0]
         dest_addr = vhead[1]
         payload = raw_msg[vhead_end:len(raw_msg) - 4]  # -4 moves before CRC
@@ -264,12 +266,13 @@ class Client(object):
             sock.connect((self.broker, self.send_port))
 
             # Send message and wait for a response
-            sock.send(message.raw_msg.encode('hex'))
+            sock.send(hexlify(message.raw_msg))
             response = sock.recv(MAX_MSG_SIZE).decode()
             sock.close()
-        except:
-            raise Exception('Send Error: Could not connect to broker.')
-
+        except Exception as e:
+            err_str = 'Send Error connecting to broker due to: ' + str(e)
+            raise Exception(err_str)
+        
         if response == 'OK':
             return True
         elif response == 'FAIL':
@@ -280,7 +283,7 @@ class Client(object):
 
     def fetch_next_msg(self, queue_name):
         """ Fetches the next msg from queue_name from the broker and returns it,
-            Raises Queue.Empty if specified queue is empty.
+            Raises queue.Empty if specified queue is empty.
         """
         try:
             # Establish socket connection
@@ -295,9 +298,9 @@ class Client(object):
 
         msg = None
         if resp == 'EMPTY':
-            raise Queue.Empty  # No msg available to fetch
+            raise queue.Empty  # No msg available to fetch
         else:
-            msg = Message(resp.decode('hex'))  # Response is the msg
+            msg = Message(resp)  # Response is the msg
 
         sock.close()
 
@@ -313,7 +316,7 @@ def get_6000_msg(loco):
         """ Returns a well-formed 6000 (loco status) msg for the given loco.
         """
         con_str = str({k: v.conn_to.ID for (k, v)
-                       in loco.conns.iteritems()
+                       in loco.conns.items()
                        if v.connected() is True})
                        
         status = {'loco': loco.ID,

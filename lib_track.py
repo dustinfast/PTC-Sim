@@ -10,26 +10,26 @@ from json import loads
 from random import randint
 from threading import Thread
 from datetime import datetime
-from ConfigParser import RawConfigParser
+from configparser import ConfigParser
 from math import degrees, radians, sin, cos, atan2
 
 from lib_app import track_log
-from lib_messaging import Connection, Queue, get_6000_msg
+from lib_messaging import Connection, queue, get_6000_msg
 
 # Init conf
-config = RawConfigParser()
+config = ConfigParser()
 config.read('config.dat')
 
 # Import conf data
-REFRESH_TIME = int(config.get('application', 'refresh_time'))
+REFRESH_TIME = config.getint('application', 'refresh_time')
 
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_LOCOS = config.get('track', 'track_locos')
 TRACK_BASES = config.get('track', 'track_bases')
-SPEED_UNITS = config.get('track', 'speed_units')
-CONN_TIMEOUT = int(config.get('track', 'component_timeout'))
+SPEED_UNITS = config.get('track', 'speed_units')  # TODO: Convert speed based on
+CONN_TIMEOUT = config.getint('track', 'component_timeout')
 
-MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
+MSG_INTERVAL = config.getint('messaging', 'msg_interval')
 LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
 
@@ -151,8 +151,7 @@ class Loco(TrackDevice):
 
         if track.mileposts:
             max_index = len(track.mileposts) - 1
-            self.coords = track.mileposts.values()[
-                randint(0, max_index)]
+            self.coords = list(track.mileposts.values())[randint(0, max_index)]
 
     def update(self,
                speed=None,
@@ -184,7 +183,7 @@ class Loco(TrackDevice):
                 [c.disconnect for c in self.conns]
                 return
             try:
-                for conn_label, base_id in bases.iteritems():
+                for conn_label, base_id in bases.items():
                     self.conns[conn_label].connect(self.track.bases[base_id])
             except KeyError:
                 err_str = ' - Invalid connection or base ID in bases param.'
@@ -451,10 +450,10 @@ class Track(object):
 
 
 class Location:
-    """ An abstraction of a location.
+    """ An abstraction of a location. 
     """
     def __init__(self, marker, latitude, longitude, covered_by=[]):
-        """ self.marker = (float) The numeric location marker
+        """ self.marker = (float) The numeric marker. Ex: A milepost number.
             self.lat = (float) Latitude of location
             self.long = (float) Longitude of location
             self.covered_by = (list) Bases covering this location
@@ -573,19 +572,19 @@ def loco_messaging(loco):
         # Send status msg over active connections, breaking on first success.
         status_msg = get_6000_msg(loco)
         for conn in conns:
-            try:
-                conn.send(status_msg)
-                info_str = ' - Sent status msg over ' + conn.conn_to.name
-                track_log.info(loco.name + info_str)
-            except Exception as e:
-                track_log.warn(loco.name + ' send failed: ' + str(e))
+            # try:
+            conn.send(status_msg)
+            info_str = ' - Sent status msg over ' + conn.conn_to.name
+            track_log.info(loco.name + info_str)
+        # except Exception as e:
+            # track_log.warn(loco.name + ' send failed: ' + str(e))
                 
         # Fetch incoming cad msgs over active connections, breaking on success.
         for conn in conns:
             cad_msg = None
             try:
                 cad_msg = conn.fetch(loco.emp_addr)
-            except Queue.Empty:
+            except queue.Empty:
                 break  # No msgs (or no more msgs) to receive.
             except Exception as e:
                 track_log.warn(loco.name + ' fetch failed: ' + str(e))

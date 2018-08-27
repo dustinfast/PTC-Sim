@@ -4,20 +4,20 @@
 """
 
 import logging
-import logging.handlers
+from logging.handlers import RotatingFileHandler as rfh_handler
 from subprocess import check_output
-from ConfigParser import RawConfigParser
+from configparser import ConfigParser
 
 # Init conf
-config = RawConfigParser()
+config = ConfigParser()
 config.read('config.dat')
 
 # Import conf data
 APP_NAME = config.get('application', 'app_name')
-REFRESH_TIME = int(config.get('application', 'refresh_time'))
-LOG_LEVEL = int(config.get('logging', 'level'))
+REFRESH_TIME = config.getint('application', 'refresh_time')
+LOG_LEVEL = config.getint('logging', 'level')
 LOG_FILES = config.get('logging', 'num_files')
-LOG_SIZE = int(config.get('logging', 'max_file_size')) 
+LOG_SIZE = config.getint('logging', 'max_file_size')
 
 # Module level loggers, Declared here and defined at the end of this file.
 track_log = None
@@ -52,7 +52,7 @@ class Prompt(object):
         if self.welcome_msg:
             print(self.welcome_msg)
         while self.running:
-            uinput = raw_input(self.prompt)
+            uinput = input(self.prompt)
             cmd = self.commands.get(uinput)
 
             if not uinput:
@@ -124,10 +124,10 @@ class Logger(logging.Logger):
         log_fmt = logging.Formatter(log_fmt + '')
 
         # Init log file rotation
-        fname = 'logs/' + name + '.log'
-        rotate_handler = logging.handlers.RotatingFileHandler(fname,
-                                                              max_filesize,
-                                                              num_files)
+        logfile_name = 'logs/' + name + '.log'
+        rotate_handler = rfh_handler(logfile_name,
+                                     maxBytes=max_filesize,
+                                     backupCount=num_files)
         rotate_handler.setLevel(level)
         rotate_handler.setFormatter(log_fmt)
         self.addHandler(rotate_handler)
@@ -148,7 +148,7 @@ def dep_install(module_name):
 
     prompt = module_name + ' is required. '
     prompt += 'Install with "' + install_str + '"? (Y/n): '
-    do_install = raw_input(prompt)  
+    do_install = input(prompt)  
 
     if do_install == 'Y':
         print('Installing... Please wait.')

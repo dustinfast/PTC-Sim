@@ -327,13 +327,13 @@ def get_status_map(track, tracklines, curr_loco=None):
         center = (max(x) + min(x)) / 2.0, (max(y) + min(y)) / 2.0
 
     status_map = Map(identifier='status_map',
-                    varname='status_map',
-                    lat=center[0],
-                    lng=center[1],
-                    maptype='SATELLITE',
-                    zoom='6.5',
-                    markers=list(m for m in map_markers),
-                    style="height:600px;width:795px;margin:0;",
-                    polylines=tracklines,
-                    fit_markers_to_bounds=True)
+                     varname='status_map',
+                     lat=center[0],
+                     lng=center[1],
+                     maptype='SATELLITE',
+                     zoom='6.5',
+                     markers=list(m for m in map_markers),
+                     style="height:600px;width:795px;margin:0;",
+                     polylines=tracklines,
+                     fit_markers_to_bounds=True)
     return status_map
