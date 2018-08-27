@@ -49,7 +49,7 @@ function loco_select_onclick(loco_name) {
         // console.log('set curr2: ' + curr_loco_name)
     }
 
-    home_get_content_async(); // Refresh the content
+    home_get_content_async(); // Refresh the pages dynamic content
 }
     
 // Refresh the status/overview map, including all bases, lines, etc. Further, if 
@@ -77,10 +77,10 @@ function home_get_content_async() {
             }
 
             // Remove all existing map markers and polylines
-            panel_map_markers.forEach(function (marker) {
+            status_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
-            panel_map_markers = []
+            status_map_markers = []
 
             curr_polylines.forEach(function (pline) {
                 pline.setMap(null);
@@ -97,12 +97,12 @@ function home_get_content_async() {
                         offset: '0px',
                         repeat: '10px'
                     }],
-                    map: panel_map
+                    map: status_map
                 });
                 curr_polylines.push(line)
             });
             
-            // Set maps markers
+            // Set map loco and base markers
             $.each(data.status_map.markers, function (i) {
                 // Note that marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
@@ -115,7 +115,7 @@ function home_get_content_async() {
                     ),
                     icon: data.status_map.markers[i].icon,
                     title: marker_title,
-                    map: panel_map  // TODO: status_map
+                    map: status_map  // TODO: status_map
                 });
                 
                 // Marker's infobox. Note that it is never explicitly attached.
@@ -125,7 +125,7 @@ function home_get_content_async() {
                 
                 // Marker's infobox "onopen" handler
                 marker.addListener('click', function () {
-                    infowindow.open(panel_map, marker);
+                    infowindow.open(status_map, marker);
                     open_infobox_markers[marker_title] = marker;  // set persist
                 });
 
@@ -135,20 +135,20 @@ function home_get_content_async() {
                 });
 
                 // Push the new marker to the map's list of markers
-                panel_map_markers.push(marker);
+                status_map_markers.push(marker);
                 
                 // Handle infobox persistence, based on open_infobox_markers
                if (open_infobox_markers.hasOwnProperty(marker_title)) {
                     is_loco = marker_title.includes('Loco ')
                    if (is_loco && marker_title == may_persist_loco) {
                         // It's the persisting loco
-                        infowindow.open(panel_map, marker);
+                        infowindow.open(status_map, marker);
                     } else if (is_loco) {
                         // Ditch ref so no reopen of unselected loco infoboxes
                         delete open_infobox_markers[marker_title]
                     } else if (!is_loco) {
-                        // We reopen all other device type infoboxes
-                        infowindow.open(panel_map, marker);
+                        // We reopen all other previously open non-loco  infoboxes
+                        infowindow.open(status_map, marker);
                     }
                 }
             });
@@ -160,7 +160,7 @@ function home_get_content_async() {
 }
 
 // Refreshes locos table & status map immediately, then again at given interval.
-function home_update_content_async(refresh_interval=500000) {
+function home_update_content_async(refresh_interval=5000) {
     home_get_content_async();
     setInterval(function () {
         home_get_content_async();

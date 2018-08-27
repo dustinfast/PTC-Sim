@@ -49,7 +49,7 @@ g_conn_lines = {}  # { TrackDevice.name: loco_statusmap }
 def home():
     """ Serves home.html
     """
-    return render_template('home.html', panel_map=g_status_maps[None])
+    return render_template('home.html', status_map=g_status_maps[None])
 
 @bos_web.route('/_home_get_async_content', methods=['POST'])
 def _home_get_async_content():

@@ -326,8 +326,8 @@ def get_status_map(track, tracklines, curr_loco=None):
         x, y = zip(*base_points)
         center = (max(x) + min(x)) / 2.0, (max(y) + min(y)) / 2.0
 
-    panel_map = Map(identifier='panel_map',
-                    varname='panel_map',
+    status_map = Map(identifier='status_map',
+                    varname='status_map',
                     lat=center[0],
                     lng=center[1],
                     maptype='SATELLITE',
@@ -336,4 +336,4 @@ def get_status_map(track, tracklines, curr_loco=None):
                     style="height:600px;width:795px;margin:0;",
                     polylines=tracklines,
                     fit_markers_to_bounds=True)
-    return panel_map
+    return status_map
