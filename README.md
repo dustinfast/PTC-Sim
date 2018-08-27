@@ -17,46 +17,61 @@ PTC-Sim currently implements broker-assisted EMP communication between simulated
 
 ### Components
 
-Each component exists as a seperate entity:
+Each component exists as a seperate entity and any communication occuring between them happens via EMP messaging.
 
 * **Back Office Server** : Provides CAD capabilities for communicating track restrictions to locomotives and displays real-time track device status and location via its website interface.
 
 * **Message Broker**: An intermediate message translation system allowing bi-directional communication between track devices and the BOS.  Currently, each component transports EMP messages via TCP/IP only, but future versions may demonstrate Class C (IP based multicast protocol) and Class D (IP based point-to-point protocol) messaging.
 
-* **Track Simulator**: Simulates a railroad and it's on-track devices, including:  
-  * **Locomotives**:  Each locomotive travels along the track, broadcasting status messages and receiving CAD directives over its two 220 MHz radio transducers.b
+* **Track Simulator**: Simulates a railroad and it's on-track devices:  
+  * **Locomotives**:  Each locomotive travels along the track, broadcasting status messages and receiving CAD directives over its two 220 MHz radio transducers.
   * **220 MHz Radio Base Stations**: Receives locomotive status messages and transmits them to the Message Broker via LAN.
   * **Waysides**: Receives status messages from it's attached switches via LAN, then broadcasts them over 220 MHz radio to the BOS.
   * **Switches**: Each switch sends its current position (OPEN, CLOSED, or ERROR) to its parent wayside at regular intervals.
 
-### File Hierarchy
+### Files
 
-**config.dat** - Application configuration information.
-**lib_app.py** - Shared application-level class library.
-**lib_msg.py** - Messaging subsytem class library.  
-**lib_track.py** - Track simulation class library, Including Locomotive and Base Station classes.
-**lib_web.py** - The BOS' web interface library.
-**start.py** - Starts the PTC-Sim wholistically.
-**sim_bos.py** - The Back Office Server (AKA "BOS", pronounced like "boss") and it's web interface.  
-**sim_broker.py** - The Message Broker.
-**sim_track.py** - The Track Simulator.  
-**track_bases.json** - JSON representation of the radio base stations facilitating locomotive communications. Each base station consists of a unique ID and the track locations it covers. Gaps in coverage area allowed, as are areas of overlapping coverage.  
-**track_locos.json** - JSON representation of a railroads locomotives.
-**track_rail.json** - JSON representation of the track rails. Contains location markers and associated lat/long coordinates (in decimal degrees). In this demonstration instance, the track is a model of the Alaska Railroad Corporation's main branch, with data obtained via Google's Map API (Base station, etc., locations are fictional)
+```
+PTC-Sim
+|   config.dat - Application configuration information.
+|   lib_app.py - Shared application-level library.
+|   lib_messaging.py - Messaging subsytem library.  
+|   lib_track.py - Track simulation class library.
+|   lib_web.py - Web specific library.
+|   LICENSE - MIT License.
+|   Procfile - Process definition, for use by hosted environments.
+|   requirements.txt - pipenv dependencies file.
+|   README.md - This document.
+|   sim_bos.py - The Back Office Server (and it's web interface).  
+|   sim_broker.py - The Message Broker.
+|   sim_track.py - The Track Simulator.  
+|   start.py - Starts the PTC-Sim wholistically.
+|
++---docs - Contains documentation files.
+|
++---logs - Created on startup to hold log files for each component.
+|
++---static - Static web content, such as images, css, and js.
+|
++---templates
+|       home.html - Home page HTML template.
+|       layout.html - Top level HTML template.
+|
++---track
+|       track_bases.json - JSON representation of the track's radio base stations.
+|       track_locos.json - JSON representation of the railroad's locomotives.
+|       track_rail.json - JSON representation of the track's main branch.
+```
 
 ### Unimplemented
 
-Some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, persistent data, and connection session management are left unimplemented for the sake of demonstration simplicity. In addition, the track simulation is currently restricted to a single branch.
-
-### Message Specification
-
-Adheres to EMP V4, as specified by docs/S-9354.pdf. Application-specific message implementation is defined in docs/app_messaging_spec.md.
+At this point in development, some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, persistent data, and connection session management are left unimplemented for the sake of demonstration simplicity. In addition, the track simulation is currently restricted to a single branch.
 
 ## Usage
 
 From a Linux terminal, start the application with `./start.py`, then navigate to http://localhost:5000/ptc_sim.
   
-Alternatively, the BOS, Message Broker, and Track Simulator may be started independently with `./sim_bos.py`, `./sim_broker.py`, and `./sim_track.py`, respectively.
+Alternatively, the BOS, Message Broker, and Track Simulator may be started independently with `./sim_bos.py`, `./sim_broker.py`, and `./sim_track.py`, respectively. Follow the on-screen prompts after starting each.
 
 ### Dependencies
 
@@ -65,8 +80,7 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 ## # TODO
 
 * Broker queue msg expire time
-* Web Output: logs and broker monitor
-* Better exception bubbling to start.py
+* Web Output: logs and broker queue monitor
 * Trackline legend: No 220 coverage, restricted, etc.
   
 * Allow other track models to be easily loaded via Google Earth
