@@ -71,7 +71,7 @@ function home_get_content_async() {
             start_time = performance.now();  // debug
 
             // Refresh locos table and update selection border if needed
-            $('#locos_table').html(data.locos_table);
+            $('#locos-table').html(data.locos_table);
             if (curr_loco_name) {
                 document.getElementById(curr_loco_name).style.border = SEL_BORDERSTYLE;
             }
@@ -153,15 +153,48 @@ function home_get_content_async() {
                 }
             });
 
+            // Reference map for use outside this context
+            map = status_map
+            
             duration = performance.now() - start_time;
             console.log('Home Refreshed - client side took: ' + duration);
         }
     });
 }
 
+function build_maplegend() {
+    // TODO: Get legend dynamically
+    imgpath = '/static/img/'
+    var icons = {
+        greenline: {
+            name: 'Strong 220 MHz coverage',
+            icon: imgpath + 'greenline.png'
+        },
+        orangline: {
+            name: 'Weak 220 MHz coverage',
+            icon: imgpath + 'orangeline.png'
+        },
+        redline: {
+            name: 'No 220 MHz coverage',
+            icon: imgpath + 'redline.png'
+        }
+    };
+
+    var legend = document.getElementById('map-legend');
+    legend.innerHTML += '&nbsp;&nbsp;'
+    for (var key in icons) {
+        var type = icons[key];
+        var name = type.name;
+        var icon = type.icon;
+        legend.innerHTML += name + ': <img src="' + icon + '"> &nbsp;&nbsp;&nbsp;&nbsp;';
+    }
+
+}
+
 // Refreshes locos table & status map immediately, then again at given interval.
 function home_update_content_async(refresh_interval=5000) {
     home_get_content_async();
+    build_maplegend();  // Only do once
     setInterval(function () {
         home_get_content_async();
     }, refresh_interval);

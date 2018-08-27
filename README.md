@@ -79,7 +79,6 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 
 ## # TODO
 
-* Web help popup
 * Broker queue msg expire time
 * Web Output: logs and broker queue monitor
 * Trackline legend: No 220 coverage, restricted, etc.

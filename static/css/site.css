@@ -20,6 +20,15 @@ body {
     cursor:pointer;
 }
 
+#map-legend {
+    font-size: 10px !important;
+    background: #fff;
+    top: 5px;
+    /* margin: 5px;  */
+    padding-left:3em;
+    border: 1px solid #000;
+}
+
 /* Display status highlights */
 .up {
     background-color: #a0f26d !important;;
