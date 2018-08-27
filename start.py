@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """ Starts the Track Simulator, Message Broker, and Back Office Server,
-    each as seperate processes, with Python's Multiprocessing lib.
+    each as seperate processes in their own memory space with Python's 
+    Multiprocessing lib.
 
     Author: Dustin Fast, 2018
 """
@@ -15,7 +16,7 @@ class _process(multiprocessing.Process):
     """ Wraps the given module in a multiprocessing.Process and provides a 
         run() interface. Assumes the given module contains a start() member.
     """
-    def __init__(self, module_name, class_name):
+    def __init__(self, module_name, class_name, *args):
         """ Accepts module_name, a string denoting the module name
         """
         multiprocessing.Process.__init__(self)
@@ -28,13 +29,20 @@ class _process(multiprocessing.Process):
         expr = 'from ' + self.module_name
         expr += ' import ' + self.class_name + ' as mod'
         exec(expr)
-        mod().start()
+        mod().start()  # Linter error ignorable here; linter it can't see def.
 
 
 if __name__ == '__main__':
     """ Start the PTC-Sim application, with each component existing in a
         seperate process.
     """
+    welcome = '** ' + APP_NAME + ': A Positive Train Control Demonstration.\n'
+    welcome += '** Web interface at: https://localhost:5000/' + APP_NAME + '\n'
+    welcome += "** Type 'exit' to quit.\n\n"
+    print(welcome)
+
+    sleep(1.5)  # Allow time to read welcome before screen is flooded
+
     # Init a process for each top-level module and start them.
     sim_procs = []
     sim_procs.append(_process('sim_bos', 'BOS'))
@@ -43,17 +51,10 @@ if __name__ == '__main__':
 
     [p.start() for p in sim_procs]
 
-    sleep(.5)  # Prevent console output overlap by allowing procs time to start.
-
-    welcome = '** ' + APP_NAME + ': A Positive Train Control Demonstration.\n'
-    welcome += '** Navigate to https://localhost:5000/' + APP_NAME
-    welcome += ' for web interface.\n'
-    welcome + "** Type 'exit' to quit."
-    print(welcome)
-
+    # Allow graceful quit with 'exit'.
     while True:
         try:
-            uinput = raw_input('>> ')
+            uinput = raw_input('')
         except KeyboardInterrupt:
             uinput = None
 
@@ -65,9 +66,7 @@ if __name__ == '__main__':
                 [p.join(timeout=5) for p in sim_procs]
 
             except:
-                e = 'Timed out wating for one or more subprocesses to close.'
-                raise Exception(e)
+                raise Exception('Timed out wating for subprocesses to close.')
             break
         else:
-            continue
-
+            print("Invalid input. Type 'exit' to quit.")

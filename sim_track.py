@@ -23,13 +23,17 @@ class TrackSim(object):
         self.running = False  # Thread kill flag
         self.tracksim_thread = Thread(target=self._tracksim)
 
-    def start(self):
+    def start(self, terminal=False):
         """ Start the message broker threads
         """
         if not self.running:
             track_log.info('Track Sim Starting...')
             self.running = True
             self.tracksim_thread.start()
+
+            # If we're not running from the terminal, chill while threads run.
+            if not terminal:
+                self.tracksim_thread.join()
 
     def stop(self):
         """ Stops the msg broker. I.e., the msg receiver and fetch watcher 
@@ -78,8 +82,8 @@ class TrackSim(object):
 
 
 if __name__ == '__main__':
-    # Start the track simulation in Prompt/Terminal mode
+    # Start the track simulation in terminal mode
     print("-- " + APP_NAME + ": Track Simulator - Type 'exit' to quit --\n")
     sim = TrackSim()
-    sim.start()    
+    sim.start(terminal=True)    
     Prompt(sim).get_repl().start()  # Blocks until 'exit' cmd received.

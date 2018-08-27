@@ -12,11 +12,8 @@
 
 from time import sleep
 from threading import Thread
-from subprocess import check_output
-
-from flask_googlemaps import GoogleMaps
-
-from lib_app import bos_log
+    
+from lib_app import bos_log, dep_install
 from lib_msging import Client, Queue
 from lib_track import Track, Loco, Location
 from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_connlines
@@ -24,54 +21,39 @@ from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_co
 from lib_app import APP_NAME, REFRESH_TIME
 from lib_msging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 
-# Attempt to import flask and prompt for install on fail
-# TODO: Move to lib_app
-while True:
-    try:
-        from flask import Flask, render_template, jsonify, request
-        break
-    except:
-        prompt = 'Flask is required. Run "pip install flask"? (Y/n): '
-        install_pip = raw_input(prompt)
+# Attempt to import 3rd party modules and prompt for install on fail
+try:
+    from flask import Flask, render_template, jsonify, request
+except:
+    dep_install('Flask')
+try:
+    from flask_googlemaps import GoogleMaps
+except:
+    dep_install('flask_googlemaps')
 
-        if install_pip == 'Y':
-            print('Installing... Please wait.')
-            result = check_output('pip install flask')
-            print('Success!')
-        else:
-            print('Exiting.')
-            exit()
-
-
-#################
-# Flask Web app #
-#################
+# Init Flask and Google Maps Flask module
+bos_web = Flask(__name__)
+GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
 
 # Global web state vars
 g_locos_table = 'Error populating table.'
 g_status_maps = {}  # { None: all_locos_statusmap, loco.name: loco_statusmap }
 g_conn_lines = {}  # { TrackDevice.name: loco_statusmap }
 
-g_curr_loco = 'ALL'
 
-# Init Flask Web Handler and Google Maps Flask module
-bos_web = Flask(__name__)
-GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")  # prodkey
-# GoogleMaps(bos_web, key="AIzaSyDHanPwylzEFdXCP8Dg1gYCYMxnfplo9LQ")  # devkey
-
-
+##############################
+# Flask Web Request Handlers #
+##############################
 
 @bos_web.route('/' + APP_NAME)
 def home():
-    """ Serves the "home" page.
+    """ Serves home.html
     """
     return render_template('home.html', panel_map=g_status_maps[None])
-    
 
 @bos_web.route('/_home_get_async_content', methods=['POST'])
 def _home_get_async_content():
-    """ Serves the status map for the loco specified in the request. If none
-        specified, returns status map with all locos.
+    """ Serves the asynchronous content, such as the locos table and status map.
     """
     try:
         loco_name = request.json['loco_name']
@@ -203,5 +185,5 @@ class BOS(object):
 if __name__ == '__main__':
     # Start the Back Office Server
     print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
-    sleep(.2)  # Ensure print statment occurs before flask output
+    sleep(.2)  # Ensure welcome statment outputs before flask output
     bos = BOS().start(debug=True)

@@ -37,14 +37,19 @@ class Broker(object):
         self.msg_recvr_thread = Thread(target=self._msgreceiver)
         self.fetch_watcher_thread = Thread(target=self._fetchwatcher)
 
-    def start(self):
+    def start(self, terminal=False):
         """ Start the message broker threads.
         """
         if not self.running:
-            broker_log.info('Broker Starting.')
+            broker_log.info('Broker Running...')
             self.running = True
             self.msg_recvr_thread.start()
             self.fetch_watcher_thread.start()
+
+            # If we're not running from the terminal, chill while threads run.
+            if not terminal:
+                self.msg_recvr_thread.join()
+                self.fetch_watcher_thread.join()
             
     def stop(self):
         """ Stops the msg broker. I.e., the msg receiver and fetch watcher 
@@ -151,8 +156,8 @@ class Broker(object):
 
 
 if __name__ == '__main__':
-    # Start the message broker in Prompt/Terminal mode
-    print("-- " + APP_NAME + ": Track Simulator - Type 'exit' to quit --\n")
+    # Start the message broker in terminal mode
+    print("-- " + APP_NAME + ": Msg Broker - Type 'exit' to quit --\n")
     broker = Broker()
-    broker.start()
+    broker.start(terminal=True)
     Prompt(broker).get_repl().start()  # Blocks until 'exit' cmd received.

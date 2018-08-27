@@ -1,10 +1,11 @@
-""" PTC-Sim's library of common "app level" classes.
+""" PTC-Sim's library of common app-level classes.
 
     Author: Dustin Fast, 2018
 """
 
 import logging
 import logging.handlers
+from subprocess import check_output
 from ConfigParser import RawConfigParser
 
 # Init conf
@@ -139,6 +140,23 @@ class Logger(logging.Logger):
             console_handler.setLevel(level + 10)
             console_handler.setFormatter(console_fmt)
             self.addHandler(console_handler)
+
+def dep_install(module_name):
+    """ Prompts user to install the given module. Application quits on deny.
+    """
+    install_str = 'pip install ' + module_name
+
+    prompt = module_name + ' is required. '
+    prompt += 'Install with "' + install_str + '"? (Y/n): '
+    do_install = raw_input(prompt)  
+
+    if do_install == 'Y':
+        print('Installing... Please wait.')
+        check_output(install_str)
+        print('Success!\n')
+    else:
+        print('Exiting.')
+        exit()
 
 
 # Module level loggers, Defined here and declared at the top of this file

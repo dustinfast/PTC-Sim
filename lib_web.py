@@ -3,10 +3,15 @@
 
 from datetime import datetime, timedelta
 
-from flask_googlemaps import Map
-
-from lib_app import bos_log
+from lib_app import bos_log, dep_install
 from lib_track import CONN_TIMEOUT
+
+# Attempt to import 3rd party module and prompt for install on fail
+try:
+    from flask_googlemaps import Map
+except:
+    dep_install('flask_googlemaps')
+
 
 # HTML constants
 GREEN = '#a0f26d;'
