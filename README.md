@@ -75,9 +75,10 @@ Alternatively, the BOS, Message Broker, and Track Simulator may be started indep
 
 ### Dependencies
 
-Requires Python 2.7. All other dependencies are managed by the application, including Flask, Jinja, JavaScript, AJAX, jQuery, GeoXML3, and the Google Maps API.
+Requires Python 2.7. All other dependencies are managed by the application, including Flask, Jinja, JavaScript, AJAX, jQuery, and the Google Maps API.
 
 ## # TODO
+
 * Web help popup
 * Broker queue msg expire time
 * Web Output: logs and broker queue monitor
