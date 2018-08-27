@@ -9,8 +9,18 @@
 from time import sleep
 import multiprocessing
 
-from lib_app import APP_NAME
+from lib_app import APP_NAME, dep_install
 
+# Attempt to import dependencies and prompt in fail. Note that these modules
+# are not used in this file, but some processes it starts depend on them.
+try:
+    from flask import Flask, render_template, jsonify, request
+except:
+    dep_install('Flask')
+try:
+    from flask_googlemaps import GoogleMaps
+except:
+    dep_install('flask_googlemaps')
 
 class _process(multiprocessing.Process):
     """ Wraps the given module in a multiprocessing.Process and provides a 

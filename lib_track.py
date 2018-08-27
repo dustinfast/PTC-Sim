@@ -142,18 +142,6 @@ class Loco(TrackDevice):
 
         self.sim = DeviceSim(self, [loco_movement, loco_messaging])
         
-        # Randomize (within reason) speed, heading, direction, bpp, and mp.
-        # TODO: Get these from last known postion
-        self.speed = randint(0, 60)
-        self.heading = randint(0, 359)
-        self.direction = {0: 'increasing', 1: 'decreasing'}.get(randint(0, 1))
-        self.bpp = randint(0, 90)
-
-        if track.mileposts:
-            max_index = len(track.mileposts) - 1
-            self.coords = track.mileposts.values()[
-                randint(0, max_index)]
-
     def update(self,
                speed=None,
                heading=None,
@@ -210,6 +198,7 @@ class Base(TrackDevice):
         """ Given a location, returns True if this base provides 
             coverage at that location, else returns False.
         """
+        r = location.marker >= self.cov_start and location.marker <= self.cov_end
         return location.marker >= self.cov_start and location.marker <= self.cov_end
 
 
@@ -260,19 +249,19 @@ class TrackSwitch(TrackDevice):
 
 class Track(object):
     """ A representation of the track, including its locations and radio base 
-        stations.
+        stations (contains lists/dicts of these objects in convenient forms).
     
-        self.locos = A dict of locootives.
+        self.locos = A dict of locootives, by loco ID
             Format: { LOCOID: LOCO_OBJECT }
-        self.bases = A dict of radio base stations, used by locos to send msgs. 
+        self.bases = A dict of radio base stations, by base ID
             Format: { BASEID: BASE_OBJECT }
-        self.mileposts = A dict of all track mileposts
+        self.mileposts = A dict of all track mileposts, by marker number
             Format: { MP: LOCATIONOBJECT }
-        self.mileposts_sorted = A list of all track mileposts, sorted by marker.
+        self.mileposts_sorted = A list of all track mileposts, sorted by marker
             Format: [ LOCATIONOBJECT_1, ... , LOCATIONOBJECT_N ]
-        self.marker_linear = A representation of the track in order of mps.
+        self.marker_linear = Numerical milepost markers in ascending order
             Format: [ MP_1, ... , MP_n ], where MP1 < MPn
-        self.marker_linear_rev = A represention the track in reverse order of mps.
+        self.marker_linear_rev = Numerical milepost markers in descending order
             Format: [ MP_n, ... , MP_1], where MP1 < MPn
         Note: BASEID/LOCOD = strings, MP = floats
     """
@@ -330,7 +319,7 @@ class Track(object):
         except Exception as e:
             raise Exception('Error reading ' + track_file + ': ' + str(e))
 
-        for i, marker in enumerate(locations):
+        for marker in locations:
             try:
                 mp = float(marker['milemarker'])
                 lat = float(marker['lat'])
@@ -361,8 +350,21 @@ class Track(object):
 
         for loco in locos:
             try:
-                loco_id = str(loco['id'])
-                self.locos[loco_id] = Loco(loco_id, self)
+                mp = loco['lastmilepost']
+                try:
+                    loco_location = self.mileposts[mp]
+                except KeyError:
+                    print(self.mileposts[0])
+                    raise Exception('Invalid milepost encountered: ' + str(mp))
+
+                loco_id = str(loco['id'])  # Ensure string ID
+                loco_obj = Loco(loco_id, self)
+                loco_obj.update(speed=loco['lastspeed'],
+                                heading=loco['lastheading'],
+                                direction=loco['lastdirection'],
+                                location=loco_location,
+                                bpp=loco['lastbpp'])
+                self.locos[loco_id] = loco_obj
             except KeyError:
                 raise Exception('Malformed ' + locos_file + ': Key Error.')
 

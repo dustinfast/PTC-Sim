@@ -1,8 +1,26 @@
 [
     {
-        "id": "1001"
+        "id": "1001",
+        "lastmilepost": 2.022,
+        "lastspeed": 45,
+        "lastheading": 0,
+        "lastdirection": "increasing",
+        "lastbpp": 90
     },
     {
-        "id": "1002"
+        "id": "1002",
+        "lastmilepost": 400.0,
+        "lastspeed": 55,
+        "lastheading": 180,
+        "lastdirection": "decreasing",
+        "lastbpp": 91
+    },
+    {
+        "id": "1003",
+        "lastmilepost": 216.0,
+        "lastspeed": 55,
+        "lastheading": 0,
+        "lastdirection": "increasing",
+        "lastbpp": 88
     }
 ]

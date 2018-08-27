@@ -48,7 +48,9 @@ Wayside Status Msgs - Contains a single key/value data element of the form:
 ```
     { sent      : (int) Unix time,
       ID        : (str) Unique wayside ID,
-      Children  : (str) Key/value pairs string of the form { ID: Status }
+      Children  : (str) Key/value pairs string of the form {
+                            ID: Status 
+                            }
     }
 ```
 
@@ -57,6 +59,9 @@ Wayside Status Msgs - Contains a single key/value data element of the form:
 ```
     { sent      : (int) Unix time,
       ID        : (str) Intended recipient ID,
-      Restrict  : (list) A list of restricted milepost ranges, as points
+      Children  : (str) Key/value pairs string of the form {
+                            Restrict: [(start_mp, end_mp), ... ],
+                            LocoLocate: [other_loco_milepost_location, ... ]
+                            }
       }
 ```
