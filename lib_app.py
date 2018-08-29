@@ -29,6 +29,7 @@ class Prompt(object):
         Contains two predefined commands: help, and exit. Additional cmds may
         be added with add_cmd(). These additional cmds all operate on the 
         object instance given as the context.
+        # TODO: Support multiple contexts - See branch repl_w_objrefs
     """
 
     def __init__(self, context, prompt='>>', welcome_msg=None):

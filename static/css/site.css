@@ -1,4 +1,8 @@
-﻿/* *************************** */
+﻿/* PTC Sim's site-specific css /*
+/*
+/* Author: Dustin Fast, 2018
+
+/* *************************** */
 /* ** Site Specific Styling ** */
 
 body {
@@ -16,15 +20,26 @@ body {
   margin-bottom: 15px !important;
 }
 
-.clickable{
+.clicked {
+    border-style: solid;
+    border-width: thick;
+    border-color: black;
     cursor:pointer;
+}
+
+.clickable {
+    cursor:pointer;
+}
+
+.clickable:hover {
+    border-style:  dotted;
+    border-color: blue;
 }
 
 #map-legend {
     font-size: 10px !important;
     background: #fff;
     top: 5px;
-    /* margin: 5px;  */
     padding-left:3em;
     border: 1px solid #000;
 }

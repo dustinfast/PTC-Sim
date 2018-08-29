@@ -79,6 +79,8 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 
 ## # TODO
 
+* Move track to static
+* Move js map ops to server-side
 * Broker queue msg expire time
 * Web Output: logs and broker queue monitor
 * Trackline legend: No 220 coverage, restricted, etc.

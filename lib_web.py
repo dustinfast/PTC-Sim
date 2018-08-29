@@ -1,4 +1,6 @@
-""" PTC-Sim's web library.
+""" PTC-Sim's web library. Includes a handy html table generator.
+
+    Author: Dustin Fast, 2018
 """
 
 from datetime import datetime, timedelta
@@ -20,6 +22,7 @@ YELLOW = '#dfd005'
 ORANGE =  '#fe9e60'
 GRAY = '#7a7a52'
 
+# TODO: CSS class for TABLE_TAG instead of this mess
 TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="'
 TABLE_TAG += 'table-condensed table table-striped table-bordered no-footer" '
 TABLE_TAG += 'width="95%" cellspacing="0">'

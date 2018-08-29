@@ -4,7 +4,7 @@
 */
 
 // Constants
-var SEL_BORDERSTYLE = 'solid thick';
+var REFRESH_RATE = 60000
 var LOCO_CONNLINE = {
     path: 'M 0, -2 1, 1',
     strokeOpacity: .6,
@@ -70,13 +70,13 @@ function home_get_content_async() {
             }
             start_time = performance.now();  // debug
 
-            // Refresh locos table and update selection border if needed
+            // Refresh locos table and update loco selection border if needed
             $('#locos-table').html(data.locos_table);
             if (curr_loco_name) {
-                document.getElementById(curr_loco_name).style.border = SEL_BORDERSTYLE;
+                document.getElementById(curr_loco_name).className = 'clicked';
             }
 
-            // Remove all existing map markers and polylines
+            // Rm all existing map markers and polylines before we replace them
             status_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
@@ -118,7 +118,8 @@ function home_get_content_async() {
                     map: status_map  // TODO: status_map
                 });
                 
-                // Marker's infobox. Note that it is never explicitly attached.
+                // Marker's infobox. Note that it is never explicitly attached
+                // and may be "opened" for more than one marker or location.
                 var infowindow = new google.maps.InfoWindow({
                     content: data.status_map.markers[i].infobox
                 });
@@ -147,7 +148,7 @@ function home_get_content_async() {
                         // Ditch ref so no reopen of unselected loco infoboxes
                         delete open_infobox_markers[marker_title]
                     } else if (!is_loco) {
-                        // We reopen all other previously open non-loco  infoboxes
+                        // We reopen all other previously open non-loco infoboxes
                         infowindow.open(status_map, marker);
                     }
                 }
@@ -188,11 +189,10 @@ function build_maplegend() {
         var icon = type.icon;
         legend.innerHTML += name + ': <img src="' + icon + '"> &nbsp;&nbsp;&nbsp;&nbsp;';
     }
-
 }
 
 // Refreshes locos table & status map immediately, then again at given interval.
-function home_update_content_async(refresh_interval=5000) {
+function home_update_content_async(refresh_interval=REFRESH_RATE) {
     home_get_content_async();
     build_maplegend();  // Only do once
     setInterval(function () {
