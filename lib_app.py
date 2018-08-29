@@ -57,7 +57,7 @@ class Prompt(object):
             cmd = self.commands.get(uinput)
 
             if not uinput:
-                continue  # if null input
+                continue  # if empty input received
             if not cmd:
                 print('Invalid command: "' + str(uinput) + '". Try "help".')
             else:

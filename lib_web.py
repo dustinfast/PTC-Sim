@@ -178,7 +178,7 @@ def get_locos_table(track):
         inner.add_row([cell(lastseen, max_colspan, lastseen_css)])
 
         outter.add_row([cell(loco.ID), cell(inner.html())], 
-                       onclick="loco_select_onclick('" + loco.name + "')",
+                       onclick="home_select_loco('" + loco.name + "')",
                        row_id=loco.name)
 
     return outter.html()

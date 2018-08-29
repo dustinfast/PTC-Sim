@@ -23,7 +23,7 @@ from lib_messaging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 
 # Attempt to import 3rd party modules and prompt for install on fail
 try:
-    from flask import Flask, render_template, jsonify, request
+    from flask import Flask, render_template, jsonify, request, session
 except:
     dep_install('Flask')
 try:
@@ -31,8 +31,12 @@ try:
 except:
     dep_install('flask_googlemaps')
 
+# Session vars modifiable from client-side js
+PUBLIC_SESSVARS = ['time_icand']
+
 # Init Flask and Google Maps Flask module
 bos_web = Flask(__name__)
+bos_web.secret_key = 'PTC=-Sim secret key'
 GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
 
 # Global web state vars
@@ -53,7 +57,7 @@ def home():
 
 @bos_web.route('/_home_get_async_content', methods=['POST'])
 def _home_get_async_content():
-    """ Serves the asynchronous content, such as the locos table and status map.
+    """ Serves the asynchronous content (i.e. locos table and status map).
     """
     try:
         loco_name = request.json['loco_name']
@@ -68,6 +72,25 @@ def _home_get_async_content():
     except Exception as e:
         bos_log.error(e)
         return 'error' 
+
+
+@bos_web.route('/_set_sessionvar', methods=['POST'])
+def main_set_sessionvar_async():
+    """ Accepts a key value pair via ajax and updates session[key] with the 
+        given value. Key must be in PUBLIC_SESSVARS, for safety.
+    """
+    try:
+        key = request.json['key']
+
+        newval = request.json['value']
+
+        if key in PUBLIC_SESSVARS:
+            session[key] = newval
+
+        return 'OK'
+    except Exception as e:
+        bos_log.error(e)
+        return 'error'
 
 
 #############
