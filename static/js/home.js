@@ -1,10 +1,9 @@
-/* The javascript library for PTC-Sim's "Home" page.
- * 
- * Author: Dustin Fast, 2018
-*/
+// The javascript library for PTC-Sim's "Home" page.
+// 
+/// Author: Dustin Fast, 2018
+
 
 // Constants
-var REFRESH_RATE = 60000
 var LOCO_CONNLINE = {
     path: 'M 0, -2 1, 1',
     strokeOpacity: .6,
@@ -24,10 +23,13 @@ var curr_loco_name = null;     // Currently selected loco in the locos table
 var may_persist_loco = null;   // Loco w/infobox to persist bteween refreshes
 var open_infobox_markers = {}; // Markers w/infoboxes to persist btwn refreshes
 var curr_polylines = [];       // A list of all visible status map polylines
+var time_icand = 1             // Simulation speed multiplier, 1 to 10,
+var refresh_interval = 5000           // AJAX call interval. Defines status resolution.
+
 
 // Locos table loco click handler - If selecting same loco as prev selected, 
 // toggles selection off, else sets the selected loco as the new selection.
-function loco_select_onclick(loco_name) {
+function home_select_loco(loco_name) {
     // Handle updating the persist var
     old_may_persist = may_persist_loco;
     if (!may_persist_loco && !curr_loco_name) {
@@ -49,14 +51,14 @@ function loco_select_onclick(loco_name) {
         // console.log('set curr2: ' + curr_loco_name)
     }
 
-    home_get_content_async(); // Refresh the pages dynamic content
+    _get_content_async(); // Refresh the pages dynamic content
 }
     
 // Refresh the status/overview map, including all bases, lines, etc. Further, if 
 // curr_loco_name is null, all locos are included in the refreshed map. Else,
 // only that loco is included in the refreshed version.
 // Note: Can't seem to get JQuery shorthand working here (trashes the JSON).
-function home_get_content_async() {
+function _get_content_async() {
     $.ajax({
         url: $SCRIPT_ROOT + '/_home_get_async_content',
         type: 'POST',
@@ -124,13 +126,13 @@ function home_get_content_async() {
                     content: data.status_map.markers[i].infobox
                 });
                 
-                // Marker's infobox "onopen" handler
+                // Regerister for marker's infobox "on open"
                 marker.addListener('click', function () {
                     infowindow.open(status_map, marker);
                     open_infobox_markers[marker_title] = marker;  // set persist
                 });
 
-                // Marker's infobox "onclose" handler
+                // Register for infobox's "on close" 
                 google.maps.event.addListener(infowindow, 'closeclick', function () {
                     delete open_infobox_markers[marker_title]; // unset persist
                 });
@@ -163,7 +165,7 @@ function home_get_content_async() {
     });
 }
 
-function build_maplegend() {
+function _build_maplegend() {
     // TODO: Get legend dynamically
     imgpath = '/static/img/'
     var icons = {
@@ -191,12 +193,23 @@ function build_maplegend() {
     }
 }
 
-// Refreshes locos table & status map immediately, then again at given interval.
-function home_update_content_async(refresh_interval=REFRESH_RATE) {
-    home_get_content_async();
-    build_maplegend();  // Only do once
+// Called at the end of main.html: Registers listeners. Starts async content update.
+function home_start_async() {
+    // Register slider onchange listeners and define behavior
+    var temporal_range = document.getElementById("temporal-range")
+    temporal_range.oninput = function () {
+       main_set_sessionvar_async('time_icand', temporal_range.value); // in main.js
+    }
+    var refresh_range = document.getElementById("refresh-range");
+    refresh_range.oninput = function () {
+        refresh_interval = refresh_range.value;
+    }
+    _build_maplegend();
+
+    // Get the main content and update the page, then start a timer to repeat.
+    _get_content_async();
     setInterval(function () {
-        home_get_content_async();
+        _get_content_async();
     }, refresh_interval);
 }
 

@@ -7,9 +7,9 @@ app_name = PTC-Sim                  ; Web and terminal display name. URL compati
 refresh_time = 5                    ; Thread & loop sleep seconds between iterations
                                     
 [track]
-track_rails = track/rails.json      ; Track model file
-track_locos = track/locos.json      ; File containing list of locomotives
-track_bases = track/bases.json      ; File containing list of base stations
+track_rails = static/track/rails.json      ; Track model file
+track_locos = static/track/locos.json      ; File containing list of locomotives
+track_bases = static/track/bases.json      ; File containing list of base stations
 speed_units = mph                   ; mph or kmh
 component_timeout = 30              ; Seconds before a track componenent is "offline"
 
