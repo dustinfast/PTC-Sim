@@ -13,7 +13,7 @@ Interoperability between railroads is also required, as defined by the Federal R
 
 PTC-Sim currently implements broker-assisted EMP communication between simulated on-track devices (locomotives and 220 MHz radio base-stations) and the BOS. Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current device status and location are displayed graphically.
 
-## Applicaton Structure
+## Application Structure
 
 ### Components
 
