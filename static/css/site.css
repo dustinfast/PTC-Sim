@@ -62,11 +62,10 @@ body {
     width: 100%;
 }
 
-
 .slider {
     -webkit-appearance: none;
     appearance: none;
-    width: 81%; 
+    width: 88%; 
     height: 8px; 
     background: #d3d3d3;
     outline: none; 
@@ -78,7 +77,6 @@ body {
 .slider:hover {
     opacity: 1;
 }
-
 
 .slider::-webkit-slider-thumb {
     /* Slider handle, for non-Mozilla clients */

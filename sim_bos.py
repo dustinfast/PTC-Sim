@@ -11,67 +11,95 @@
 """
 
 from time import sleep
+from random import randint
 from threading import Thread
+from datetime import timedelta
     
 from lib_app import bos_log, dep_install
 from lib_messaging import Client, Queue
 from lib_track import Track, Loco, Location
 from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_connlines
 
-from lib_app import APP_NAME, REFRESH_TIME
+from lib_app import APP_NAME, REFRESH_TIME, WEB_EXPIRE
 from lib_messaging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 
 # Attempt to import 3rd party modules and prompt for install on fail
 try:
-    from flask import Flask, render_template, jsonify, request, session
+    import flask
 except:
-    dep_install('Flask')
+    dep_install('flask')
 try:
-    from flask_googlemaps import GoogleMaps
+    import flask_login
+except:
+    dep_install('flask_login')
+try:
+    import flask_googlemaps
 except:
     dep_install('flask_googlemaps')
 
-# Session vars modifiable from client-side js
+# List of session vars modifiable from client-side js
 PUBLIC_SESSVARS = ['time_icand']
-
-# Init Flask and Google Maps Flask module
-bos_web = Flask(__name__)
-bos_web.secret_key = 'PTC=-Sim secret key'
-GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
 
 # Global web state vars
 g_locos_table = 'Error populating table.'
 g_status_maps = {}  # { None: all_locos_statusmap, loco.name: loco_statusmap }
 g_conn_lines = {}  # { TrackDevice.name: loco_statusmap }
 
+# For sim/demo purposes, each session gets its own track instance so that
+# track status and sim settings are user dependent.
+g_tracks = {}
+
+# Init Flask
+bos_web = flask.Flask(__name__)
+bos_web.secret_key = 'PTC-Sim secret key'
+login_manager = flask_login.LoginManager()
+login_manager.init_app(bos_web)
+login_manager.login_view = 'login'
+flask_googlemaps.GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
+
 
 ##############################
 # Flask Web Request Handlers #
 ##############################
 
+@bos_web.before_request
+def before_request():
+    """ Refresh the client session.
+    """
+    # Init flask sessoin
+    flask.session.permanent = True
+    flask.session.modified = True
+    bos_web.permanent_session_lifetime = timedelta(minutes=WEB_EXPIRE) 
+    flask.g.user = randint(0, 9999999)  # Randmon user ID
+    print(flask.request.args.get('api_key'))
+
 @bos_web.route('/' + APP_NAME)
 def home():
-    """ Serves home.html
+    """ Serves home.html after instantiating the client's unique track instance.
     """
-    return render_template('home.html', status_map=g_status_maps[None])
+    print(flask.g.user)
+    if not g_tracks.get(flask.g.user):
+        g_tracks[flask.g.user] = Track()
+    return flask.render_template('home.html', status_map=g_status_maps[None])
+
 
 @bos_web.route('/_home_get_async_content', methods=['POST'])
 def _home_get_async_content():
-    """ Serves the asynchronous content (i.e. locos table and status map).
+    """ Serves the asynchronous content (i.e. the locos table and status map).
     """
     try:
-        loco_name = request.json['loco_name']
+        loco_name = flask.request.json['loco_name']
 
         if loco_name:
-            return jsonify(status_map=g_status_maps[loco_name].as_json(),
-                           locos_table=g_locos_table,
-                           loco_connlines=g_conn_lines.get(loco_name))
+            return flask.jsonify(status_map=g_status_maps[loco_name].as_json(),
+                                 locos_table=g_locos_table,
+                                 loco_connlines=g_conn_lines.get(loco_name))
         else:
-            return jsonify(status_map=g_status_maps[None].as_json(),
-                           locos_table=g_locos_table)
+            return flask.jsonify(status_map=g_status_maps[None].as_json(),
+                                 locos_table=g_locos_table)
     except Exception as e:
         bos_log.error(e)
-        return 'error' 
+        return 'error'
 
 
 @bos_web.route('/_set_sessionvar', methods=['POST'])
@@ -80,11 +108,11 @@ def main_set_sessionvar_async():
         given value. Key must be in PUBLIC_SESSVARS, for safety.
     """
     try:
-        key = request.json['key']
-        newval = request.json['value']
+        key = flask.request.json['key']
+        newval = flask.request.json['value']
 
         if key in PUBLIC_SESSVARS:
-            session[key] = newval
+            flask.session[key] = newval
             bos_log.info('Set: ' + key + '=' + newval)
 
         return 'OK'

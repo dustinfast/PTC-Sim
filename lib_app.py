@@ -15,9 +15,11 @@ config.read('config.dat')
 # Import conf data
 APP_NAME = config.get('application', 'app_name')
 REFRESH_TIME = int(config.get('application', 'refresh_time'))
+WEB_EXPIRE = int(config.get('application', 'web_expire'))
+
 LOG_LEVEL = int(config.get('logging', 'level'))
-LOG_FILES = config.get('logging', 'num_files')
 LOG_SIZE = int(config.get('logging', 'max_file_size')) 
+LOG_FILES = config.get('logging', 'num_files')
 
 # Module level loggers, Declared here and defined at the end of this file.
 track_log = None

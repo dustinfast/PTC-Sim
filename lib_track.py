@@ -7,7 +7,6 @@
 
 from time import sleep
 from json import loads
-from random import randint
 from threading import Thread
 from datetime import datetime
 from ConfigParser import RawConfigParser
