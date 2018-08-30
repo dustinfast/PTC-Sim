@@ -22,35 +22,27 @@
 		<div class="col-xs-9" style="display: block; overflow-x: scroll;">
 			<div class="panel panel-default" style="overflow-x: hidden; display: inline-block;">
 				<div class="panel-heading">
-					<div class="row">
-						<div class="col">
-							<h4 style="display: block;">Overview</h4>
-							<h6>Click a device, locomotive, or track section for details. </h6>
-						</div>
-						<div class="col">
-							<!-- Control Panel Collapse Btn-->
-							<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#control-panel">Control Panel</button>
-						</div>
-					</div>
+					<h4 style="display: block;">Overview</h4>
+					<h6>Click a device, locomotive, or track section for details. </h6>
+					<!-- Control Panel Collapse Btn-->
+					<!-- <button type="button" width="100%" class="btn btn-info" data-toggle="collapse" data-target="#control-panel">Control Panel</button> -->
 				</div>
-				
-				<!-- Control Panel -->
-				<div id="control-panel" class="collapse" style="overflow-y: visible;" display="inline-block">
-					<!-- Temporal rate slider -->
-					<!-- TODO: Session var: each client will need it's own track instance -->
-					<div class="sliderpanel">
-						<input id="temporal-range" type="range" class="slider" min="1" max="10" value="50" >
-					</div>
-					<!-- Refresh rate slider -->
-					<!-- TODO: Session var -->
-					<div class="sliderpanel">
-						<input id="refresh-range" type="range" class="slider" min="1" max="60" value="5">
-					</div>
-				</div>
-
 				<!-- Google maps display of track and its realtime devices statuses, Populated via AJAX in home.js -->
 				<link rel="stylesheet" href=""> {{status_map.js}} {{ status_map.html }}
 				<div id="map-legend" class="text-center"></div>
+				
+			</div>
+			<!-- Control Panel -->
+			<div id="control-panel" display="inline-block">
+				<!-- Temporal rate slider -->
+				<!-- TODO: Session var: each client will need it's own track instance -->
+				<div class="sliderpanel">
+					Time: <input id="temporal-range" type="range" class="slider" min="0.1" max="2.0" value="1.0">
+				</div>
+				<!-- Refresh rate slider -->
+				<div class="sliderpanel">
+					Refresh: <input id="refresh-range" type="range" class="slider" min="1" max="60" value="5">
+				</div>
 			</div>
 		</div>
 	</div>

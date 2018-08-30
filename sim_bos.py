@@ -81,11 +81,11 @@ def main_set_sessionvar_async():
     """
     try:
         key = request.json['key']
-
         newval = request.json['value']
 
         if key in PUBLIC_SESSVARS:
             session[key] = newval
+            bos_log.info('Set: ' + key + '=' + newval)
 
         return 'OK'
     except Exception as e:

@@ -18,13 +18,14 @@ var LOCO_NO_CONNLINE = {
     scale: 2
 };
 
-// Page state vars
+// Page state and obj refs
 var curr_loco_name = null;     // Currently selected loco in the locos table
 var may_persist_loco = null;   // Loco w/infobox to persist bteween refreshes
 var open_infobox_markers = {}; // Markers w/infoboxes to persist btwn refreshes
 var curr_polylines = [];       // A list of all visible status map polylines
 var time_icand = 1             // Simulation speed multiplier, 1 to 10,
-var refresh_interval = 5000           // AJAX call interval. Defines status resolution.
+var refresh_interval = 5000    // AJAX call interval. Defines status resolution
+var on_interval = null;        // Ref  to setInterval function, for clearing it
 
 
 // Locos table loco click handler - If selecting same loco as prev selected, 
@@ -34,21 +35,21 @@ function home_select_loco(loco_name) {
     old_may_persist = may_persist_loco;
     if (!may_persist_loco && !curr_loco_name) {
         may_persist_loco = loco_name;
-        // console.log('set persist1: ' + may_persist_loco);
+        // console.log('set persist1: ' + may_persist_loco);  //debug
     } else if (curr_loco_name && may_persist_loco != curr_loco_name) {
         may_persist_loco = null;
-        // console.log('set persist2: ' + may_persist_loco);
+        // console.log('set persist2: ' + may_persist_loco);  //debug
     } else if (curr_loco_name) {
         may_persist_loco = curr_loco_name;
-        // console.log('set persist3: ' + may_persist_loco);
+        // console.log('set persist3: ' + may_persist_loco);  //debug
     }
 
     if (curr_loco_name == loco_name) {
         curr_loco_name = null;
-        // console.log('set curr1: ' + curr_loco_name)
+        // console.log('set curr1: ' + curr_loco_name);  //debug
     } else {
         curr_loco_name = loco_name;
-        // console.log('set curr2: ' + curr_loco_name)
+        // console.log('set curr2: ' + curr_loco_name);  //debug
     }
 
     _get_content_async(); // Refresh the pages dynamic content
@@ -193,24 +194,35 @@ function _build_maplegend() {
     }
 }
 
-// Called at the end of main.html: Registers listeners. Starts async content update.
+// The setInterval handler. Retruns a ref to the actual setInterval()
+function _async_interval (refresh_interval) {
+        var setinterval = setInterval(function () {
+            _get_content_async();
+    }, refresh_interval);
+    return setinterval;
+}
+
+// Called at the end of main.html: Registers listeners. Calls _async_interval()
 function home_start_async() {
-    // Register slider onchange listeners and define behavior
+    // Register slider onchange listeners and define their behavior
     var temporal_range = document.getElementById("temporal-range")
+    var refresh_range = document.getElementById("refresh-range");
+
     temporal_range.oninput = function () {
        main_set_sessionvar_async('time_icand', temporal_range.value); // in main.js
     }
-    var refresh_range = document.getElementById("refresh-range");
     refresh_range.oninput = function () {
-        refresh_interval = refresh_range.value;
+        new_val = refresh_range.value * 1000 // Convert to ms
+        clearInterval(on_interval);      // Stop current setInterval
+        on_interval = _async_interval(new_val); // Start new setInterval
+        console.log('Set: refresh_interval = ' + new_val);
     }
-    _build_maplegend();
 
-    // Get the main content and update the page, then start a timer to repeat.
+    _build_maplegend(); // Init the map legend
+
+    // Get the main content and update the page, then call setInterval handler
     _get_content_async();
-    setInterval(function () {
-        _get_content_async();
-    }, refresh_interval);
+    on_interval = _async_interval(refresh_range.value * 1000) // Converting to ms
 }
 
 // AJAX GET
