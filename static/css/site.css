@@ -10,6 +10,8 @@ body {
     padding-bottom: 20px;
     padding-right: 15px;
     padding-left: 15px;
+    margin-right: 0px;
+    margin-left: 0px;
 }
 
 .main-panel {
@@ -64,7 +66,7 @@ body {
 .slider {
     -webkit-appearance: none;
     appearance: none;
-    width: 100%; 
+    width: 81%; 
     height: 8px; 
     background: #d3d3d3;
     outline: none; 

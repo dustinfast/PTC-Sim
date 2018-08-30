@@ -171,21 +171,21 @@ function _build_maplegend() {
     imgpath = '/static/img/'
     var icons = {
         greenline: {
-            name: 'Strong 220 MHz coverage',
+            name: 'Two (or more) 220 MHz bases',
             icon: imgpath + 'greenline.png'
         },
         orangline: {
-            name: 'Weak 220 MHz coverage',
+            name: 'Single 220 MHz base',
             icon: imgpath + 'orangeline.png'
         },
         redline: {
-            name: 'No 220 MHz coverage',
+            name: 'None',
             icon: imgpath + 'redline.png'
         }
     };
 
     var legend = document.getElementById('map-legend');
-    legend.innerHTML += '&nbsp;&nbsp;'
+    legend.innerHTML += '&nbsp;<b>Coverage Legend</b>: '
     for (var key in icons) {
         var type = icons[key];
         var name = type.name;
@@ -199,30 +199,42 @@ function _async_interval (refresh_interval) {
         var setinterval = setInterval(function () {
             _get_content_async();
     }, refresh_interval);
+
+    // Update control panel refresh interval display
+    disp_val = refresh_interval / 1000  // Back to seconds for display
+    document.getElementById('refresh-val').innerHTML = '&nbsp;' + disp_val + 's';
+
     return setinterval;
 }
 
-// Called at the end of main.html: Registers listeners. Calls _async_interval()
+// Called at the end of main.html: Registers listeners then calls _async_interval()
 function home_start_async() {
     // Register slider onchange listeners and define their behavior
-    var temporal_range = document.getElementById("temporal-range")
-    var refresh_range = document.getElementById("refresh-range");
+    var time_slider = document.getElementById("temporal-range")
+    var refresh_slider = document.getElementById("refresh-range");
+    time_disp = refresh_slider.value + '%';
+    refresh_disp = refresh_slider.value + 's';
 
-    temporal_range.oninput = function () {
-       main_set_sessionvar_async('time_icand', temporal_range.value); // in main.js
+    time_slider.oninput = function () {
+       main_set_sessionvar_async('time_icand', this.value); // from main.js
+       document.getElementById('time-icand').innerHTML = '&nbsp;' + this.value + '%';
     }
-    refresh_range.oninput = function () {
-        new_val = refresh_range.value * 1000 // Convert to ms
-        clearInterval(on_interval);      // Stop current setInterval
+    refresh_slider.oninput = function () {
+        new_val = this.value * 1000             // Convert to ms
+        clearInterval(on_interval);             // Stop current setInterval
         on_interval = _async_interval(new_val); // Start new setInterval
-        console.log('Set: refresh_interval = ' + new_val);
+        // console.log('Set: refresh_interval = ' + new_val); // debug
     }
 
     _build_maplegend(); // Init the map legend
 
     // Get the main content and update the page, then call setInterval handler
     _get_content_async();
-    on_interval = _async_interval(refresh_range.value * 1000) // Converting to ms
+    on_interval = _async_interval(refresh_slider.value * 1000) // Converting to ms
+    document.getElementById('time-icand').innerHTML = '&nbsp;' + time_slider.value + '%';
+    document.getElementById('refresh-val').innerHTML = '&nbsp;' + refresh_slider.value + 's';
+
+
 }
 
 // AJAX GET
