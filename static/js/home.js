@@ -65,6 +65,13 @@ function _get_content_async() {
         type: 'POST',
         contentType: 'application/json;charset=UTF-8',
         data: JSON.stringify({ 'loco_name': curr_loco_name }),
+        timeout: 1000,
+
+        error: function (jqXHR, textStatus, errorThrown) { //TODO: declare in main.js
+            if (textStatus === "timeout") {
+                console.log('Content refresh timed out wait for server.');
+            }
+        },
 
         success: function (data) {
             if (data == 'error') {
