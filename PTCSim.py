@@ -65,7 +65,7 @@ def before_request():
     # If session exists, refresh it to prevent expire
     bos_ID = flask.session.get('bos_id')
     if bos_ID and bos_sessions.get(bos_ID):
-        print('Request from existing client received: ' + str(bos_ID))  # debug
+        # print('Request from existing client received: ' + str(bos_ID))  # debug
         refresh_sess()
 
     # Else, init a new BOS & flag session as dirty so change is registered.
@@ -104,7 +104,7 @@ def _home_get_async_content():
     """ Serves updated asynchronous content, the locos table and status map.
     """
     # Get the session's associated BOS
-    print('** ' + str(flask.session['bos_id']))
+    # print('** ' + str(flask.session['bos_id']))  # Debug
     bos = bos_sessions[flask.session['bos_id']]
 
     locos_table = get_locos_table(bos.track)
@@ -135,12 +135,20 @@ def main_set_sessionvar_async():
 
         if key in PUBLIC_SESSVARS:
             flask.session[key] = newval
-            bos_log.info('Set: ' + key + '=' + newval)
+            bos_log.info('Set: ' + key + '=' + str(newval))
+
+            # Update time sim
+            if key == 'time_icand':
+                try:
+                    bos_sessions[flask.session['bos_id']].time_icand = newval
+                    print('#####' + str(newval))
+                except:
+                    return 'BOS association failure. Try restarting your browser.'
 
         return 'OK'
     except Exception as e:
         bos_log.error(e)
-        return 'error'
+        return 'error: + ' + str(e)
 
 
 ###########
@@ -148,29 +156,36 @@ def main_set_sessionvar_async():
 ###########
 
 class BOS(Thread):
-    """ The Back Office Server. Consists of a messaging client and status
-        watcher thread that fetches messages from the broker over TCP/IP, in
-        addition to the web interface.
+    """ The Back Office Server. Consists of a messaging client that fetches 
+        messages from the broker over TCP/IP. The BOS also runs the Track and 
+        Message Broker sims, but as subprocesses. This is to demonstrate their
+        isolation, as well as assure optimal sim performance.
     """
     def __init__(self):
         Thread.__init__(self)
+        self.time_icand = 1  # Initial simulation time multiplier
         self.track = Track()
-        self.msg_client = Client()  # TODO: Random ip/ports?
+        self.msg_client = Client()  # TODO: Random ports, to enable multiple sandboxes
 
         # For demo purposes, each BOS gets it's own Message Broker.
-        self.msg_broker = MsgBroker()
-        # For demo purposes, each BOS gets it's own Track Sim.
+        self.broker_sim = MsgBroker()
+
+        # For demo purposes, each BOS gets it's own Track Sim. The track sim
+        # gets a multiprocessing queue so we can cheat and send it "time"
         self.track_sim = TrackSim()
 
     def run(self):
         """ Checks msg broker for new status msgs every REFRESH_TIME sec.
         """
         bos_log.info('Starting Sandbox...')
-        self.msg_broker.start()
+        self.broker_sim.start()
         self.track_sim.start()
         bos_log.info('BOS Started.')
 
         while True:
+            # Update the time multiplier for each sim
+            self.track_sim.timeq.put_nowait(self.time_icand)
+
             # Fetch the next available msg, if any
             msg = None
             try:

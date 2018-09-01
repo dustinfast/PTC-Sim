@@ -174,7 +174,7 @@ function _get_content_async() {
 }
 
 function _build_maplegend() {
-    // TODO: Get legend dynamically
+    // TODO: Build legend server-side
     imgpath = '/static/img/'
     var icons = {
         greenline: {
@@ -223,25 +223,23 @@ function home_start_async() {
     refresh_disp = refresh_slider.value + 's';
 
     time_slider.oninput = function () {
-       main_set_sessionvar_async('time_icand', this.value); // from main.js
+       new_val = this.value / 100              // Convert percent to decimal
+       main_set_sessionvar_async('time_icand', new_val); // from main.js
        document.getElementById('time-icand').innerHTML = '&nbsp;' + this.value + '%';
     }
     refresh_slider.oninput = function () {
         new_val = this.value * 1000             // Convert to ms
         clearInterval(on_interval);             // Stop current setInterval
         on_interval = _async_interval(new_val); // Start new setInterval
-        // console.log('Set: refresh_interval = ' + new_val); // debug
     }
 
     _build_maplegend(); // Init the map legend
 
-    // Get the main content and update the page, then call setInterval handler
+    // Get the main content and update the page
     _get_content_async();
     on_interval = _async_interval(refresh_slider.value * 1000) // Converting to ms
     document.getElementById('time-icand').innerHTML = '&nbsp;' + time_slider.value + '%';
     document.getElementById('refresh-val').innerHTML = '&nbsp;' + refresh_slider.value + 's';
-
-
 }
 
 // AJAX GET

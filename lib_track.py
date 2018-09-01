@@ -4,11 +4,12 @@
     Author: Dustin Fast, 2018
 """
 
+import Queue
+import multiprocessing
 from time import sleep
 from json import loads
 from threading import Thread
 from datetime import datetime
-from multiprocessing import Process
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
@@ -474,17 +475,20 @@ class Location:
 # Track Sim  #
 ##############
 
-class TrackSim(Process):
+class TrackSim(multiprocessing.Process):
     """ The Track Simulator. Simulates a locomotives traveling on the track and
         sending/receiving EMP msgs over on-track communications infrastructure,
         which is also simulated here.
     """
     def __init__(self):
-        Process.__init__(self)
+        multiprocessing.Process.__init__(self)
+        self.timeq = multiprocessing.Queue()
 
     def run(self):
         track_log.info('Track Sim Starting...')
         track = Track()  # The track contains all it's devices and locos.
+        
+        time_icand = 2  # Sim "time speed" multiplier. Updated via self.timeq 
 
         # Start each track componenet-device's simulation thread
         # These devices exists "on" the track and simulate their own 
@@ -493,9 +497,15 @@ class TrackSim(Process):
         for l in track.locos.values():
             l.sim.start()
         
-        # Log the sim status at intervals of REFRESH_TIME seconds
+        # Update sim time and log status at intervals of REFRESH_TIME seconds
         while True:
             for l in track.locos.values():
+                try:
+                    time_icand = self.timeq.get_nowait()
+                    print('******' + str(time_icand))
+                except Queue.Empty:
+                    pass
+
                 status_str = 'Loco ' + l.ID + ': '
                 status_str += str(l.speed) + ' @ ' + str(l.coords.marker)
                 status_str += ' (' + str(l.coords.long) + ',' + str(l.coords.lat) + ')'
