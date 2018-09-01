@@ -87,6 +87,7 @@ def home():
 def _home_get_async_content():
     """ Serves the asynchronous content (i.e. the locos table and status map).
     """
+<<<<<<< Updated upstream
     try:
         loco_name = flask.request.json['loco_name']
 
@@ -100,6 +101,32 @@ def _home_get_async_content():
     except Exception as e:
         bos_log.error(e)
         return 'error'
+=======
+    print('ASYNC')
+
+    # Get the sessions associated BOSd
+    bos = bos_sessions[flask.session['bos_id']]
+
+    # Get pdated locos_table
+    locos_table = get_locos_table(bos.track)
+
+    # Get updated map lines
+    tracklines = get_tracklines(bos.track)
+    
+    loco_name = flask.request.json['loco_name']  # 'Loco XXXX'
+    
+    if loco_name:
+        loco = bos.track.locos[loco_name.replace('Loco ', '')]
+        conn_line = get_loco_connline(bos.track, loco)
+        status_map = get_status_map(bos.track, tracklines, loco)
+        return flask.jsonify(status_map=status_map.as_json(),
+                             locos_table=locos_table,
+                             loco_connlines=conn_line.get(loco_name))
+    else:
+        status_map = get_status_map(bos.track, tracklines)
+        return flask.jsonify(status_map=bos.status_map.as_json(),
+                             locos_table=bos.locos_table)
+>>>>>>> Stashed changes
 
 
 @bos_web.route('/_set_sessionvar', methods=['POST'])

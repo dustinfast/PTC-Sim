@@ -46,6 +46,24 @@ WARN = 'warn'
 DOWN = 'down'
 
 
+class Polyline(object):
+    """ A representation of a geometric Polyline, for use with Google Maps.
+    """
+    def __init__(self, path, line_color, line_opacity=1.0, line_wt=2.0):
+        self.path = path
+        self.color = line_color
+        self.opacity = line_opacity
+        self.wt = line_wt
+
+    def repr(self):
+        """ Returns a dict representation of the polyline.
+        """
+        return {'stroke_color': self.color,
+                'stroke_opacity': self.opacity,
+                'stroke_weight': self.wt,
+                'path': list(ln for ln in self.path)}
+
+
 class WebTable:
     """ An HTML Table, with build methods.
     """
@@ -184,42 +202,27 @@ def get_locos_table(track):
     return outter.html()
 
 
-def get_loco_connlines(track):
+def get_loco_connline(track, loco):
     """ Returns a dict of lines representing each locos base connections.
     """
+    # If loco, only iterate a list of the given loco
+    if loco:
+        locos = [loco]
+    else:
+        locos = track.locos.values()
+
     # Build loco to base connection lines
-    loco_connlines = {}  # { loco.name: [ linepath, ... ] }
-    for loco in [l for l in track.locos.values() if l.connected()]:
-        for conn in [c for c in loco.conns.values() if c.connected()]:
-            linepath = []
-            linepath.append({'lat': loco.coords.lat + 0.2,  # TODO: scale offset
-                             'lng': loco.coords.long})
-            linepath.append({'lat': conn.conn_to.coords.lat,
-                             'lng': conn.conn_to.coords.long})
+    loco_connline = []
+    for conn in [c for c in loco.conns.values() if c.connected()]:
+        linepath = []
+        linepath.append({'lat': l.coords.lat + 0.2,  # TODO: scale offset to map zoom
+                         'lng': l.coords.long})
+        linepath.append({'lat': conn.conn_to.coords.lat,
+                         'lng': conn.conn_to.coords.long})
 
-            if not loco_connlines.get(loco.name):
-                loco_connlines[loco.name] = []
-            loco_connlines[loco.name].append(linepath)
+        loco_connline.append(linepath)
 
-    return loco_connlines
-
-
-class Polyline(object):
-    """
-    """
-    def __init__(self, path, line_color, line_opacity=1.0, line_wt=2.0):
-        self.path = path
-        self.color = line_color
-        self.opacity = line_opacity
-        self.wt = line_wt
-
-    def repr(self):
-        """ Returns a dict representation of the polyline.
-        """
-        return {'stroke_color': self.color,
-                'stroke_opacity': self.opacity,
-                'stroke_weight': self.wt,
-                'path': list(ln for ln in self.path)}
+    return loco_connline
 
 
 def get_tracklines(track):
@@ -258,42 +261,37 @@ def get_tracklines(track):
     return polylines  # Note: only one item in this list
 
 
-def get_status_map(track, tracklines, curr_loco=None):
-    """ Gets the main status map for the given track.
-        If not curr_loco, all locos are added to the map. Else only the loco
-        given by curr_loco is added.
+def get_status_map(track, tracklines, loco=None):
+    """ Gets the main status map for the given track. If not loco, all locos
+        are added to the map. Else only the given loco is added.
     """
     map_markers = []  # Map markers, for the Google.map.markers property.
     base_points = []  # All base station points, (p1, p2). For map centering.   
 
     # Append markers to map_markers for --
     # -- Loco(s).
-    if not curr_loco:
-        locos = track.locos.values()
+    if loco:
+        locos = [loco]
     else:
-        try:
-            locos = [curr_loco]  # Put in list form, so we can still iterate
-        except KeyError:
-            bos_log.error('get_status_map recvd invalid loco: ' + curr_loco.ID)
-            locos = []
+        locos = track.locos.values()
 
-    for loco in locos:
+    for l in locos:
         status_tbl = WebTable()
-        status_tbl.add_row([cell('Device'), cell(loco.name)])
+        status_tbl.add_row([cell('Device'), cell(l.name)])
         status_tbl.add_row([cell('Status'), cell('OK')])
-        status_tbl.add_row([cell('Location'), cell(str(loco.coords))])
+        status_tbl.add_row([cell('Location'), cell(str(l.coords))])
         status_tbl.add_row([cell('Last Seen'), cell('NA')])
 
         map_icon = MAP_LOCO_UP
-        if not loco.connected():
+        if not l.connected():
             map_icon = MAP_LOCO_DOWN
-        elif [c for c in loco.conns.values() if not c.connected()]:
+        elif [c for c in l.conns.values() if not c.connected()]:
             map_icon = MAP_LOCO_WARN
 
-        marker = {'title': loco.name,
+        marker = {'title': l.name,
                   'icon': map_icon,
-                  'lat': loco.coords.lat,
-                  'lng': loco.coords.long,
+                  'lat': l.coords.lat,
+                  'lng': l.coords.long,
                   'infobox': status_tbl.html()}
         map_markers.append(marker)
 
@@ -320,12 +318,11 @@ def get_status_map(track, tracklines, curr_loco=None):
         map_markers.append(marker)
         base_points.append((base.coords.lat, base.coords.long))
 
-    # Determine where to center map
+    # If a loco was initially passed, center the resulting map on it.
     if loco:
-        # Center map on the loco given by curr_loco, if given.
         center = (loco.coords.lat, loco.coords.long)
+    # Else, center map on the centroid of all base station coords
     else:
-        # Else, center on the centroid of all base station pts.
         x, y = zip(*base_points)
         center = (max(x) + min(x)) / 2.0, (max(y) + min(y)) / 2.0
 
