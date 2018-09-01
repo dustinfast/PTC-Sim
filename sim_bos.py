@@ -60,10 +60,12 @@ def before_request():
         bos_web.permanent_session_lifetime = timedelta(minutes=WEB_EXPIRE)
         flask.session.permanent = True
         flask.session.modified = True
+        # TODO: Test timeout
     
     # If session exists, refresh it to prevent expire
-    if flask.session.get('bos_id') and bos_sessions.get(flask.session['bos_id']):
-        print('Request from existing client received.')
+    bos_ID = flask.session.get('bos_id')
+    if bos_ID and bos_sessions.get(bos_ID):
+        print('Request from existing client received: ' + str(bos_ID))  # debug
         refresh_sess()
 
     # Else, init a new BOS & flag session as dirty so change is registered.
@@ -153,18 +155,15 @@ class BOS(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.track = Track()
-        self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)
+        self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)  # TODO: Random ip/ports
 
-        # TODO: For demo purposes, each BOS gets it's own msg broker.
+        # TODO: For demo purposes, each BOS gets it's own Message Broker.
+        # TODO: For demo purposes, each BOS gets it's own Track Sim.
 
     def run(self):
         """ Checks msg broker for new status msgs every REFRESH_TIME sec.
         """
         bos_log.info('BOS Starting.')
-
-        # TODO: For demo purposes, each BOS's track is also a Track Sim
-        # for loco in self.track.locos.values():
-        #     loco.sim.start()
 
         bos_log.info('BOS Started.')
         
@@ -218,3 +217,4 @@ if __name__ == '__main__':
     print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
     sleep(.2)  # Ensure welcome statment outputs before flask output
     bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL+C
+    # TODO: Terminate procs
