@@ -15,6 +15,7 @@ config.read('config.dat')
 # Import conf data
 APP_NAME = config.get('application', 'app_name')
 REFRESH_TIME = int(config.get('application', 'refresh_time'))
+WEB_EXPIRE = int(config.get('application', 'web_expire'))
 
 LOG_LEVEL = int(config.get('logging', 'level'))
 LOG_SIZE = int(config.get('logging', 'max_file_size')) 
