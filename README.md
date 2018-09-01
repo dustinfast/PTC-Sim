@@ -13,11 +13,15 @@ Interoperability between railroads is also required, as defined by the Federal R
 
 PTC-Sim currently implements broker-assisted EMP communication between simulated on-track devices (locomotives and 220 MHz radio base-stations) and the BOS. Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current device status and location are displayed graphically.
 
+## Usage
+
+From a Linux terminal, start the application with `./PTCSim.py`, then navigate to http://localhost:5000/ptc_sim.
+  
 ## Application Structure
 
 ### Components
 
-Each component exists as a seperate entity and any communication occuring between them happens via EMP messaging.
+Each component exists as a seperate entity. Any communication occuring between them happens via EMP messaging.
 
 * **Back Office Server** : Provides CAD capabilities for communicating track restrictions to locomotives and displays real-time track device status and location via its website interface.
 
@@ -42,10 +46,7 @@ PTC-Sim
 |   Procfile - Process definition, for use by hosted environments.
 |   requirements.txt - pipenv dependencies file.
 |   README.md - This document.
-|   sim_bos.py - The Back Office Server (and it's web interface).  
-|   sim_broker.py - The Message Broker.
-|   sim_track.py - The Track Simulator.  
-|   start.py - Starts the PTC-Sim wholistically.
+|   PTCSim.py - Starts the PTC-Sim web interface.
 |
 +---docs - Contains documentation files.
 |
@@ -67,29 +68,19 @@ PTC-Sim
 
 At this point in development, some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, persistent data, and connection session management are left unimplemented for the sake of demonstration simplicity. In addition, the track simulation is currently restricted to a single branch.
 
-## Usage
-
-From a Linux terminal, start the application with `./start.py`, then navigate to http://localhost:5000/ptc_sim.
-  
-Alternatively, the BOS, Message Broker, and Track Simulator may be started independently with `./sim_bos.py`, `./sim_broker.py`, and `./sim_track.py`, respectively. Follow the on-screen prompts after starting each.
-
 ### Dependencies
 
 Requires Python 2.7. All other dependencies are managed by the application, including Flask, Jinja, JavaScript, AJAX, jQuery, and the Google Maps API.
 
 ## # TODO
 
-* Move track to static
 * Move js map ops to server-side
 * Broker queue msg expire time
 * Web Output: logs and broker queue monitor
-* Trackline legend: No 220 coverage, restricted, etc.
   
 * Allow other track models to be easily loaded via Google Earth
 * Move JSON data to SQL
 * Ensure PEP8 for file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members
 * Readme screenshots and high-level PTC images
-* Move to py3 - config = configparser.ConfigParser()
-* Track Circuits, to aid col avoidance.  
-* Use multiprocessing instead of threading where reasonable
+* Track Circuits, to aid col avoidance.

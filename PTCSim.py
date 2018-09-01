@@ -157,9 +157,9 @@ class BOS(Thread):
         self.track = Track()
         self.msg_client = Client()  # TODO: Random ip/ports?
 
-        # TODO: For demo purposes, each BOS gets it's own Message Broker.
+        # For demo purposes, each BOS gets it's own Message Broker.
         self.msg_broker = MsgBroker()
-        # TODO: For demo purposes, each BOS gets it's own Track Sim.
+        # For demo purposes, each BOS gets it's own Track Sim.
         self.track_sim = TrackSim()
 
     def run(self):
