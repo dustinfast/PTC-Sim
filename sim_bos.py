@@ -155,7 +155,6 @@ class BOS(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.track = Track()
-        self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)  # TODO: Random ip/ports
 
         # TODO: For demo purposes, each BOS gets it's own Message Broker.
         # TODO: For demo purposes, each BOS gets it's own Track Sim.
@@ -165,13 +164,15 @@ class BOS(Thread):
         """
         bos_log.info('BOS Starting...')
 
-        bos_log.info('BOS Started.')
+        msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)  # TODO: Random ip/ports?
         
+        bos_log.info('BOS Started.')
+
         while True:
             # Fetch the next available msg, if any
             msg = None
             try:
-                msg = self.msg_client.fetch_next_msg(BOS_EMP)
+                msg = msg_client.fetch_next_msg(BOS_EMP)
             except Queue.Empty:
                 bos_log.info('Msg queue empty.')
             except Exception:
