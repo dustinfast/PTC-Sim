@@ -202,27 +202,21 @@ def get_locos_table(track):
     return outter.html()
 
 
-def get_loco_connline(track, loco):
+def get_loco_connlines(track, loco):
     """ Returns a dict of lines representing each locos base connections.
     """
-    # If loco, only iterate a list of the given loco
-    if loco:
-        locos = [loco]
-    else:
-        locos = track.locos.values()
-
     # Build loco to base connection lines
-    loco_connline = []
+    loco_connlines = []
     for conn in [c for c in loco.conns.values() if c.connected()]:
         linepath = []
-        linepath.append({'lat': l.coords.lat + 0.2,  # TODO: scale offset to map zoom
-                         'lng': l.coords.long})
+        linepath.append({'lat': loco.coords.lat + 0.2,  # TODO: scale offset to map zoom
+                         'lng': loco.coords.long})
         linepath.append({'lat': conn.conn_to.coords.lat,
                          'lng': conn.conn_to.coords.long})
 
-        loco_connline.append(linepath)
+        loco_connlines.append(linepath)
 
-    return loco_connline
+    return loco_connlines
 
 
 def get_tracklines(track):

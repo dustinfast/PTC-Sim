@@ -11,12 +11,12 @@
 """
 
 from time import sleep
-from random import randint
-from threading import Thread
 from datetime import timedelta
+from random import randrange
+from threading import Thread
     
-from lib_app import bos_log, dep_install
 from lib_messaging import Client, Queue
+from lib_app import bos_log, dep_install
 from lib_track import Track, Loco, Location
 from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_connlines
 
@@ -29,10 +29,6 @@ try:
 except:
     dep_install('flask')
 try:
-    import flask_login
-except:
-    dep_install('flask_login')
-try:
     import flask_googlemaps
 except:
     dep_install('flask_googlemaps')
@@ -40,22 +36,11 @@ except:
 # List of session vars modifiable from client-side js
 PUBLIC_SESSVARS = ['time_icand']
 
-# Global web state vars
-g_locos_table = 'Error populating table.'
-g_status_maps = {}  # { None: all_locos_statusmap, loco.name: loco_statusmap }
-g_conn_lines = {}  # { TrackDevice.name: loco_statusmap }
-
-# For sim/demo purposes, each session gets its own track instance so that
-# track status and sim settings are user dependent.
-g_tracks = {}
-
 # Init Flask
 bos_web = flask.Flask(__name__)
 bos_web.secret_key = 'PTC-Sim secret key'
-login_manager = flask_login.LoginManager()
-login_manager.init_app(bos_web)
-login_manager.login_view = 'login'
 flask_googlemaps.GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
+bos_sessions = {}  # { BOS_ID: BOS_OBJ }
 
 
 ##############################
@@ -64,69 +49,79 @@ flask_googlemaps.GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP
 
 @bos_web.before_request
 def before_request():
-    """ Refresh the client session.
+    """ Before each client request is processed, refresh the session.
+        If the session is new, instantiate a BOS for the client.
+        Note: Each session gets its own BOS. This is for demo/sim purposes,
+        so that each web client can have it's own "sandbox" BOS.
     """
-    # Init flask sessoin
-    flask.session.permanent = True
-    flask.session.modified = True
-    bos_web.permanent_session_lifetime = timedelta(minutes=WEB_EXPIRE) 
-    flask.g.user = randint(0, 9999999)  # Randmon user ID
-    print(flask.request.args.get('api_key'))
+    global bos_sessions
+    
+    def refresh_sess():
+        bos_web.permanent_session_lifetime = timedelta(minutes=WEB_EXPIRE)
+        flask.session.permanent = True
+        flask.session.modified = True
+        # TODO: Test timeout
+    
+    # If session exists, refresh it to prevent expire
+    bos_ID = flask.session.get('bos_id')
+    if bos_ID and bos_sessions.get(bos_ID):
+        print('Request from existing client received: ' + str(bos_ID))  # debug
+        refresh_sess()
+
+    # Else, init a new BOS & flag session as dirty so change is registered.
+    # The association is necessary because the BOS obj is not serializable.
+    else:
+        # Init a new boss associated with a random 16 bit ID
+        bos_ID = randrange(65536)  
+        bos_sessions[bos_ID] = BOS()
+        bos_sessions[bos_ID].start()
+        sleep(.5)  # Ample time to start
+
+        # Associate session with it's BOS
+        flask.session['bos_id'] = bos_ID
+        refresh_sess()
+        bos_log.info('New client session started: ' + str(bos_ID))
+        
 
 @bos_web.route('/' + APP_NAME)
 def home():
     """ Serves home.html after instantiating the client's unique track instance.
     """
-    print(flask.g.user)
-    if not g_tracks.get(flask.g.user):
-        g_tracks[flask.g.user] = Track()
-    return flask.render_template('home.html', status_map=g_status_maps[None])
+    try:
+        bos = bos_sessions[flask.session['bos_id']]
+    except:
+        return 'BOS association failure. Try restarting your browser.'
+
+    # Get a fresh status map
+    tracklines = get_tracklines(bos.track)
+    status_map = get_status_map(bos.track, tracklines)
+
+    return flask.render_template('home.html', status_map=status_map)
 
 
 @bos_web.route('/_home_get_async_content', methods=['POST'])
 def _home_get_async_content():
-    """ Serves the asynchronous content (i.e. the locos table and status map).
+    """ Serves updated asynchronous content, the locos table and status map.
     """
-<<<<<<< Updated upstream
-    try:
-        loco_name = flask.request.json['loco_name']
-
-        if loco_name:
-            return flask.jsonify(status_map=g_status_maps[loco_name].as_json(),
-                                 locos_table=g_locos_table,
-                                 loco_connlines=g_conn_lines.get(loco_name))
-        else:
-            return flask.jsonify(status_map=g_status_maps[None].as_json(),
-                                 locos_table=g_locos_table)
-    except Exception as e:
-        bos_log.error(e)
-        return 'error'
-=======
-    print('ASYNC')
-
-    # Get the sessions associated BOSd
+    # Get the session's associated BOS
+    print('** ' + str(flask.session['bos_id']))
     bos = bos_sessions[flask.session['bos_id']]
 
-    # Get pdated locos_table
     locos_table = get_locos_table(bos.track)
-
-    # Get updated map lines
     tracklines = get_tracklines(bos.track)
-    
     loco_name = flask.request.json['loco_name']  # 'Loco XXXX'
-    
+
     if loco_name:
         loco = bos.track.locos[loco_name.replace('Loco ', '')]
-        conn_line = get_loco_connline(bos.track, loco)
         status_map = get_status_map(bos.track, tracklines, loco)
-        return flask.jsonify(status_map=status_map.as_json(),
-                             locos_table=locos_table,
-                             loco_connlines=conn_line.get(loco_name))
+        conn_lines = get_loco_connlines(bos.track, loco)
+        return flask.jsonify(locos_table=locos_table, 
+                             status_map=status_map.as_json(),
+                             loco_connlines=conn_lines)
     else:
         status_map = get_status_map(bos.track, tracklines)
-        return flask.jsonify(status_map=bos.status_map.as_json(),
-                             locos_table=bos.locos_table)
->>>>>>> Stashed changes
+        return flask.jsonify(locos_table=locos_table,
+                             status_map=status_map.as_json())
 
 
 @bos_web.route('/_set_sessionvar', methods=['POST'])
@@ -152,46 +147,27 @@ def main_set_sessionvar_async():
 # BOS Class #
 #############
 
-class BOS(object):
+class BOS(Thread):
     """ The Back Office Server. Consists of a messaging client and status
         watcher thread that fetches messages from the broker over TCP/IP, in
         addition to the web interface.
     """
     def __init__(self):
+        Thread.__init__(self)
         self.track = Track()
+        self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)  # TODO: Random ip/ports
 
-        # Messaging client
-        self.msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)
+        # TODO: For demo purposes, each BOS gets it's own Message Broker.
+        # TODO: For demo purposes, each BOS gets it's own Track Sim.
 
-        # Threading
-        self.running = False  # Thread kill flag
-        self.msg_watcher_thread = Thread(target=self._statuswatcher)
-        self.webupdate_thread = Thread(target=self._webupdater)
-
-    def start(self, debug=False):
-        """ Start the BOS. I.e., the status watcher thread and web interface.
+    def run(self):
+        """ Checks msg broker for new status msgs every REFRESH_TIME sec.
         """
-        bos_log.info('BOS Starting.')
+        bos_log.info('BOS Starting...')
+
+        bos_log.info('BOS Started.')
         
-        self.running = True
-        self.msg_watcher_thread.start()
-        self.webupdate_thread.start()
-        sleep(.5)  # Ample time to ensure all threads did one iteration
-
-        bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL+C
-
-        # Do shutdown
-        print('\nBOS Stopping... Please wait.')
-        self.running = False
-        self.msg_watcher_thread.join(timeout=REFRESH_TIME)
-        self.webupdate_thread.join(timeout=REFRESH_TIME)
-        bos_log.info('BOS stopped.')
-
-    def _statuswatcher(self):
-        """ The status message watcher thread - watches the broker for msgs
-            addressed to it and processes them.
-        """
-        while self.running:
+        while True:
             # Fetch the next available msg, if any
             msg = None
             try:
@@ -234,34 +210,11 @@ class BOS(object):
                 bos_log.error('Fetched unhandled msg type: ' + str(msg.msg_type))
                 
             sleep(REFRESH_TIME)
-        
-    def _webupdater(self):
-        """ The web updater thread. Parses the BOS's local track object's
-            devices and updates the web output (HTML table, Google Earth/KMLs, 
-            etc.) accordingly.
-        """
-        global g_locos_table, g_status_maps, g_conn_lines
-
-        while self.running:
-            # Update g_locos_table and main panel map
-            g_locos_table = get_locos_table(self.track)
-
-            # Get updated map lines
-            tracklines = get_tracklines(self.track)
-            g_conn_lines = get_loco_connlines(self.track)
-            maps = {}  # Temporary container, so we never serve incomplete map
-
-            for loco in self.track.locos.values():
-                maps[loco.name] = get_status_map(self.track, tracklines, loco)
-            maps[None] = get_status_map(self.track, tracklines)  
-
-            g_status_maps = maps
-
-            sleep(REFRESH_TIME)
 
 
 if __name__ == '__main__':
     # Start the Back Office Server
     print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
     sleep(.2)  # Ensure welcome statment outputs before flask output
-    bos = BOS().start(debug=True)
+    bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL+C
+    # TODO: Terminate procs
