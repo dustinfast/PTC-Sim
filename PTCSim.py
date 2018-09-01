@@ -14,16 +14,17 @@ from time import sleep
 from datetime import timedelta
 from random import randrange
 from threading import Thread
+from multiprocessing import Process
     
-from lib_messaging import Client, Queue
+from lib_messaging import MsgBroker, Client, Queue
+from lib_messaging import BOS_EMP
 from lib_app import bos_log, dep_install
-from lib_track import Track, Loco, Location
+from lib_app import APP_NAME, REFRESH_TIME, WEB_EXPIRE
+from lib_track import Track, TrackSim, Loco, Location
 from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_connlines
 
-from lib_app import APP_NAME, REFRESH_TIME, WEB_EXPIRE
-from lib_messaging import BROKER, SEND_PORT, FETCH_PORT, BOS_EMP
 
-# Attempt to import 3rd party modules and prompt for install on fail
+# Attempt to import 3rd party modules, prompting for install on fail.
 try:
     import flask
 except:
@@ -36,16 +37,15 @@ except:
 # List of session vars modifiable from client-side js
 PUBLIC_SESSVARS = ['time_icand']
 
-# Init Flask
+
+#######################
+# Flask Web Framework #
+#######################
+
 bos_web = flask.Flask(__name__)
-bos_web.secret_key = 'PTC-Sim secret key'
+bos_web.secret_key = 'PTC-Sim secret key'  # Enables flask.session
 flask_googlemaps.GoogleMaps(bos_web, key="AIzaSyAcls51x9-GhMmjEa8pxT01Q6crxpIYFP0")
 bos_sessions = {}  # { BOS_ID: BOS_OBJ }
-
-
-##############################
-# Flask Web Request Handlers #
-##############################
 
 @bos_web.before_request
 def before_request():
@@ -143,9 +143,9 @@ def main_set_sessionvar_async():
         return 'error'
 
 
-#############
-# BOS Class #
-#############
+###########
+# The BOS #
+###########
 
 class BOS(Thread):
     """ The Back Office Server. Consists of a messaging client and status
@@ -155,24 +155,26 @@ class BOS(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.track = Track()
+        self.msg_client = Client()  # TODO: Random ip/ports?
 
         # TODO: For demo purposes, each BOS gets it's own Message Broker.
+        self.msg_broker = MsgBroker()
         # TODO: For demo purposes, each BOS gets it's own Track Sim.
+        self.track_sim = TrackSim()
 
     def run(self):
         """ Checks msg broker for new status msgs every REFRESH_TIME sec.
         """
-        bos_log.info('BOS Starting...')
-
-        msg_client = Client(BROKER, SEND_PORT, FETCH_PORT)  # TODO: Random ip/ports?
-        
+        bos_log.info('Starting Sandbox...')
+        self.msg_broker.start()
+        self.track_sim.start()
         bos_log.info('BOS Started.')
 
         while True:
             # Fetch the next available msg, if any
             msg = None
             try:
-                msg = msg_client.fetch_next_msg(BOS_EMP)
+                msg = self.msg_client.fetch_next_msg(BOS_EMP)
             except Queue.Empty:
                 bos_log.info('Msg queue empty.')
             except Exception:
@@ -213,9 +215,36 @@ class BOS(Thread):
             sleep(REFRESH_TIME)
 
 
+class Web(Process):
+    def __init__(self):
+        Process.__init__(self)
+
+    def run(self):
+        bos_web.run(debug=True, use_reloader=False)  # Blocks
+
+
 if __name__ == '__main__':
-    # Start the Back Office Server
-    print('-- ' + APP_NAME + ': Back Office Server - CTRL + C quits --\n')
+    # Start the BOS web interface - the BOS itself is started on client connect.
+    print("-- " + APP_NAME + ": Back Office Server - CTRL + C quits --\n")
     sleep(.2)  # Ensure welcome statment outputs before flask output
-    bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL+C
-    # TODO: Terminate procs
+    # bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL + C
+
+    # Start the web interface as a subprocess.
+    web_thread = Web() 
+    web_thread.start()
+    # bos_web.run(debug=True, use_reloader=False)  # Blocks
+
+    while True:
+        uinput = raw_input('')
+
+        if uinput == 'exit':
+            print('Stopping...')
+            web_thread.terminate()
+
+            try:
+                web_thread.join(timeout=5)
+            except:
+                raise Exception('Timed out wating for web process to close.')
+            break
+        else:
+            print("Invalid input. Type 'exit' to quit.")

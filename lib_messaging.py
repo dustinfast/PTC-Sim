@@ -1,6 +1,10 @@
 """ PTC-Sim's messaging library for sending and receiving Edge Message 
-    Protocol(EMP) messages over TCP/IP. See README.md for implementation
-    specific information.
+    Protocol(EMP) messages over TCP/IP. 
+
+    Message Specification:
+        EMP V4 (specified in msg_spec/S-9354.pdf) fixed-format messages 
+        with variable-length header sections.
+        See README.md for more info.
 
     Author: Dustin Fast, 2018
 """
@@ -12,22 +16,23 @@ from time import sleep
 from binascii import crc32
 from threading import Thread
 from struct import pack, unpack
+from multiprocessing import Process
 from ConfigParser import RawConfigParser
 
+from lib_app import broker_log
 from lib_app import REFRESH_TIME
 
-# Init conf
+# Import conf data
 config = RawConfigParser()
 config.read('config.dat')
-
-# Import messaging conf data
 BROKER = config.get('messaging', 'broker')
+BOS_EMP = config.get('messaging', 'bos_emp_addr')
 SEND_PORT = int(config.get('messaging', 'send_port'))
 FETCH_PORT = int(config.get('messaging', 'fetch_port'))
 MAX_MSG_SIZE = int(config.get('messaging', 'max_msg_size'))
 NET_TIMEOUT = float(config.get('messaging', 'network_timeout'))
-BOS_EMP = config.get('messaging', 'bos_emp_addr')
-
+MSG_INTERVAL = float(config.get('messaging', 'msg_interval'))
+LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
 # Set default timeout for all sockets, including importers of this library
 socket.setdefaulttimeout(NET_TIMEOUT)
@@ -170,7 +175,7 @@ class Connection(object):
         # Interface
         self.conn_to = None
         self.client = Client()
-        self.receiver = Receiver()
+        # TODO: self.receiver = Receiver()
 
         # Timeout
         self._timeout = timeout
@@ -304,11 +309,6 @@ class Client(object):
         return msg
 
 
-class Receiver(object):
-    def __init__(self):
-        pass
-
-
 def get_6000_msg(loco):
         """ Returns a well-formed 6000 (loco status) msg for the given loco.
         """
@@ -337,3 +337,131 @@ def get_6000_msg(loco):
                               payload))
 
         return status_msg
+
+
+class Receiver(Thread):
+    """ Watches for incoming EMP messages over TCP/IP on the interface and port 
+        specified and adds them to the given list of queues (a list)
+    """
+    def __init__(self, outgoing_queues):
+        Thread.__init__(self)
+        self.outgoing_queues = outgoing_queues
+
+    def run(self):
+        # Init TCP/IP listener
+        sock = socket.socket()
+        sock.bind((BROKER, SEND_PORT))
+        sock.listen(1)
+
+        while True:
+            # Block until timeout or a send request is received
+            try:
+                conn, client = sock.accept()
+            except:
+                continue
+
+            # Receive the msg from sender, responding with either OK or FAIL
+            log_str = 'Incoming msg from ' + str(client[0]) + ' gave: '
+            try:
+                raw_msg = conn.recv(MAX_MSG_SIZE).decode()
+                msg = Message(raw_msg.decode('hex'))
+                conn.send('OK'.encode())
+                conn.close()
+            except Exception as e:
+                log_str += 'Msg recv failed due to ' + str(e)
+                broker_log.error(log_str)
+
+                try:
+                    conn.send('FAIL'.encode())
+                except:
+                    pass
+
+                conn.close()
+                continue
+
+            # Add msg to outgoing queue dict, keyed by dest_addr
+            if not self.outgoing_queues.get(msg.dest_addr):
+                self.outgoing_queues[msg.dest_addr] = Queue.Queue()
+            self.outgoing_queues[msg.dest_addr].put(msg)
+            log_str = 'Msg served: ' + msg.sender_addr + ' '
+            log_str += 'to ' + msg.dest_addr
+            broker_log.info(log_str)
+
+        # Do cleanup
+        sock.close()
+
+
+class MsgServer(Thread):
+    """ Watches for incoming TCP/IP msg requests (ex, A loco or the BOS
+        checking its msg queue) and serves them from the given list of queues 
+        by address.
+        After a msg is served it's removed from the queue.
+    """
+    def __init__(self, outgoing_queues):
+        Thread.__init__(self)
+        self.outgoing_queues = outgoing_queues
+
+    def run(self):
+        # Init listener
+        sock = socket.socket()
+        sock.bind((BROKER, FETCH_PORT))
+        sock.listen(1)
+
+        while True:
+            # Block until timeout or a send request is received
+            try:
+                conn, client = sock.accept()
+            except:
+                continue
+
+            # Process the request
+            log_str = 'Fetch request from ' + str(client[0]) + ' '
+            try:
+                queue_name = conn.recv(MAX_MSG_SIZE).decode()
+                log_str += 'for ' + queue_name + ' gave: '
+
+                msg = None
+                try:
+                    msg = self.outgoing_queues[queue_name].get(timeout=.5)
+                except:
+                    log_str += 'Queue empty.'
+                    conn.send('EMPTY'.encode())
+
+                if msg:
+                    conn.send(msg.raw_msg.encode('hex'))  # Send msg
+                    log_str += 'Msg served.'
+
+                broker_log.info(log_str)
+                conn.close()
+            except:
+                continue
+
+        # Do cleanup
+        sock.close()
+
+
+class MsgBroker(Process):
+    """ PTC-Sim's Edge Message Protocol (EMP) Message Broker.
+    Msgs are received by the broker via TCP/IP and enqued for receipt.
+    Recipients request msgs from broker via TCP/IP by address (i.e queue name).
+    After a fetch, the msg is removed from the queue.
+    """
+    def __init__(self): 
+        Process.__init__(self)
+        self.outgoing_queues = {}  # Outbound msg queues: { ADDRESS: Queue }
+
+    def run(self):        
+        Receiver(self.outgoing_queues).start()
+        MsgServer(self.outgoing_queues).start()
+        broker_log.info('BOS Started.')
+
+        # Stay alive (there is likely a better way to do this)
+        while True:
+            sleep(10)
+
+
+# debug:
+# if __name__ == '__main__':
+#     # Start the track simulation in terminal mode
+#     sim = MsgBroker()
+#     sim.start()

@@ -1,4 +1,4 @@
-""" PTC-Sim's library of common app-level classes.
+""" PTC-Sim's library of app-level classes.
 
     Author: Dustin Fast, 2018
 """
@@ -8,11 +8,10 @@ import logging.handlers
 from subprocess import check_output
 from ConfigParser import RawConfigParser
 
-# Init conf
+# Import conf data
 config = RawConfigParser()
 config.read('config.dat')
 
-# Import conf data
 APP_NAME = config.get('application', 'app_name')
 REFRESH_TIME = int(config.get('application', 'refresh_time'))
 WEB_EXPIRE = int(config.get('application', 'web_expire'))
@@ -163,6 +162,6 @@ def dep_install(module_name):
 
 
 # Module level loggers, Defined here and declared at the top of this file
-track_log = Logger('log_track', True)
-broker_log = Logger('log_broker', True)
-bos_log = Logger('log_bos', True)
+track_log = Logger('log_track', False)
+broker_log = Logger('log_broker', False)
+bos_log = Logger('log_bos', False)

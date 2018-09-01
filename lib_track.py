@@ -1,6 +1,5 @@
 """ PTC-Sim's collection of railroad component classes, including the track, 
-    locomotives, base stations, etc., and their specific simulation threads.
-
+    locomotives, base stations, etc., and the Track Simulator
 
     Author: Dustin Fast, 2018
 """
@@ -9,32 +8,28 @@ from time import sleep
 from json import loads
 from threading import Thread
 from datetime import datetime
+from multiprocessing import Process
 from ConfigParser import RawConfigParser
 from math import degrees, radians, sin, cos, atan2
 
 from lib_app import track_log
+from lib_app import REFRESH_TIME
 from lib_messaging import Connection, Queue, get_6000_msg
-
-# Init conf
-config = RawConfigParser()
-config.read('config.dat')
+from lib_messaging import MSG_INTERVAL, LOCO_EMP_PREFIX
 
 # Import conf data
-REFRESH_TIME = int(config.get('application', 'refresh_time'))
-
+config = RawConfigParser()
+config.read('config.dat')
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_LOCOS = config.get('track', 'track_locos')
 TRACK_BASES = config.get('track', 'track_bases')
 SPEED_UNITS = config.get('track', 'speed_units')
 CONN_TIMEOUT = int(config.get('track', 'component_timeout'))
 
-MSG_INTERVAL = int(config.get('messaging', 'msg_interval'))
-LOCO_EMP_PREFIX = config.get('messaging', 'loco_emp_prefix')
 
-
-##################
-# Parent Classes #
-##################
+############################
+# Top-Level/Parent Classes #
+############################
 
 class DeviceSim(object):
     """ A collection of threads representing a device simulation. Exposes start
@@ -139,7 +134,9 @@ class Loco(TrackDevice):
         self.conns = {'Radio1': Connection('Radio1', timeout=CONN_TIMEOUT),
                       'Radio2': Connection('Radio2', timeout=CONN_TIMEOUT)}
 
-        self.sim = DeviceSim(self, [loco_movement, loco_messaging])
+        self.sim = DeviceSim(self, 
+                             [TrackSim.loco_movement,
+                              TrackSim.loco_messaging])
         
     def update(self,
                speed=None,
@@ -241,9 +238,9 @@ class TrackSwitch(TrackDevice):
         raise NotImplementedError
 
 
-#######################
-# Independent Classes #
-#######################
+##############################
+# Terminal Top-level Classes #
+##############################
 
 
 class Track(object):
@@ -473,136 +470,173 @@ class Location:
         return coord_str
 
 
-##############################
-# Track Device Sim Functions #
-##############################
+##############
+# Track Sim  #
+##############
 
-def loco_movement(loco):
-    """ Real-time simulation of a locomotive's on-track movement. Also
-        determines base stations in range of locos current position.
+class TrackSim(Process):
+    """ The Track Simulator. Simulates a locomotives traveling on the track and
+        sending/receiving EMP msgs over on-track communications infrastructure,
+        which is also simulated here.
     """
-    def _brake():
-        """ Apply the adaptive braking algorithm.
+    def __init__(self):
+        Process.__init__(self)
+
+    def run(self):
+        track_log.info('Track Sim Starting...')
+        track = Track()  # The track contains all it's devices and locos.
+
+        # Start each track componenet-device's simulation thread
+        # These devices exists "on" the track and simulate their own 
+        # operation.
+        # TODO: Bases, Waysides, etc
+        for l in track.locos.values():
+            l.sim.start()
+        
+        # Log the sim status at intervals of REFRESH_TIME seconds
+        while True:
+            for l in track.locos.values():
+                status_str = 'Loco ' + l.ID + ': '
+                status_str += str(l.speed) + ' @ ' + str(l.coords.marker)
+                status_str += ' (' + str(l.coords.long) + ',' + str(l.coords.lat) + ')'
+                status_str += '. Bases in range: '
+                status_str += ', '.join([b.ID for b in l.bases_inrange])
+                status_str += ' Conns: '
+                status_str += ', '.join([c.conn_to.ID for c in l.conns.values() if c.conn_to])
+                track_log.info(status_str)
+
+            sleep(REFRESH_TIME)
+
+    @staticmethod
+    def loco_movement(loco):
+        """ Real-time simulation of a locomotive's on-track movement. Also
+            determines base stations in range of locos current position.
+            This function is intended to be run as a Thread.
         """
-        raise NotImplementedError
-
-    def _set_heading(prev_mp, curr_mp):
-            """ Sets loco heading based on current and prev lat/long
+        def _brake():
+            """ Apply the adaptive braking algorithm.
             """
-            lat1 = radians(prev_mp.lat)
-            lat2 = radians(curr_mp.lat)
+            raise NotImplementedError
 
-            long_diff = radians(prev_mp.long - curr_mp.long)
+        def _set_heading(prev_mp, curr_mp):
+                """ Sets loco heading based on current and prev lat/long
+                """
+                lat1 = radians(prev_mp.lat)
+                lat2 = radians(curr_mp.lat)
 
-            a = cos(lat1) * sin(lat2)
-            b = (sin(lat1) * cos(lat2) * cos(long_diff))
-            x = sin(long_diff) * cos(lat2)
-            y = a - b
-            deg = degrees(atan2(x, y))
-            compass_bearing = (deg + 360) % 360
+                long_diff = radians(prev_mp.long - curr_mp.long)
 
-            loco.heading = compass_bearing
+                a = cos(lat1) * sin(lat2)
+                b = (sin(lat1) * cos(lat2) * cos(long_diff))
+                x = sin(long_diff) * cos(lat2)
+                y = a - b
+                deg = degrees(atan2(x, y))
+                compass_bearing = (deg + 360) % 360
 
-    # Start of locomotive simulator
-    makeup_dist = 0
-    if not loco.direction or not loco.coords or loco.speed is None:
-        raise ValueError('Cannot simulate an unintialized Locomotive.')
+                loco.heading = compass_bearing
 
-    while loco.sim.running:
-        sleep(MSG_INTERVAL)  # Sleep for specified interval
+        # Start
+        makeup_dist = 0
+        if not loco.direction or not loco.coords or loco.speed is None:
+            raise ValueError('Cannot simulate an unintialized Locomotive.')
 
-        # Move, if at speed
-        if loco.speed > 0:
-            # Determine dist traveled since last iteration, including
-            # makeup distance, if any.
-            hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
-            dist = loco.speed * hours * 1.0  # distance = speed * time
-            dist += makeup_dist
+        while loco.sim.running:
+            sleep(MSG_INTERVAL)  # Sleep for specified interval
 
-            # Set sign of dist based on dir of travel
-            if loco.direction == 'decreasing':
-                dist *= -1
+            # Move, if at speed
+            if loco.speed > 0:
+                # Determine dist traveled since last iteration, including
+                # makeup distance, if any.
+                hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
+                dist = loco.speed * hours * 1.0  # distance = speed * time
+                dist += makeup_dist
 
-            # Get next location and any makeup distance
-            new_mp, dist = loco.track._get_next_mp(loco.coords, dist)
-            if not new_mp:
-                err_str = ' - At end of track. Reversing.'
-                track_log.info(loco.name + err_str)
-                loco.direction *= -1
-            else:
-                _set_heading(loco.coords, new_mp)
-                loco.coords = new_mp
-                makeup_dist = dist
+                # Set sign of dist based on dir of travel
+                if loco.direction == 'decreasing':
+                    dist *= -1
 
-                # Determine base stations in range of current position
-                loco.bases_inrange = [b for b in loco.track.bases.values()
-                                      if b.covers_location(loco.coords)]
+                # Get next location and any makeup distance
+                new_mp, dist = loco.track._get_next_mp(loco.coords, dist)
+                if not new_mp:
+                    err_str = ' - At end of track. Reversing.'
+                    track_log.info(loco.name + err_str)
+                    loco.direction *= -1
+                else:
+                    _set_heading(loco.coords, new_mp)
+                    loco.coords = new_mp
+                    makeup_dist = dist
 
+                    # Determine base stations in range of current position
+                    loco.bases_inrange = [b for b in loco.track.bases.values()
+                                          if b.covers_location(loco.coords)]
 
-def loco_messaging(loco):
-    """ Real-time simulation of a locomotives's messaging system. Maintains
-        connections to bases in range of loco position and sends/fetches msgs.
-    """
-    while loco.sim.running:
-        sleep(MSG_INTERVAL)  # Sleep for specified interval
+    @staticmethod
+    def loco_messaging(loco):
+        """ Real-time simulation of a locomotives's messaging system. Maintains
+            connections to bases in range of loco's position. 
+            # TODO: and sends/fetches msgs over them. 
+            This function is intended to be run as a Thread.
+        """
+        while loco.sim.running:
+            sleep(MSG_INTERVAL)  # Sleep for specified interval
 
-        # Drop all out of range base connections and keep alive existing
-        # in-range connections
-        lconns = loco.conns.values()
-        for conn in [c for c in lconns if c.connected() is True]:
-            if conn.conn_to not in loco.bases_inrange:
-                conn.disconnect()
-            else:
-                conn.keep_alive()
+            # Drop all out of range base connections and keep alive existing
+            # in-range connections
+            lconns = loco.conns.values()
+            for conn in [c for c in lconns if c.connected() is True]:
+                if conn.conn_to not in loco.bases_inrange:
+                    conn.disconnect()
+                else:
+                    conn.keep_alive()
 
-        open_conns = [c for c in lconns if c.connected() is False]
-        used_bases = [c.conn_to for c in lconns if c.connected() is True]
-        for i, conn in enumerate(open_conns):
-            try:
-                if loco.bases_inrange[i] not in used_bases:
-                    conn.connect(loco.bases_inrange[i])
-            except IndexError:
-                break  # No (or no more) bases in range to consider
-            
-        # Ensure at least one active connection
-        conns = [c for c in lconns if c.connected() is True]
-        if not conns:
-            err_str = ' skipping msg send/recv - No active comms.'
-            track_log.warn(loco.name + err_str)
-            continue  # Try again next iteration
-
-        # Send status msg over active connections, breaking on first success.
-        status_msg = get_6000_msg(loco)
-        for conn in conns:
-            try:
-                conn.send(status_msg)
-                info_str = ' - Sent status msg over ' + conn.conn_to.name
-                track_log.info(loco.name + info_str)
-            except Exception as e:
-                track_log.warn(loco.name + ' send failed: ' + str(e))
-                
-        # Fetch incoming cad msgs over active connections, breaking on success.
-        for conn in conns:
-            cad_msg = None
-            try:
-                cad_msg = conn.fetch(loco.emp_addr)
-            except Queue.Empty:
-                break  # No msgs (or no more msgs) to receive.
-            except Exception as e:
-                track_log.warn(loco.name + ' fetch failed: ' + str(e))
-                continue  # Try the next connecion
-
-            # Process cad msg, if msg and if actually for this loco
-            if cad_msg and cad_msg.payload.get('ID') == loco.ID:
+            open_conns = [c for c in lconns if c.connected() is False]
+            used_bases = [c.conn_to for c in lconns if c.connected() is True]
+            for i, conn in enumerate(open_conns):
                 try:
-                    # TODO: Update track restrictions based on msg
-                    track_log.info(loco.name + ' - CAD msg processed.')
-                except:
-                    track_log.error(loco.name + ' - Received invalid CAD msg.')
-                break  # Either way, the msg was fetched # TODO: ACK w/broker?
-        else:
-            err_str = ' - active connections exist, but msg fetch/recv failed.'
-            track_log.error(loco.name + err_str)
+                    if loco.bases_inrange[i] not in used_bases:
+                        conn.connect(loco.bases_inrange[i])
+                except IndexError:
+                    break  # No (or no more) bases in range to consider
+                
+            # Ensure at least one active connection
+            conns = [c for c in lconns if c.connected() is True]
+            if not conns:
+                err_str = ' skipping msg send/recv - No active comms.'
+                track_log.warn(loco.name + err_str)
+                continue  # Try again next iteration
+
+            # Send status msg over active connections, breaking on first success.
+            status_msg = get_6000_msg(loco)
+            for conn in conns:
+                try:
+                    conn.send(status_msg)
+                    info_str = ' - Sent status msg over ' + conn.conn_to.name
+                    track_log.info(loco.name + info_str)
+                except Exception as e:
+                    track_log.warn(loco.name + ' send failed: ' + str(e))
+                    
+            # Fetch incoming cad msgs over active connections, breaking on success.
+            for conn in conns:
+                cad_msg = None
+                try:
+                    cad_msg = conn.fetch(loco.emp_addr)
+                except Queue.Empty:
+                    break  # No msgs (or no more msgs) to receive.
+                except Exception as e:
+                    track_log.warn(loco.name + ' fetch failed: ' + str(e))
+                    continue  # Try the next connecion
+
+                # Process cad msg, if msg and if actually for this loco
+                if cad_msg and cad_msg.payload.get('ID') == loco.ID:
+                    try:
+                        # TODO: Update track restrictions based on msg
+                        track_log.info(loco.name + ' - CAD msg processed.')
+                    except:
+                        track_log.error(loco.name + ' - Received invalid CAD msg.')
+                    break  # Either way, the msg was fetched # TODO: ACK w/broker?
+            else:
+                err_str = ' - active connections exist, but msg fetch/recv failed.'
+                track_log.error(loco.name + err_str)
 
 
 def base_messaging(self):
@@ -615,3 +649,9 @@ def wayside_messaging(self):
     """ Real-time simulation of a wayside's messaging system
     """
     raise NotImplementedError
+
+
+# debug:
+# if __name__ == '__main__':
+#     sim = TrackSim()
+#     sim.start()

@@ -5,10 +5,10 @@
 
 from datetime import datetime, timedelta
 
-from lib_app import bos_log, dep_install
+from lib_app import dep_install
 from lib_track import CONN_TIMEOUT
 
-# Attempt to import 3rd party module and prompt for install on fail
+# Attempt to import 3rd party modules, prompting for install on fail.
 try:
     from flask_googlemaps import Map
 except:
@@ -151,7 +151,7 @@ def get_locos_table(track):
     outter = WebTable(col_headers=[' ID', ' Status'])
 
     timenow = datetime.now()
-    delta = timedelta(seconds=CONN_TIMEOUT)  
+    delta = timedelta(seconds=CONN_TIMEOUT)  # TODO: Move timeout to Connection
     for loco in sorted(track.locos.values(), key=lambda x: x.ID):
         # Last seen row value
         lastseentime = track.get_lastseen(loco)
@@ -161,7 +161,7 @@ def get_locos_table(track):
 
             if delta < timenow - lastseentime:
                 lastseen_css = DOWN
-                loco.disconnect()  # TODO: Move timeout into sim
+                loco.disconnect()  # TODO: Move timeout to Connection
             else:
                 lastseen_css = UP
         else:
