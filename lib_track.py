@@ -482,13 +482,12 @@ class TrackSim(multiprocessing.Process):
     """
     def __init__(self):
         multiprocessing.Process.__init__(self)
-        self.timeq = multiprocessing.Queue()
+        self.timeq = multiprocessing.Queue()  # Input queue for "time speed"
 
     def run(self):
         track_log.info('Track Sim Starting...')
         track = Track()  # The track contains all it's devices and locos.
-        
-        time_icand = 2  # Sim "time speed" multiplier. Updated via self.timeq 
+        time_icand = 1  # "time speed" multiplier. Updated via self.timeq 
 
         # Start each track componenet-device's simulation thread
         # These devices exists "on" the track and simulate their own 
@@ -501,8 +500,10 @@ class TrackSim(multiprocessing.Process):
         while True:
             for l in track.locos.values():
                 try:
+                    # Update the "time speed" if an update is waiting
                     time_icand = self.timeq.get_nowait()
-                    print('******' + str(time_icand))
+                    print('*** Time Multiplier Set:' + str(time_icand))  # debug
+                    track_log.info('Time Multiplier Set: ' + str(time_icand))
                 except Queue.Empty:
                     pass
 
