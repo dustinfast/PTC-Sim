@@ -638,17 +638,17 @@ class TrackSim(Process):
                 err_str = ' - active connections exist, but msg fetch/recv failed.'
                 track_log.error(loco.name + err_str)
 
+    @staticmethod
+    def base_messaging(self):
+        """ Real-time simulation of a base station's messaging system
+        """
+        raise NotImplementedError
 
-def base_messaging(self):
-    """ Real-time simulation of a base station's messaging system
-    """
-    raise NotImplementedError
-
-
-def wayside_messaging(self):
-    """ Real-time simulation of a wayside's messaging system
-    """
-    raise NotImplementedError
+    @staticmethod
+    def wayside_messaging(self):
+        """ Real-time simulation of a wayside's messaging system
+        """
+        raise NotImplementedError
 
 
 # debug:
