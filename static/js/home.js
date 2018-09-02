@@ -100,8 +100,8 @@ function _get_content_async() {
             $('.shuffleable').each(function (i, obj) {
                 if (needs_txtshuffle.indexOf($(this).attr('id')) != -1) {
                     $(this).shuffleLetters({
-                        "step": 4,
-                        "fps": 45
+                        "step": 6,
+                        "fps": 35
                     });
                 }
             });
