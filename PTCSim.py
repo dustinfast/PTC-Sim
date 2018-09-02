@@ -115,7 +115,7 @@ def _home_get_async_content():
         loco = bos.track.locos[loco_name.replace('Loco ', '')]
         status_map = get_status_map(bos.track, tracklines, loco)
         conn_lines = get_loco_connlines(bos.track, loco)
-        return flask.jsonify(locos_table=locos_table, 
+        return flask.jsonify(locos_table=locos_table,
                              status_map=status_map.as_json(),
                              loco_connlines=conn_lines)
     else:

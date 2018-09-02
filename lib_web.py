@@ -95,7 +95,7 @@ class WebTable:
 
         return html_table
 
-    def add_row(self, cells, css=None, onclick=None, row_id=None):
+    def add_row(self, cells, css_class=None, onclick=None, row_id=None):
         """ Adds a row of the given cells (a list of cells) and html properties.
             Ex usage: add_row([cell('hello'), cell('world')], onclick=DoHello())
         """
@@ -103,13 +103,13 @@ class WebTable:
         
         if row_id:
             row_str += ' id="' + row_id + '"'
-        if not css:
-            css = ''
+        if not css_class:
+            css_class = ''
         if onclick:
             row_str += ' onclick="' + onclick + '"'
-            css = 'clickable ' + css
-        if css:
-            row_str += ' class="' + css + '"'
+            css_class = 'clickable ' + css_class
+        if css_class:
+            row_str += ' class="' + css_class + '"'
 
         row_str += '>'
         row_str += ''.join([c for c in cells])
@@ -118,18 +118,18 @@ class WebTable:
         self._rows.append(row_str)
 
 
-def cell(content, colspan=None, css=None):
+def cell(content, colspan=None, css_class=None):
     """ Returns the given parameters as a well-formed HTML table cell tag.
         content: (str) The cell's inner content. Ex: Hello World!
         colspan: (int) HTML colspan tag content.
-        css  : (str) HTML css class.
+        css_class  : (str) HTML css class.
     """
     cell_str = '<td'
 
     if colspan:
         cell_str += ' colspan=' + str(colspan)
-    if css:
-        cell_str += ' class="' + css + '"'
+    if css_class:
+        cell_str += ' class="' + css_class + '"'
 
     cell_str += '>' + content + '</td>'
     
@@ -153,20 +153,21 @@ def get_locos_table(track):
     timenow = datetime.now()
     delta = timedelta(seconds=CONN_TIMEOUT)  # TODO: Move timeout to Connection
     for loco in sorted(track.locos.values(), key=lambda x: x.ID):
-        # Last seen row value
+        # Last seen cell value and css class
         lastseentime = track.get_lastseen(loco)
+        lastseen_css = 'shuffleable '  # Denote possible client-side txt shuffle
         if lastseentime:
             lastseen = str(loco.coords.marker)
             lastseen += ' @ ' + webtime(lastseentime)
 
             if delta < timenow - lastseentime:
-                lastseen_css = DOWN
+                lastseen_css += DOWN
                 loco.disconnect()  # TODO: Move timeout to Connection
             else:
-                lastseen_css = UP
+                lastseen_css += UP
         else:
             lastseen = 'N/A'
-            lastseen_css = DOWN
+            lastseen_css += DOWN
 
         # Connection interface row values
         one_flag = False  # denotes at least one conn up
@@ -192,7 +193,7 @@ def get_locos_table(track):
         inner.add_row(connrow_cells)
 
         # -- Last seen row (colspan=all cols of connection status row)
-        inner.add_row([cell('<b>Last Seen Milepost/Time</b>', colspan=2)])
+        inner.add_row([cell('<b>Last Msg Recvc Time</b>', colspan=2)])
         inner.add_row([cell(lastseen, max_colspan, lastseen_css)])
 
         outter.add_row([cell(loco.ID), cell(inner.html())], 

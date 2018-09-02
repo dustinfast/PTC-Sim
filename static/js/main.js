@@ -3,7 +3,7 @@
 /// Author: Dustin Fast, 2018
 
 // Sends a single key/value pair back to the server to update the corresponding
-// server-side variable (having the name given by key) accordingly.
+// server-side variable having the name given by the key.
 function main_set_sessionvar_async(key, value) {
     $.ajax({
         url: $SCRIPT_ROOT + '/_set_sessionvar',

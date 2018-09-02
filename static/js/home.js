@@ -67,7 +67,7 @@ function _get_content_async() {
         data: JSON.stringify({ 'loco_name': curr_loco_name }),
         timeout: 1000,
 
-        error: function (jqXHR, textStatus, errorThrown) { //TODO: declare in main.js
+        error: function (jqXHR, textStatus, errorThrown) { //TODO: abstract to main.js
             if (textStatus === "timeout") {
                 console.log('Content refresh timed out wait for server.');
             }
@@ -79,12 +79,17 @@ function _get_content_async() {
                 return;
             }
             start_time = performance.now();  // debug
-
-            // Refresh locos table and update loco selection border if needed
+            
+            // Refresh locos table, update loco selection border if needed
             $('#locos-table').html(data.locos_table);
             if (curr_loco_name) {
                 document.getElementById(curr_loco_name).className = 'clicked';
             }
+
+            // Do the shuffle effect for each elemenet of class 'shuffle'
+            $('.shuffle').each(function (i, obj) {
+                $(this).shuffleLetters();
+            });
 
             // Rm all existing map markers and polylines before we replace them
             status_map_markers.forEach(function (marker) {
@@ -210,7 +215,7 @@ function _async_interval (refresh_interval) {
     // Update control panel refresh interval display
     disp_val = refresh_interval / 1000  // Back to seconds for display
     document.getElementById('refresh-val').innerHTML = '&nbsp;' + disp_val + 's';
-
+    // TODO: $('#refresh-val').innerHTML = '&nbsp;' + disp_val + 's';
     return setinterval;
 }
 
@@ -240,6 +245,7 @@ function home_start_async() {
     on_interval = _async_interval(refresh_slider.value * 1000) // Converting to ms
     document.getElementById('time-icand').innerHTML = '&nbsp;' + time_slider.value + '%';
     document.getElementById('refresh-val').innerHTML = '&nbsp;' + refresh_slider.value + 's';
+    // TODO: $("#time-icand").innerHTML = '&nbsp;' + time_slider.value + '%';
 }
 
 // AJAX GET
