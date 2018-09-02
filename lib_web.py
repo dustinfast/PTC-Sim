@@ -118,7 +118,7 @@ class WebTable:
         self._rows.append(row_str)
 
 
-def cell(content, colspan=None, css_class=None):
+def cell(content, colspan=None, css_class=None, cell_id=None):
     """ Returns the given parameters as a well-formed HTML table cell tag.
         content: (str) The cell's inner content. Ex: Hello World!
         colspan: (int) HTML colspan tag content.
@@ -126,6 +126,8 @@ def cell(content, colspan=None, css_class=None):
     """
     cell_str = '<td'
 
+    if cell_id:
+            cell_str += ' id="' + cell_id + '"'
     if colspan:
         cell_str += ' colspan=' + str(colspan)
     if css_class:
@@ -145,17 +147,22 @@ def webtime(datetime_obj):
 
 
 def get_locos_table(track):
-    """ Given a track object, returns the locos html table for web display.
+    """ Given a track object, returns two items - The locos html table (str)
+         for web display, and a dict of locoIDs and their lastseen cell
+         contents (used client-side to compare new data w/old.
+         # TODO: Return html as json instead, negating the need for the dict. 
     """
     # Locos table is an outter table consisting of an inner table for each loco
     outter = WebTable(col_headers=[' ID', ' Status'])
 
     timenow = datetime.now()
     delta = timedelta(seconds=CONN_TIMEOUT)  # TODO: Move timeout to Connection
+    lastseens = {}  # { Loco.Name: lastseen }
     for loco in sorted(track.locos.values(), key=lambda x: x.ID):
         # Last seen cell value and css class
         lastseentime = track.get_lastseen(loco)
         lastseen_css = 'shuffleable '  # Denote possible client-side txt shuffle
+        lastseen_id = 'ls-' + loco.Name  # HTML element id for lastseen cell
         if lastseentime:
             lastseen = str(loco.coords.marker)
             lastseen += ' @ ' + webtime(lastseentime)
@@ -168,6 +175,8 @@ def get_locos_table(track):
         else:
             lastseen = 'N/A'
             lastseen_css += DOWN
+        
+        lastseens['ls-' + loco.Name] = lastseen  # Add 'ls-' to match cell id
 
         # Connection interface row values
         one_flag = False  # denotes at least one conn up
@@ -194,13 +203,13 @@ def get_locos_table(track):
 
         # -- Last seen row (colspan=all cols of connection status row)
         inner.add_row([cell('<b>Last Msg Recvc Time</b>', colspan=2)])
-        inner.add_row([cell(lastseen, max_colspan, lastseen_css)])
+        inner.add_row([cell(lastseen, max_colspan, lastseen_css, lastseen_id)])
 
         outter.add_row([cell(loco.ID), cell(inner.html())], 
                        onclick="home_select_loco('" + loco.name + "')",
                        row_id=loco.name)
 
-    return outter.html()
+    return outter.html(), lastseens
 
 
 def get_loco_connlines(track, loco):

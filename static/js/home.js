@@ -79,6 +79,15 @@ function _get_content_async() {
                 return;
             }
             start_time = performance.now();  // debug
+
+            // Denote shuffle effect for cells w/new data since the last refresh
+            $('.shuffleable').each(function (i, obj) {
+                console.log($(this).value());
+                console.log($(this).attr('id'));
+                // if ($(this).attr('id') != data.last_seens[
+            });
+
+            console.log(data)
             
             // Refresh locos table, update loco selection border if needed
             $('#locos-table').html(data.locos_table);

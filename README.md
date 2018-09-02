@@ -46,7 +46,7 @@ PTC-Sim
 |   Procfile - Process definition, for use by hosted environments.
 |   requirements.txt - pipenv dependencies file.
 |   README.md - This document.
-|   PTCSim.py - Starts the PTC-Sim web interface.
+|   sim_bos.py - Starts the Back Office Server and sims, including web interface.
 |
 +---docs - Contains documentation files.
 |
@@ -54,9 +54,9 @@ PTC-Sim
 |
 +---static - Static web content, such as images, css, and js.
 |
-+---templates
-|       home.html - Home page HTML template.
-|       layout.html - Top level HTML template.
++---templates - Flask web templates
+|       home.html - 
+|       layout.html - Top-level container template, including navbar.
 |
 +---track
 |       track_bases.json - JSON representation of the track's radio base stations.
