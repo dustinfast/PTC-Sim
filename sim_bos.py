@@ -107,7 +107,7 @@ def _home_get_async_content():
     # print('** ' + str(flask.session['bos_id']))  # Debug
     bos = bos_sessions[flask.session['bos_id']]
 
-    locos_table, last_seens = get_locos_table(bos.track)
+    locos_table, shuffle_data = get_locos_table(bos.track)
     tracklines = get_tracklines(bos.track)
     loco_name = flask.request.json['loco_name']  # 'Loco XXXX'
 
@@ -117,14 +117,14 @@ def _home_get_async_content():
         conn_lines = get_loco_connlines(bos.track, loco)
 
         return flask.jsonify(locos_table=locos_table,
-                             last_seens=last_seens,
+                             shuffle_data=shuffle_data,
                              status_map=status_map.as_json(),
                              loco_connlines=conn_lines)
     else:
         status_map = get_status_map(bos.track, tracklines)
         
         return flask.jsonify(locos_table=locos_table,
-                             last_seens=last_seens,
+                             shuffle_data=shuffle_data,
                              status_map=status_map.as_json())
 
 

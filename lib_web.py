@@ -23,9 +23,8 @@ ORANGE =  '#fe9e60'
 GRAY = '#7a7a52'
 
 # TODO: CSS class for TABLE_TAG instead of this mess
-TABLE_TAG = '<table border="1px" style="font-size: 12px;" class="'
-TABLE_TAG += 'table-condensed table table-striped table-bordered no-footer" '
-TABLE_TAG += 'width="95%" cellspacing="0">'
+TABLE_TAG = '<table class="'
+TABLE_TAG += 'table-condensed table table-striped table-bordered no-footer">'
 
 WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 IMAGE_PATH = '/static/img/'
@@ -41,9 +40,9 @@ MAP_TRACKLINE_WARN = ORANGE
 MAP_TRACKLINE_DOWN = RED
 
 # CSS class name constants
-UP = 'up'
-WARN = 'warn'
-DOWN = 'down'
+UP = 'up shuffleable'
+WARN = 'warn shuffleable'
+DOWN = 'down shuffleable'
 
 
 class Polyline(object):
@@ -148,68 +147,73 @@ def webtime(datetime_obj):
 
 def get_locos_table(track):
     """ Given a track object, returns two items - The locos html table (str)
-         for web display, and a dict of locoIDs and their lastseen cell
-         contents (used client-side to compare new data w/old.
-         # TODO: Return html as json instead, negating the need for the dict. 
+         for web display, and a dict of cell IDs and their contents, from l to
+         r, for use client-side to determine if shuffle txt effect applied.
+         # TODO: Return html as json and render from a template instead, thus
+         negating the need for the dict. 
     """
+    shuffle_data = {}  # { CELLID: value }
+    
     # Locos table is an outter table consisting of an inner table for each loco
     outter = WebTable(col_headers=[' ID', ' Status'])
 
     timenow = datetime.now()
     delta = timedelta(seconds=CONN_TIMEOUT)  # TODO: Move timeout to Connection
-    lastseens = {}  # { Loco.Name: lastseen }
     for loco in sorted(track.locos.values(), key=lambda x: x.ID):
+        # Connection interface row values and css class
+        one_flag = False  # denotes at least one conn up
+        conn_disp = {UP: [], DOWN: [], WARN: []}
+        for c in loco.conns.values():
+            conn_html_id = loco.name + ' ' + c.ID
+            if c.conn_to:
+                shuffle_data[conn_html_id] = c.conn_to.ID
+                conn_disp[UP].append((conn_html_id, c.conn_to.ID))
+                one_flag = True
+            else:
+                shuffle_data[conn_html_id] = 'N/A'
+
+                if one_flag:
+                    conn_disp[WARN].append((conn_html_id, 'N/A'))
+                else:
+                    conn_disp[DOWN].append((conn_html_id, 'N/A'))
+
         # Last seen cell value and css class
-        lastseentime = track.get_lastseen(loco)
-        lastseen_css = 'shuffleable '  # Denote possible client-side txt shuffle
-        lastseen_id = 'ls-' + loco.Name  # HTML element id for lastseen cell
+        lastseentime = track.get_lastseen(loco) 
+        lastseen_html_id = loco.name + ' lastseen'
         if lastseentime:
             lastseen = str(loco.coords.marker)
             lastseen += ' @ ' + webtime(lastseentime)
 
             if delta < timenow - lastseentime:
-                lastseen_css += DOWN
+                lastseen_css = DOWN
                 loco.disconnect()  # TODO: Move timeout to Connection
             else:
-                lastseen_css += UP
+                lastseen_css = UP
         else:
             lastseen = 'N/A'
-            lastseen_css += DOWN
-        
-        lastseens['ls-' + loco.Name] = lastseen  # Add 'ls-' to match cell id
+            lastseen_css = DOWN
 
-        # Connection interface row values
-        one_flag = False  # denotes at least one conn up
-        conn_disp = {UP: [], DOWN: [], WARN: []}
-        for c in loco.conns.values():
-            if c.conn_to:
-                conn_disp[UP].append(c.conn_to.ID)
-                one_flag = True
-            else:
-                if one_flag:
-                    conn_disp[WARN].append('N/A')
-                else:
-                    conn_disp[DOWN].append('N/A')
+        shuffle_data[lastseen_html_id] = lastseen
 
         # Begin building inner table --
         inner = WebTable(col_headers=[c for c in loco.conns.keys()])
 
         # -- Connection status row
-        connrow_cells = [cell(conn, 1, UP) for conn in conn_disp[UP]]
-        connrow_cells += [cell(conn, 1, DOWN) for conn in conn_disp[DOWN]]
-        connrow_cells += [cell(conn, 1, WARN) for conn in conn_disp[WARN]]
+        connrow_cells = [cell(conn[1], 1, UP, conn[0]) for conn in conn_disp[UP]]
+        connrow_cells += [cell(conn[1], 1, WARN, conn[0]) for conn in conn_disp[WARN]]
+        connrow_cells += [cell(conn[1], 1, DOWN, conn[0]) for conn in conn_disp[DOWN]]
         max_colspan = len(connrow_cells)
         inner.add_row(connrow_cells)
 
         # -- Last seen row (colspan=all cols of connection status row)
         inner.add_row([cell('<b>Last Msg Recvc Time</b>', colspan=2)])
-        inner.add_row([cell(lastseen, max_colspan, lastseen_css, lastseen_id)])
+        inner.add_row([cell(lastseen, max_colspan, lastseen_css, lastseen_html_id)])
 
-        outter.add_row([cell(loco.ID), cell(inner.html())], 
+        outter.add_row([cell(loco.ID), cell(inner.html())],
                        onclick="home_select_loco('" + loco.name + "')",
                        row_id=loco.name)
 
-    return outter.html(), lastseens
+    return outter.html(), shuffle_data
 
 
 def get_loco_connlines(track, loco):

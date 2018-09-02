@@ -132,8 +132,8 @@ class Loco(TrackDevice):
         self.bases_inrange = []
         self.bases = []
 
-        self.conns = {'Radio1': Connection('Radio1', timeout=CONN_TIMEOUT),
-                      'Radio2': Connection('Radio2', timeout=CONN_TIMEOUT)}
+        self.conns = {'Radio 1': Connection('Radio 1', timeout=CONN_TIMEOUT),
+                      'Radio 2': Connection('Radio 2', timeout=CONN_TIMEOUT)}
 
         self.sim = DeviceSim(self, 
                              [TrackSim.loco_movement,

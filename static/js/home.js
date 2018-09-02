@@ -28,8 +28,9 @@ var refresh_interval = 5000    // AJAX call interval. Defines status resolution
 var on_interval = null;        // Ref  to setInterval function, for clearing it
 
 
-// Locos table loco click handler - If selecting same loco as prev selected, 
+// Locos table-row click handler - If selecting same loco as prev selected, 
 // toggles selection off, else sets the selected loco as the new selection.
+// Selected locos get their table border highlighted & persistent infoboxes
 function home_select_loco(loco_name) {
     // Handle updating the persist var
     old_may_persist = may_persist_loco;
@@ -81,23 +82,28 @@ function _get_content_async() {
             start_time = performance.now();  // debug
 
             // Denote shuffle effect for cells w/new data since the last refresh
+            needs_txtshuffle = []
             $('.shuffleable').each(function (i, obj) {
-                console.log($(this).value());
-                console.log($(this).attr('id'));
-                // if ($(this).attr('id') != data.last_seens[
+                id = $(this).attr('id')
+                if ($(this).text() != data.shuffle_data[id]) {
+                    needs_txtshuffle.push(id);
+                }
             });
-
-            console.log(data)
             
-            // Refresh locos table, update loco selection border if needed
+            // Refresh locos table, updating loco selection border if needed
             $('#locos-table').html(data.locos_table);
             if (curr_loco_name) {
                 document.getElementById(curr_loco_name).className = 'clicked';
             }
 
-            // Do the shuffle effect for each elemenet of class 'shuffle'
-            $('.shuffle').each(function (i, obj) {
-                $(this).shuffleLetters();
+            // Do the shuffle effect for each element id in needs_txtshuffle
+            $('.shuffleable').each(function (i, obj) {
+                if (needs_txtshuffle.indexOf($(this).attr('id')) != -1) {
+                    $(this).shuffleLetters({
+                        "step": 4,
+                        "fps": 45
+                    });
+                }
             });
 
             // Rm all existing map markers and polylines before we replace them

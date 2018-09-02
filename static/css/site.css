@@ -32,7 +32,6 @@ body {
 
 .clickable:hover {
     border-style:  dotted;
-    border-style:  solid;
     border-color: blue;
 }
 
@@ -42,6 +41,13 @@ body {
     top: 5px;
     padding-left:3em;
     border: 1px solid #000;
+}
+
+#locos-table {
+    border-width: thin;
+    font-size: 12px;
+    width: 100%;
+    padding: 0px;
 }
 
 /* Display status highlights */
