@@ -73,7 +73,7 @@ class PersistInfobox {
 persist_infobox = new PersistInfobox();
 
 // Locos table click handler -
-// If clicking currently selected loco, toggles selection off, else toggle it on
+// Onclick currently selected loco, toggles selection off, else toggle it on.
 function home_select_loco(loco_name) {
     if (curr_loco == loco_name) {
         curr_loco = null;
@@ -86,7 +86,7 @@ function home_select_loco(loco_name) {
         }
     }
 
-    _update_content_async(); // Refresh the pages dynamic content
+    _update_content_async(); // Refresh the page's dynamic content
 }
     
 // Refresh pages asynchronous content -
@@ -168,17 +168,29 @@ function _update_content_async() {
             $.each(data.status_map.markers, function (i) {
                 // Note: marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
+                var marker_icon = data.status_map.markers[i].iconpath
 
+                // Rotate loco icons according to heading. 
+                // This works but is doesn't show icon until next refresh 
+                // and doesn't rotate on center
+                // if (marker_title.includes('Loco')) {
+                //     marker_icon = RotateIcon
+                //         .makeIcon(data.status_map.markers[i].iconpath)
+                //         .setRotation({ deg: data.status_map.markers[i].rotation })
+                //         .getUrl()
+                // }
+                
                 // Init the marker object
                 var marker = new google.maps.Marker({
                     position: new google.maps.LatLng(
                         data.status_map.markers[i].lat,
                         data.status_map.markers[i].lng
                     ),
-                    icon: data.status_map.markers[i].icon,
+                    icon: marker_icon,
                     title: marker_title,
+                    // TODO: animation: google.maps.Animation.BOUNCE,
+                    // TODO: draggable: true,
                     map: status_map
-                    // TODO: heading
                 });
                 
                 // Marker's infobox. Note it is only 'attached' on open
@@ -192,11 +204,11 @@ function _update_content_async() {
                     // if this infobox is currently open, close it
                     if (persist_infobox.is_for_device(marker.title)) {
                         persist_infobox.close();
-                    // else, open it, closing the open one first, if any
+                    // else open it, closing the currently open one first, if any
                     } else {
                         persist_infobox.close();
                         persist_infobox.set(infobox, marker); 
-                        persist_infobox.open(status_map);
+                        persist_infobox.open(status_map);  // TODO: combine with set
                     }
                 });
 
@@ -248,7 +260,7 @@ function _async_interval (refresh_interval) {
     }, refresh_interval);
 
     // Update control panel refresh interval display
-    disp_val = refresh_interval / 1000  // Back to seconds for display
+    disp_val = refresh_interval / 1000          // Back to seconds for display
     $('#refresh-val').html('&nbsp;' + disp_val + 's');
     return setinterval;
 }
@@ -262,12 +274,12 @@ function home_start_async() {
     refresh_disp = refresh_slider.val() + 's';
 
     time_slider.on('input', function () {
-       new_val = $(this).val() / 100              // Convert percent to decimal
+       new_val = $(this).val() / 100            // Convert percent to decimal
        main_set_sessionvar_async('time_icand', new_val); // from main.js
         $('#time-icand').html('&nbsp;' + $(this).val() + '%');
     });
     refresh_slider.on('input', function () {
-        new_val = $(this).val() * 1000             // Convert to ms
+        new_val = $(this).val() * 1000          // Convert to ms
         clearInterval(on_interval);             // Stop current setInterval
         on_interval = _async_interval(new_val); // Start new setInterval
     });
@@ -280,3 +292,39 @@ function home_start_async() {
     $('#time-icand').html('&nbsp;' + time_slider.val() + '%');
     $('#refresh-val').html('&nbsp;' + refresh_slider.val() + 's');
 }
+
+
+// From https://code.i-harness.com/en/q/67c4e5
+class RotateIcon {
+    constructor(options) {
+        this.options = options || {};
+        this.rImg = options.img || new Image();
+        this.rImg.src = this.rImg.src || this.options.url || '';
+        this.options.width = this.options.width || this.rImg.width || 52;
+        this.options.height = this.options.height || this.rImg.height || 60;
+        var canvas = document.createElement("canvas");
+        canvas.width = this.options.width;
+        canvas.height = this.options.height;
+        this.context = canvas.getContext("2d");
+        this.canvas = canvas;
+    }
+    setRotation(options) {
+        var canvas = this.context, angle = options.deg ? options.deg * Math.PI / 180 :
+            options.rad, centerX = this.options.width / 2, centerY = this.options.height / 2;
+        canvas.clearRect(0, 0, this.options.width, this.options.height);
+        canvas.save();
+        canvas.translate(centerX, centerY);
+        canvas.rotate(angle);
+        canvas.translate(-centerX, -centerY);
+        canvas.drawImage(this.rImg, 0, 0);
+        canvas.restore();
+        return this;
+    }
+    getUrl() {
+        return this.canvas.toDataURL('image/png');
+    }
+    static makeIcon(url) {
+        return new RotateIcon({ url: url });
+    }
+}
+

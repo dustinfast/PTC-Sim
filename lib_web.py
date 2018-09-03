@@ -153,11 +153,9 @@ def webtime(datetime_obj):
 
 
 def get_locos_table(track):
-    """ Given a track object, returns two items - The locos html table (str)
-         for web display, and a dict of cell IDs and their contents, from l to
-         r, for use client-side to determine if shuffle txt effect applied.
-         # TODO: Return html as json and render from a template instead, thus
-         negating the need for the dict. 
+    """ Given a track object, returns two items - The locos html table for
+         web display, and a dict of cell IDs and their contents, from l to r,
+         for use client-side to determine if shuffle txt effect needs applied.
     """
     shuffle_data = {}  # { CELLID: value }
     
@@ -189,11 +187,11 @@ def get_locos_table(track):
         lastseen_html_id = loco.name + ' lastseen'
         if lastseentime:
             lastseen = webtime(lastseentime)
-            lastseen += ' @ MP ' + str(loco.coords.marker)
+            lastseen += ' @ ' + str(loco.coords.marker)
 
             if delta < timenow - lastseentime:
                 lastseen_css = DOWN
-                loco.disconnect()  # TODO: Move timeout to Connection
+                loco.disconnect()
             else:
                 lastseen_css = UP
         else:
@@ -213,7 +211,7 @@ def get_locos_table(track):
         inner.add_row(connrow_cells)
 
         # -- Last seen row (colspan=all cols of connection status row)
-        inner.add_row([cell('<b>Last Msg Recveived</b>', colspan=2)])
+        inner.add_row([cell('<b>Last Msg Recveived @ MP</b>', colspan=2)])
         inner.add_row([cell(lastseen, max_colspan, lastseen_css, lastseen_html_id)])
 
         outter.add_row([cell(loco.ID), cell(inner.html())],
@@ -307,11 +305,14 @@ def get_status_map(track, tracklines, loco=None):
         elif [c for c in l.conns.values() if not c.connected()]:
             map_icon = MAP_LOCO_WARN
 
+        # TODO: Move to track lib as a class
         marker = {'title': l.name,
-                  'icon': map_icon,
+                  'iconpath': map_icon,
                   'lat': l.coords.lat,
                   'lng': l.coords.long,
+                  'rotation': int(l.heading),
                   'infobox': info_tbl.html()}
+        
         map_markers.append(marker)
 
     # -- Bases:
@@ -330,9 +331,10 @@ def get_status_map(track, tracklines, loco=None):
         #     map_icon = MAP_BASE_WARN
 
         marker = {'title': base.name,
-                  'icon': map_icon,
+                  'iconpath': map_icon,
                   'lat': base.coords.lat,
                   'lng': base.coords.long,
+                  'rotation': 0,
                   'infobox': info_tbl.html()}
         map_markers.append(marker)
         base_points.append((base.coords.lat, base.coords.long))
