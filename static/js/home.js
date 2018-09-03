@@ -86,13 +86,13 @@ function home_select_loco(loco_name) {
         }
     }
 
-    _get_content_async(); // Refresh the pages dynamic content
+    _update_content_async(); // Refresh the pages dynamic content
 }
     
 // Refresh pages asynchronous content -
 // If curr_loco, only that loco is shown. Else, all locos shown
 // Note: Can't seem to get JQuery shorthand working in ajax call (JSON trashed)
-function _get_content_async() {
+function _update_content_async() {
     $.ajax({
         url: $SCRIPT_ROOT + '/_home_get_async_content',
         type: 'POST',
@@ -101,7 +101,7 @@ function _get_content_async() {
         timeout: 1000,
 
         error: function (jqXHR, textStatus, errorThrown) {
-            if (textStatus === "timeout") {
+            if (textStatus === 'timeout') {
                 console.log('Content refresh request timed out.');
             }
         },
@@ -129,12 +129,11 @@ function _get_content_async() {
             }
 
             // Do txt shuffle effect for each element id in needs_txtshuffle
-            // TODO: Fix perf of txt shuffle
             $('.shuffleable').each(function (i, obj) {
                 if (needs_txtshuffle.indexOf($(this).attr('id')) != -1) {
                     $(this).shuffleLetters({
-                        "step": 6,
-                        "fps": 35
+                        'step': 6,
+                        'fps': 35
                     });
                 }
             });
@@ -168,7 +167,7 @@ function _get_content_async() {
             
             // Set map loco and base markers
             $.each(data.status_map.markers, function (i) {
-                // Note that marker_title matches curr_loco's table ID.
+                // Note: marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
 
                 // Init the marker object
@@ -179,11 +178,11 @@ function _get_content_async() {
                     ),
                     icon: data.status_map.markers[i].icon,
                     title: marker_title,
-                    map: status_map  // TODO: status_map
+                    map: status_map
                     // TODO: heading
                 });
                 
-                // Marker's infobox. Note it is only "attached" on open
+                // Marker's infobox. Note it is only 'attached' on open
                 var infobox = new google.maps.InfoWindow({
                     content: data.status_map.markers[i].infobox,
                 });
@@ -191,8 +190,8 @@ function _get_content_async() {
                 // Define onclick behavior for the marker (toggle open/close)
                 // Note that we only ever allow one open infobox at a time
                 marker.addListener('click', function () {
-                    // if this infobox is currently open, close it // TODO: this?
-                    if (infobox.getMap()) { //TODO: if persist title == curr title
+                    // if this infobox is currently open, close it
+                    if (persist_infobox.is_for_device(marker.title)) { //TODO: if persist title == curr title
                         persist_infobox.close();
                     // else, open it, closing the open one first, if any
                     } else {
@@ -247,28 +246,27 @@ function _build_maplegend() {
 // The setInterval handler. Retruns a ref to the actual setInterval()
 function _async_interval (refresh_interval) {
         var setinterval = setInterval(function () {
-            _get_content_async();
+            _update_content_async();
     }, refresh_interval);
 
     // Update control panel refresh interval display
     disp_val = refresh_interval / 1000  // Back to seconds for display
-    document.getElementById('refresh-val').innerHTML = '&nbsp;' + disp_val + 's';
-    // TODO: $('#refresh-val').innerHTML = '&nbsp;' + disp_val + 's';
+    $('#refresh-val').html('&nbsp;' + disp_val + 's');
     return setinterval;
 }
 
 // Called at the end of main.html: Registers listeners then calls _async_interval()
 function home_start_async() {
     // Register slider onchange listeners and define their behavior
-    var time_slider = document.getElementById("temporal-range")
-    var refresh_slider = document.getElementById("refresh-range");
+    var time_slider = document.getElementById('temporal-range')  // TODO: Convert to jquery
+    var refresh_slider = document.getElementById('refresh-range');
     time_disp = refresh_slider.value + '%';
     refresh_disp = refresh_slider.value + 's';
 
     time_slider.oninput = function () {
        new_val = this.value / 100              // Convert percent to decimal
        main_set_sessionvar_async('time_icand', new_val); // from main.js
-       document.getElementById('time-icand').innerHTML = '&nbsp;' + this.value + '%';
+        $('#time-icand').html('&nbsp;' + this.value + '%');
     }
     refresh_slider.oninput = function () {
         new_val = this.value * 1000             // Convert to ms
@@ -279,10 +277,8 @@ function home_start_async() {
     _build_maplegend(); // Init the map legend
 
     // Get the main content and update the page
-    _get_content_async();
+    _update_content_async();
     on_interval = _async_interval(refresh_slider.value * 1000) // Converting to ms
-    document.getElementById('time-icand').innerHTML = '&nbsp;' + time_slider.value + '%';
-    document.getElementById('refresh-val').innerHTML = '&nbsp;' + refresh_slider.value + 's';
-    // TODO: $("#time-icand").innerHTML = '&nbsp;' + time_slider.value + '%';
+    $('#time-icand').html('&nbsp;' + time_slider.value + '%');
+    $('#refresh-val').html('&nbsp;' + refresh_slider.value + 's');
 }
-
