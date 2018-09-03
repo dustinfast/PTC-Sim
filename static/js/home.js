@@ -19,12 +19,13 @@ var LOCO_NO_CONNLINE = {
 };
 
 // Globals
-var curr_loco = null;          // Selected loco. Ex: 'Loco 1001'
-var curr_polylines = [];       // A list of all visible map polylines
-var time_icand = 1             // Simulation speed multiplicand
-var refresh_interval = 5000    // Async refresh interval
-var on_interval = null;        // Ref to the active setInterval function
-var persist_infobox = null;    // The map infobox to persist between refreshes
+var curr_loco = null;           // Selected loco. Ex: 'Loco 1001'
+var curr_polylines = [];        // A list of all visible map polylines
+var time_icand = 1              // Simulation speed multiplicand
+var refresh_interval = 5000     // Async refresh interval
+var on_interval = null;         // Ref to the active setInterval function
+var persist_infobox = null;     // The map infobox to persist between refreshes
+var prev_marker_icons = {}      // i'th refresh's icons, to use at refresh i + 1
 
 
 // A Maps infobox & associated marker that persists across async updates.
@@ -77,10 +78,11 @@ function locosTableOnclick(loco_name) {
 
     updateContentAsync(); // Refresh the page's dynamic content
 }
-    
+
+
 // Refresh pages asynchronous content -
 // If curr_loco, only that loco is shown. Else, all locos shown
-// Note: Can't seem to get JQuery shorthand working in ajax call (JSON trashed)
+// Note: Don't use JQuery shorthand here, it trashes the JSON.
 function updateContentAsync() {
     $.ajax({
         url: $SCRIPT_ROOT + '/_home_get_async_content',
@@ -90,14 +92,12 @@ function updateContentAsync() {
         timeout: 1000,
 
         error: function (jqXHR, textStatus, errorThrown) {
-            if (textStatus === 'timeout') {
-                console.log('Content refresh timed out.');
-            }
+                console.warn('Error contacting server for content refresh.');
         },
 
         success: function (data) {
             if (data == 'error') {
-                console.error('Server available but failed returning content.')
+                console.warn('Server-server content refresh error.')
                 return;
             }
             start_time = performance.now();  // debug
@@ -127,7 +127,7 @@ function updateContentAsync() {
                 }
             });
 
-            // Rm all existing map markers and polylines before we replace them
+            // Remove all existing map markers & polylines. We'll replace them.
             status_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
@@ -157,14 +157,46 @@ function updateContentAsync() {
             $.each(data.status_map.markers, function (i) {
                 // Note: marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
+
+                // Non-loco markers just get a rel path to an img
                 var marker_icon = data.status_map.markers[i].iconpath
 
-                // Rotate loco icons according to heading. 
+                // Loco icons get rotated according to heading. 
                 if (marker_title.includes('Loco')) {
-                    marker_icon = {
-                        url: imgRotate(marker_icon, data.status_map.markers[i].rotation),
-                        origin: new google.maps.Point(0, 0),  // image origin
-                        anchor: new google.maps.Point(32, 0)  // from origin
+                    // Save this locos icon to use at during the next
+                    // refresh. Necessary to avoid late img load issues
+                    loadImage(marker_icon)
+                        .then((img) => {
+                            var canvas = document.createElement("canvas");
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+
+                            center_x = img.width / 2;
+                            center_y = img.height / 2;
+                            
+                            context = canvas.getContext("2d");
+                            context.clearRect(0, 0, img.width, img.height);
+                            context.save();          // Push context state
+                            context.translate(center_x, center_y);
+                            context.rotate(data.status_map.markers[i].rotation);
+                            context.translate(-center_x, -center_y);
+                            context.drawImage(img, 0, 0);
+                            context.restore();       // Pop context state
+
+                            rotated_url = canvas.toDataURL("image/png");
+                            rotated_icon = {
+                                url: rotated_url,
+                                origin: new google.maps.Point(0, 0),  // image origin
+                                anchor: new google.maps.Point(32, 0)  // from origin
+                            }
+                            prev_marker_icons[marker_title] = rotated_icon;
+                        })
+                        .catch(error => console.error('ERROR: ' + error));
+
+                    // Populated the current loco icon by consuming it's prev icon
+                    if (prev_marker_icons.hasOwnProperty(marker_title)) {
+                        marker_icon = prev_marker_icons[marker_title];
+                        delete prev_marker_icons[marker_title];
                     }
                 }
 
@@ -224,6 +256,7 @@ function setAsynchInterval (refresh_interval) {
     return setinterval;
 }
 
+
 // TODO:Call on main.html ready
 function startHomeAsyncRefresh() {
     // Register slider onchange listeners and define their behavior
@@ -249,67 +282,3 @@ function startHomeAsyncRefresh() {
     $('#time-icand').html('&nbsp;' + time_slider.val() + '%');
     $('#refresh-val').html('&nbsp;' + refresh_slider.val() + 's');
 }
-
-// Rotates the image at the given url according to rotate_degree
-function imgRotate(img_url, rotate_degrees ){
-    var img = new Image();
-    img.src = img_url;
-    
-    center_x = img.width / 2;
-    center_y = img.height / 2;
-    
-    var canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-
-    var context = canvas.getContext("2d");
-    context.clearRect(0, 0, img.width, img.height);
-    context.save();                          // Push context state
-    context.translate(center_x, center_y);
-    context.rotate(rotate_degrees);
-    context.translate(-center_x, -center_y);
-    context.drawImage(img, 0, 0);
-    context.restore();                      // Pop context state
-
-    return canvas.toDataURL("image/png");
-}
-
-// function loadImage(url) {
-//     return new Promise((resolve, reject) => {
-//         let img = new Image();
-
-//         // Listen for the image onload event (or its error event)
-//         img.addEventListener('load', e => resolve(img));
-//         img.addEventListener('error', () => {
-//             reject(new Error(`Failed to load image's URL: ${url}`));
-//         });
-
-//         // Load the image, triggering the load (or error) events and
-//         // fulfilling (or rejecting) the promise.
-//         img.src = url;
-//     });
-// }
-
-// loadImage(img_url)
-//     .then((img, canvas) => {
-//         center_x = img.width / 2;
-//         center_y = img.height / 2;
-
-//         var canvas = document.createElement("canvas");
-
-//         canvas.width = img.width;
-//         canvas.height = img.height;
-
-//         context = canvas.getContext("2d");
-//         context.clearRect(0, 0, img.width, img.height);
-//         context.save();                          // Push context state
-//         context.translate(center_x, center_y);
-//         context.rotate(rotate_degrees);
-//         context.translate(-center_x, -center_y);
-//         context.drawImage(img, 0, 0);
-//         context.restore();                      // Pop context state
-
-//         console.log('Returning img url');
-//         return canvas.toDataURL("image/png");
-//     })
-//     .catch(error => console.error('ERROR: ' + error));
