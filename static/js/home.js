@@ -1,7 +1,7 @@
-// The javascript library for PTC-Sim's "Home" page.
-// 
-/// Author: Dustin Fast, 2018
-
+/* The javascript for PTC-Sim's home.html
+* 
+* Author: Dustin Fast, 2018
+*/
 
 // Constants
 var LOCO_CONNLINE = {
@@ -18,71 +18,102 @@ var LOCO_NO_CONNLINE = {
     scale: 2
 };
 
-// Page state and obj refs
-var curr_loco_name = null;     // Currently selected loco in the locos table
-var may_persist_loco = null;   // Loco w/infobox to persist bteween refreshes
-var open_infobox_markers = {}; // Markers w/infoboxes to persist btwn refreshes
-var open_infobox = {};         // Currently open infobox: { ID: infoWindow}
+// Globals
+var curr_loco = null;          // Selected locos table loco. Ex: 'Loco 1001'
 var curr_polylines = [];       // A list of all visible status map polylines
 var time_icand = 1             // Simulation speed multiplier, 1 to 10,
-var refresh_interval = 5000    // AJAX call interval. Defines status resolution
-var on_interval = null;        // Ref  to setInterval function, for clearing it
+var refresh_interval = 5000    // async refresh interval / max status resolution
+var on_interval = null;        // Ref to setInterval function, for clearing it
+var persist_infobox = null; // The map infobox to persist btween refreshes
 
 
-// Locos table-row click handler - If selecting same loco as prev selected, 
-// toggles selection off, else sets the selected loco as the new selection.
-// Selected locos get their table border highlighted & persistent infoboxes
+// A Google maps infobox with associated marker. 
+// Handles persisting across asynchronous page content updates.
+class PersistInfobox {
+    constructor(infobox=null, marker=null) {
+        this.infobox = infobox,
+        this.marker = marker
+    }
+
+    set(infobox, marker, map) {
+        this.infobox = infobox,
+        this.marker = marker
+    }
+
+    clear() {
+        this.infobox = null,
+        this.marker = null
+    }
+
+    is_set() {
+        return (!this.infobox);
+    }
+
+    open(map) {
+        if (this.infobox) {
+            this.infobox.open(map, this.marker);
+        }
+    }
+
+    close() {
+        if (this.infobox) {
+            this.infobox.close();
+            this.clear();
+        }
+    }
+
+    is_for_device(device_name) { 
+       return (this.marker && this.marker.title == device_name)
+    }
+    
+    is_loco () {
+        return (this.marker && this.marker.title.includes('Loco'))
+    }
+}
+persist_infobox = new PersistInfobox();
+
+// Locos table click handler -
+// If clicking currently selected loco, toggles selection off, else toggle it on
 function home_select_loco(loco_name) {
-    // Handle updating the persist var
-    // old_may_persist = may_persist_loco;
-    // if (!may_persist_loco && !curr_loco_name) {
-    //     may_persist_loco = loco_name;
-    //     // console.log('set persist1: ' + may_persist_loco);  //debug
-    // } else if (curr_loco_name && may_persist_loco != curr_loco_name) {
-    //     may_persist_loco = null;
-    //     // console.log('set persist2: ' + may_persist_loco);  //debug
-    // } else if (curr_loco_name) {
-    //     may_persist_loco = curr_loco_name;
-    //     // console.log('set persist3: ' + may_persist_loco);  //debug
-    // }
-
-    if (curr_loco_name == loco_name) {
-        curr_loco_name = null;
-        // console.log('set curr1: ' + curr_loco_name);  //debug
+    if (curr_loco == loco_name) {
+        curr_loco = null;
     } else {
-        curr_loco_name = loco_name;
-        // console.log('set curr2: ' + curr_loco_name);  //debug
+        curr_loco = loco_name;
+
+        // If selecting a loco but another loco's infobox is open, clear it.
+        if (persist_infobox.is_loco() && !persist_infobox.is_for_device(loco_name)) {
+            persist_infobox.close();
+        }
     }
 
     _get_content_async(); // Refresh the pages dynamic content
 }
     
-// Refresh the status/overview map, including all bases, lines, etc. Further, if 
-// curr_loco_name is null, all locos are included in the refreshed map. Else,
-// only that loco is included in the refreshed version.
-// Note: Can't seem to get JQuery shorthand working here (trashes the JSON).
+// Refresh pages asynchronous content -
+// If curr_loco, only that loco is shown. Else, all locos shown
+// Note: Can't seem to get JQuery shorthand working in ajax call (JSON trashed)
 function _get_content_async() {
     $.ajax({
         url: $SCRIPT_ROOT + '/_home_get_async_content',
         type: 'POST',
         contentType: 'application/json;charset=UTF-8',
-        data: JSON.stringify({ 'loco_name': curr_loco_name }),
+        data: JSON.stringify({ 'loco_name': curr_loco }),
         timeout: 1000,
 
-        error: function (jqXHR, textStatus, errorThrown) { //TODO: abstract to main.js
+        error: function (jqXHR, textStatus, errorThrown) {
             if (textStatus === "timeout") {
-                console.log('Content refresh timed out wait for server.');
+                console.log('Content refresh request timed out.');
             }
         },
 
         success: function (data) {
             if (data == 'error') {
-                console.error('Server returned error fetching status map.')
+                console.error('Server available but failed returning content.')
                 return;
             }
             start_time = performance.now();  // debug
 
-            // Denote shuffle effect for cells w/new data since the last refresh
+            // Note fields for txt shuffle if having new data since last refresh
             needs_txtshuffle = []
             $('.shuffleable').each(function (i, obj) {
                 id = $(this).attr('id')
@@ -91,13 +122,14 @@ function _get_content_async() {
                 }
             });
             
-            // Refresh locos table, updating loco selection border if needed
+            // Refresh locos table, setting loco selection border if needed
             $('#locos-table').html(data.locos_table);
-            if (curr_loco_name) {
-                document.getElementById(curr_loco_name).className = 'clicked';
+            if (curr_loco) {
+                document.getElementById(curr_loco).className = 'clicked';
             }
 
-            // Do the shuffle effect for each element id in needs_txtshuffle
+            // Do txt shuffle effect for each element id in needs_txtshuffle
+            // TODO: Fix perf of txt shuffle
             $('.shuffleable').each(function (i, obj) {
                 if (needs_txtshuffle.indexOf($(this).attr('id')) != -1) {
                     $(this).shuffleLetters({
@@ -108,6 +140,7 @@ function _get_content_async() {
             });
 
             // Rm all existing map markers and polylines before we replace them
+            // TODO: concat arrays and do one loop
             status_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
@@ -118,7 +151,7 @@ function _get_content_async() {
             });
             curr_polylines = []
 
-            // Set map's loco connection lines as polylines, if any
+            // Create loco conn polylines
             $.each(data.loco_connlines, function (i) {
                 var line = new google.maps.Polyline({
                     path: data.loco_connlines[i],
@@ -147,54 +180,36 @@ function _get_content_async() {
                     icon: data.status_map.markers[i].icon,
                     title: marker_title,
                     map: status_map  // TODO: status_map
+                    // TODO: heading
                 });
                 
-                // Marker's infobox. Note that it is never explicitly attached
-                // and may be "opened" for more than one marker or location.
+                // Marker's infobox. Note it is only "attached" on open
                 var infobox = new google.maps.InfoWindow({
-                    content: data.status_map.markers[i].infobox
+                    content: data.status_map.markers[i].infobox,
                 });
 
-                // Define onclick listener for the marker, to toggle open/close
+                // Define onclick behavior for the marker (toggle open/close)
+                // Note that we only ever allow one open infobox at a time
                 marker.addListener('click', function () {
-                    // if infobox is currently open, close it
-                    if (infobox.getMap()) {
-                        infobox.close()
-                        open_infobox = {}  // unset persist
-
-                    // else, open it
+                    // if this infobox is currently open, close it // TODO: this?
+                    if (infobox.getMap()) { //TODO: if persist title == curr title
+                        persist_infobox.close();
+                    // else, open it, closing the open one first, if any
                     } else {
-                        // Close currently open infobox, if any.
-                        currbox = getFirst(open_infobox);
-                        if (currbox) {
-                            currbox.close();
-                            open_infobox = {}  // unset persist
-                        }
-                        // Open this marker
-                        infobox.open(status_map, marker);
-                        open_infobox[marker_title] = infobox;
+                        persist_infobox.close();
+                        persist_infobox.set(infobox, marker); 
+                        persist_infobox.open(status_map);
                     }
                 });
 
-                // Push the new marker to the map's list of markers
+                // Push the new marker to the map
                 status_map_markers.push(marker);
-                
-                // Handle infobox persistence, based on open_infobox_markers
-            //    if (open_infobox_markers.hasOwnProperty(marker_title)) {
-            //         is_loco = marker_title.includes('Loco ')
-            //        if (is_loco && marker_title == may_persist_loco) {
-            //             // It's the persisting loco
-            //             infobox.open(status_map, marker);
-            //         } else if (is_loco) {
-            //             // Ditch ref so no reopen of unselected loco infoboxes
-            //             delete open_infobox_markers[marker_title]
-            //         } else if (!is_loco) {
-            //             // We reopen all other previously open non-loco infoboxes
-            //             infobox.open(status_map, marker);
-            //         }
-            //     }
             });
+
+            // Reopen the persisting infobox, if any
+            persist_infobox.open(status_map)
             
+            // debug
             duration = performance.now() - start_time;
             console.log('Home Refreshed - client side took: ' + duration);
         }
@@ -202,7 +217,7 @@ function _get_content_async() {
 }
 
 function _build_maplegend() {
-    // TODO: Build legend server-side
+    // TODO: Do this in a cleaner way. Possibly server-side
     imgpath = '/static/img/'
     var icons = {
         greenline: {
@@ -270,26 +285,4 @@ function home_start_async() {
     document.getElementById('refresh-val').innerHTML = '&nbsp;' + refresh_slider.value + 's';
     // TODO: $("#time-icand").innerHTML = '&nbsp;' + time_slider.value + '%';
 }
-
-// AJAX GET
-// function home_get_map_async() {
-//     $.getJSON($SCRIPT_ROOT + '/_home_map_update',
-//         function (data) {
-//             console.log(data.status_map.markers)
-//             });
-//         });
-// }
-
-// AJAX POST
-// function home_loco_select(locoID) {
-//     $.ajax({
-//         url: $SCRIPT_ROOT + '/_home_select_loco',
-//         type: 'POST',
-//         contentType: 'application/json;charset=UTF-8',
-//         data: JSON.stringify({ 'locoID': locoID }),
-//         success: function () {
-//             console.log('success');
-//         }
-//     });
-// }
 

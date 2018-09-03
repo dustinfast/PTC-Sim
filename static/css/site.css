@@ -54,6 +54,17 @@ body {
     margin-bottom: 0px;
 }
 
+ /* Remove Google Maps InfoWindow Close button */
+.gm-style-iw + div {
+    display: none;
+}
+
+.gm-style-iw {
+    text-align:center;
+    padding: 1px !important;
+    margin-bottom: 1px !important;
+}
+
 /* Display status highlights */
 .up {
     background-color: #a0f26d !important;;

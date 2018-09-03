@@ -110,22 +110,19 @@ def _home_get_async_content():
     locos_table, shuffle_data = get_locos_table(bos.track)
     tracklines = get_tracklines(bos.track)
     loco_name = flask.request.json['loco_name']  # 'Loco XXXX'
+    conn_lines = []
 
     if loco_name:
         loco = bos.track.locos[loco_name.replace('Loco ', '')]
         status_map = get_status_map(bos.track, tracklines, loco)
         conn_lines = get_loco_connlines(bos.track, loco)
-
-        return flask.jsonify(locos_table=locos_table,
-                             shuffle_data=shuffle_data,
-                             status_map=status_map.as_json(),
-                             loco_connlines=conn_lines)
     else:
         status_map = get_status_map(bos.track, tracklines)
-        
-        return flask.jsonify(locos_table=locos_table,
-                             shuffle_data=shuffle_data,
-                             status_map=status_map.as_json())
+
+    return flask.jsonify(locos_table=locos_table,
+                         shuffle_data=shuffle_data,
+                         status_map=status_map.as_json(),
+                         loco_connlines=conn_lines)
 
 
 @bos_web.route('/_set_sessionvar', methods=['POST'])
