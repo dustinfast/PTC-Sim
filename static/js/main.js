@@ -20,3 +20,18 @@ function main_set_sessionvar_async(key, value) {
         }
     }
 );}
+
+// Accepts a js object and returns true iff obj is empty. For convenience.
+function isObjEmpty(obj) {
+    for (var k in obj) {
+        if (obj.hasOwnProperty(k))
+            return false;
+    }
+    return true;
+}
+
+function getFirst(obj) {
+    for (var k in obj) {
+        return obj[k];
+    }
+}

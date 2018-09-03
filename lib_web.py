@@ -16,18 +16,14 @@ except:
 
 
 # HTML constants
+WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+IMAGE_PATH = '/static/img/'
+
 GREEN = '#a0f26d'
 RED = '#e60000'
 YELLOW = '#dfd005'
 ORANGE =  '#fe9e60'
 GRAY = '#7a7a52'
-
-# TODO: CSS class for TABLE_TAG instead of this mess
-TABLE_TAG = '<table class="'
-TABLE_TAG += 'table-condensed table table-striped table-bordered no-footer">'
-
-WEBTIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-IMAGE_PATH = '/static/img/'
 
 MAP_LOCO_UP = IMAGE_PATH + 'loco_ico_up.png'
 MAP_LOCO_DOWN = IMAGE_PATH + 'loco_ico_down.png'
@@ -36,10 +32,12 @@ MAP_BASE_UP = IMAGE_PATH + 'base_ico_up.png'
 MAP_BASE_DOWN = IMAGE_PATH + 'base_ico_down.png'
 MAP_BASE_WARN = IMAGE_PATH + 'base_ico_warn.png'
 MAP_TRACKLINE_OK = GREEN
-MAP_TRACKLINE_WARN = ORANGE
 MAP_TRACKLINE_DOWN = RED
+MAP_TRACKLINE_WARN = ORANGE
 
 # CSS class name constants
+TABLE_CSS = 'table-condensed table table-striped table-bordered no-footer'
+INFOBOX = 'infobox-table'
 UP = 'up shuffleable'
 WARN = 'warn shuffleable'
 DOWN = 'down shuffleable'
@@ -66,27 +64,30 @@ class Polyline(object):
 class WebTable:
     """ An HTML Table, with build methods.
     """
-    _default_head_tag = TABLE_TAG
+    _default_css = TABLE_CSS
     
-    def __init__(self, head_tag=None, col_headers=[], title=None):
+    def __init__(self, css_class=None, col_headers=[], title=None):
         """ num_columns: Number of table columns
             col_headers: A list of strings representing table column headings
         """
-        self.title = title
-        self._head_tag = {None: self._default_head_tag}.get(head_tag, head_tag)
+        self._css_class = css_class
         self._header = ''.join(['<th>' + h + '</th>' for h in col_headers])
-        self._footer = '</table>'
+        self._title = title
         self._rows = []
+        self._footer = '</table>'
 
     def html(self):
         """ Returns an html representation of the table.
         """
         html_table = ''
 
-        if self.title:
-            html_table += '<center>' + self.title + '</center>'
+        if self._title:
+            html_table += '<center>' + self._title + '</center>'
 
-        html_table += self._head_tag
+        html_table += '<table class="' + self._default_css
+        if self._css_class:
+            html_table += ' ' + self._css_class
+        html_table += '">'
 
         if self._header:
             html_table += '<thead><tr>'
@@ -187,8 +188,8 @@ def get_locos_table(track):
         lastseentime = track.get_lastseen(loco) 
         lastseen_html_id = loco.name + ' lastseen'
         if lastseentime:
-            lastseen = str(loco.coords.marker)
-            lastseen += ' @ ' + webtime(lastseentime)
+            lastseen = webtime(lastseentime)
+            lastseen += ' @ MP ' + str(loco.coords.marker)
 
             if delta < timenow - lastseentime:
                 lastseen_css = DOWN
@@ -212,7 +213,7 @@ def get_locos_table(track):
         inner.add_row(connrow_cells)
 
         # -- Last seen row (colspan=all cols of connection status row)
-        inner.add_row([cell('<b>Last Msg Recvc Time</b>', colspan=2)])
+        inner.add_row([cell('<b>Last Msg Recveived</b>', colspan=2)])
         inner.add_row([cell(lastseen, max_colspan, lastseen_css, lastseen_html_id)])
 
         outter.add_row([cell(loco.ID), cell(inner.html())],
@@ -293,10 +294,10 @@ def get_status_map(track, tracklines, loco=None):
         # Infobox contents
         tbl_title = l.name
         tbl_headers = ['MP', 'Speed', 'Direction', 'BPP']
-        info_tbl = WebTable(col_headers=tbl_headers, title=tbl_title)
+        info_tbl = WebTable(col_headers=tbl_headers, title=tbl_title, css_class=INFOBOX)
         info_tbl.add_row([cell(str(l.coords.marker)),
                          cell(str(l.speed)), 
-                         cell(l.direction),
+                         cell(l.direction.title()),
                          cell(str(l.bpp))])
 
         # Status icon
