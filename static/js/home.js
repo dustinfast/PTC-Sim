@@ -3,14 +3,14 @@
 * Author: Dustin Fast, 2018
 */
 
-// Constants
+// Consts
+var IMG_PATH = '/static/img/'
 var LOCO_CONNLINE = {
     path: 'M 0, -2 1, 1',
     strokeOpacity: .8,
     strokeColor: '#ffff00', // Yellow
     scale: 2
 };
-
 var LOCO_NO_CONNLINE = {
     path: 'M 0,-1 0,1',
     strokeOpacity: .6,
@@ -19,80 +19,69 @@ var LOCO_NO_CONNLINE = {
 };
 
 // Globals
-var curr_loco = null;          // Selected locos table loco. Ex: 'Loco 1001'
-var curr_polylines = [];       // A list of all visible status map polylines
+var curr_loco = null;          // Selected loco. Ex: 'Loco 1001'
+var curr_polylines = [];       // A list of all visible map polylines
 var time_icand = 1             // Simulation speed multiplicand
-var refresh_interval = 5000    // async refresh interval / max status resolution
-var on_interval = null;        // Ref to setInterval function, for clearing it
-var persist_infobox = null; // The map infobox to persist btween refreshes
+var refresh_interval = 5000    // Async refresh interval
+var on_interval = null;        // Ref to the active setInterval function
+var persist_infobox = null;    // The map infobox to persist between refreshes
 
 
-// A Google maps infobox with associated marker. 
-// Handles persisting across asynchronous page content updates.
+// A Maps infobox & associated marker that persists across async updates.
 class PersistInfobox {
-    constructor(infobox=null, marker=null) {
-        this.infobox = infobox,
-        this.marker = marker
+    constructor() {
+        this.clear();
     }
-
     set(infobox, marker, map) {
-        this.infobox = infobox,
-        this.marker = marker
+        this._infobox = infobox,
+        this._marker = marker
     }
-
     clear() {
-        this.infobox = null,
-        this.marker = null
+        this._infobox = null,
+        this._marker = null
     }
-
-    is_set() {
-        return (!this.infobox);
-    }
-
     open(map) {
-        if (this.infobox) {
-            this.infobox.open(map, this.marker);
+        if (this._infobox) {
+            this._infobox.open(map, this._marker);
         }
     }
-
     close() {
-        if (this.infobox) {
-            this.infobox.close();
+        if (this._infobox) {
+            this._infobox.close();
             this.clear();
         }
     }
-
     is_for_device(device_name) { 
-       return (this.marker && this.marker.title == device_name)
+       return (this._marker && this._marker.title == device_name)
     }
-    
     is_loco () {
-        return (this.marker && this.marker.title.includes('Loco'))
+        return (this._marker && this._marker.title.includes('Loco'))
     }
 }
 persist_infobox = new PersistInfobox();
 
+
 // Locos table click handler -
 // Onclick currently selected loco, toggles selection off, else toggle it on.
-function home_select_loco(loco_name) {
+function locosTableOnclick(loco_name) {
     if (curr_loco == loco_name) {
         curr_loco = null;
     } else {
         curr_loco = loco_name;
 
-        // If selecting a loco but another loco's infobox is open, clear it.
+        // If selected a loco and another's infobox is open, clear it.
         if (persist_infobox.is_loco() && !persist_infobox.is_for_device(loco_name)) {
             persist_infobox.close();
         }
     }
 
-    _update_content_async(); // Refresh the page's dynamic content
+    updateContentAsync(); // Refresh the page's dynamic content
 }
     
 // Refresh pages asynchronous content -
 // If curr_loco, only that loco is shown. Else, all locos shown
 // Note: Can't seem to get JQuery shorthand working in ajax call (JSON trashed)
-function _update_content_async() {
+function updateContentAsync() {
     $.ajax({
         url: $SCRIPT_ROOT + '/_home_get_async_content',
         type: 'POST',
@@ -102,7 +91,7 @@ function _update_content_async() {
 
         error: function (jqXHR, textStatus, errorThrown) {
             if (textStatus === 'timeout') {
-                console.log('Content refresh request timed out.');
+                console.log('Content refresh timed out.');
             }
         },
 
@@ -171,15 +160,14 @@ function _update_content_async() {
                 var marker_icon = data.status_map.markers[i].iconpath
 
                 // Rotate loco icons according to heading. 
-                // This works but is doesn't show icon until next refresh 
-                // and doesn't rotate on center
-                // if (marker_title.includes('Loco')) {
-                //     marker_icon = RotateIcon
-                //         .makeIcon(data.status_map.markers[i].iconpath)
-                //         .setRotation({ deg: data.status_map.markers[i].rotation })
-                //         .getUrl()
-                // }
-                
+                if (marker_title.includes('Loco')) {
+                    marker_icon = {
+                        url: imgRotate(marker_icon, data.status_map.markers[i].rotation),
+                        origin: new google.maps.Point(0, 0),  // image origin
+                        anchor: new google.maps.Point(32, 0)  // from origin
+                    }
+                }
+
                 // Init the marker object
                 var marker = new google.maps.Marker({
                     position: new google.maps.LatLng(
@@ -188,8 +176,7 @@ function _update_content_async() {
                     ),
                     icon: marker_icon,
                     title: marker_title,
-                    // TODO: animation: google.maps.Animation.BOUNCE,
-                    // TODO: draggable: true,
+                    // TODO: draggable: true, for helicoptering
                     map: status_map
                 });
                 
@@ -201,14 +188,12 @@ function _update_content_async() {
                 // Define onclick behavior for the marker (toggle open/close)
                 // Note that we only ever allow one open infobox at a time
                 marker.addListener('click', function () {
-                    // if this infobox is currently open, close it
                     if (persist_infobox.is_for_device(marker.title)) {
                         persist_infobox.close();
-                    // else open it, closing the currently open one first, if any
                     } else {
                         persist_infobox.close();
                         persist_infobox.set(infobox, marker); 
-                        persist_infobox.open(status_map);  // TODO: combine with set
+                        persist_infobox.open(status_map);
                     }
                 });
 
@@ -226,47 +211,21 @@ function _update_content_async() {
     });
 }
 
-function _build_maplegend() {
-    imgpath = '/static/img/'
-    var icons = {
-        greenline: {
-            name: 'Two (or more) 220 MHz bases',
-            icon: imgpath + 'greenline.png'
-        },
-        orangline: {
-            name: 'Single 220 MHz base',
-            icon: imgpath + 'orangeline.png'
-        },
-        redline: {
-            name: 'None',
-            icon: imgpath + 'redline.png'
-        }
-    };
 
-    var legend = document.getElementById('map-legend');
-    legend.innerHTML += '&nbsp;<b>Coverage Legend</b>: '
-    for (var key in icons) {
-        var type = icons[key];
-        var name = type.name;
-        var icon = type.icon;
-        legend.innerHTML += name + ': <img src="' + icon + '"> &nbsp;&nbsp;&nbsp;&nbsp;';
-    }
-}
-
-// The setInterval handler. Retruns a ref to the actual setInterval()
-function _async_interval (refresh_interval) {
+// The setInterval handler. Returns a ref to the actual setInterval()
+function setAsynchInterval (refresh_interval) {
         var setinterval = setInterval(function () {
-            _update_content_async();
+            updateContentAsync();
     }, refresh_interval);
 
     // Update control panel refresh interval display
-    disp_val = refresh_interval / 1000          // Back to seconds for display
-    $('#refresh-val').html('&nbsp;' + disp_val + 's');
+    // TODO: We're doing this in two places. Fix it.
+    $('#refresh-val').html('&nbsp;' + refresh_interval / 1000 + 's');
     return setinterval;
 }
 
-// Called at the end of main.html: Registers listeners then calls _async_interval()
-function home_start_async() {
+// TODO:Call on main.html ready
+function startHomeAsyncRefresh() {
     // Register slider onchange listeners and define their behavior
     var time_slider = $('#temporal-range')
     var refresh_slider = $('#refresh-range');
@@ -274,57 +233,83 @@ function home_start_async() {
     refresh_disp = refresh_slider.val() + 's';
 
     time_slider.on('input', function () {
-       new_val = $(this).val() / 100            // Convert percent to decimal
-       main_set_sessionvar_async('time_icand', new_val); // from main.js
+       new_val = $(this).val() / 100                // % to decimal
+       main_set_sessionvar_async('time_icand', new_val);
         $('#time-icand').html('&nbsp;' + $(this).val() + '%');
     });
     refresh_slider.on('input', function () {
-        new_val = $(this).val() * 1000          // Convert to ms
-        clearInterval(on_interval);             // Stop current setInterval
-        on_interval = _async_interval(new_val); // Start new setInterval
+        new_val = $(this).val() * 1000              // s to ms
+        clearInterval(on_interval);                 // Nullify current interval
+        on_interval = setAsynchInterval(new_val);   // Start new setInterval
     });
 
-    _build_maplegend(); // Init the map legend
-
     // Get the main content and update the page
-    _update_content_async();
-    on_interval = _async_interval(refresh_slider.val() * 1000) // Converting to ms
+    updateContentAsync();
+    on_interval = setAsynchInterval(refresh_slider.val() * 1000) // s to ms
     $('#time-icand').html('&nbsp;' + time_slider.val() + '%');
     $('#refresh-val').html('&nbsp;' + refresh_slider.val() + 's');
 }
 
+// Rotates the image at the given url according to rotate_degree
+function imgRotate(img_url, rotate_degrees ){
+    var img = new Image();
+    img.src = img_url;
+    
+    center_x = img.width / 2;
+    center_y = img.height / 2;
+    
+    var canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
 
-// From https://code.i-harness.com/en/q/67c4e5
-class RotateIcon {
-    constructor(options) {
-        this.options = options || {};
-        this.rImg = options.img || new Image();
-        this.rImg.src = this.rImg.src || this.options.url || '';
-        this.options.width = this.options.width || this.rImg.width || 52;
-        this.options.height = this.options.height || this.rImg.height || 60;
-        var canvas = document.createElement("canvas");
-        canvas.width = this.options.width;
-        canvas.height = this.options.height;
-        this.context = canvas.getContext("2d");
-        this.canvas = canvas;
-    }
-    setRotation(options) {
-        var canvas = this.context, angle = options.deg ? options.deg * Math.PI / 180 :
-            options.rad, centerX = this.options.width / 2, centerY = this.options.height / 2;
-        canvas.clearRect(0, 0, this.options.width, this.options.height);
-        canvas.save();
-        canvas.translate(centerX, centerY);
-        canvas.rotate(angle);
-        canvas.translate(-centerX, -centerY);
-        canvas.drawImage(this.rImg, 0, 0);
-        canvas.restore();
-        return this;
-    }
-    getUrl() {
-        return this.canvas.toDataURL('image/png');
-    }
-    static makeIcon(url) {
-        return new RotateIcon({ url: url });
-    }
+    var context = canvas.getContext("2d");
+    context.clearRect(0, 0, img.width, img.height);
+    context.save();                          // Push context state
+    context.translate(center_x, center_y);
+    context.rotate(rotate_degrees);
+    context.translate(-center_x, -center_y);
+    context.drawImage(img, 0, 0);
+    context.restore();                      // Pop context state
+
+    return canvas.toDataURL("image/png");
 }
 
+// function loadImage(url) {
+//     return new Promise((resolve, reject) => {
+//         let img = new Image();
+
+//         // Listen for the image onload event (or its error event)
+//         img.addEventListener('load', e => resolve(img));
+//         img.addEventListener('error', () => {
+//             reject(new Error(`Failed to load image's URL: ${url}`));
+//         });
+
+//         // Load the image, triggering the load (or error) events and
+//         // fulfilling (or rejecting) the promise.
+//         img.src = url;
+//     });
+// }
+
+// loadImage(img_url)
+//     .then((img, canvas) => {
+//         center_x = img.width / 2;
+//         center_y = img.height / 2;
+
+//         var canvas = document.createElement("canvas");
+
+//         canvas.width = img.width;
+//         canvas.height = img.height;
+
+//         context = canvas.getContext("2d");
+//         context.clearRect(0, 0, img.width, img.height);
+//         context.save();                          // Push context state
+//         context.translate(center_x, center_y);
+//         context.rotate(rotate_degrees);
+//         context.translate(-center_x, -center_y);
+//         context.drawImage(img, 0, 0);
+//         context.restore();                      // Pop context state
+
+//         console.log('Returning img url');
+//         return canvas.toDataURL("image/png");
+//     })
+//     .catch(error => console.error('ERROR: ' + error));

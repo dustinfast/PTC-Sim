@@ -215,7 +215,7 @@ def get_locos_table(track):
         inner.add_row([cell(lastseen, max_colspan, lastseen_css, lastseen_html_id)])
 
         outter.add_row([cell(loco.ID), cell(inner.html())],
-                       onclick="home_select_loco('" + loco.name + "')",
+                       onclick="locosTableOnclick('" + loco.name + "')",
                        row_id=loco.name)
 
     return outter.html(), shuffle_data
