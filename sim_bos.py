@@ -95,7 +95,7 @@ def home():
     # Get a fresh status map
     tracklines = get_tracklines(bos.track)
     status_map = get_status_map(bos.track, tracklines)
-
+    
     return flask.render_template('home.html', status_map=status_map)
 
 

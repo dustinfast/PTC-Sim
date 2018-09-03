@@ -155,14 +155,16 @@ function updateContentAsync() {
             
             // Set map loco and base markers
             $.each(data.status_map.markers, function (i) {
+
                 // Note: marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
 
-                // Non-loco markers just get a rel path to an img
                 var marker_icon = data.status_map.markers[i].iconpath
+                is_draggable = false;
 
-                // Loco icons get rotated according to heading. 
+                // Loco icons get rotated according to heading and are draggable
                 if (marker_title.includes('Loco')) {
+                    is_draggable = true;
                     // Save this locos icon to use at during the next
                     // refresh. Necessary to avoid late img load issues
                     loadImage(marker_icon)
@@ -199,7 +201,7 @@ function updateContentAsync() {
                         delete prev_marker_icons[marker_title];
                     }
                 }
-
+                
                 // Init the marker object
                 var marker = new google.maps.Marker({
                     position: new google.maps.LatLng(
@@ -208,7 +210,7 @@ function updateContentAsync() {
                     ),
                     icon: marker_icon,
                     title: marker_title,
-                    // TODO: draggable: true, for helicoptering
+                    draggable: is_draggable, // TODO: helicoptering
                     map: status_map
                 });
                 
@@ -229,11 +231,10 @@ function updateContentAsync() {
                     }
                 });
 
-                // Push the new marker to the map
-                status_map_markers.push(marker);
+                status_map_markers.push(marker); // Attach new marker to the map
             });
 
-            // Reopen the persisting infobox, if any
+            // Reopen current persisting infobox, if any
             persist_infobox.open(status_map)
             
             // debug
@@ -246,39 +247,36 @@ function updateContentAsync() {
 
 // The setInterval handler. Returns a ref to the actual setInterval()
 function setAsynchInterval (refresh_interval) {
+    updateContentAsync();
         var setinterval = setInterval(function () {
             updateContentAsync();
     }, refresh_interval);
-
-    // Update control panel refresh interval display
-    // TODO: We're doing this in two places. Fix it.
-    $('#refresh-val').html('&nbsp;' + refresh_interval / 1000 + 's');
+    
     return setinterval;
 }
 
+$(document).ready(function () {
+    // Define listeners and their behavior
+    var time_slider = 
+        $('#temporal-range').on('input', function () {
+        main_set_sessionvar_async('time_icand', $(this).val() / 100 ); // % to decimal
+        doCPViewUpdate();
+    });
 
-// TODO:Call on main.html ready
-function startHomeAsyncRefresh() {
-    // Register slider onchange listeners and define their behavior
-    var time_slider = $('#temporal-range')
     var refresh_slider = $('#refresh-range');
-    time_disp = refresh_slider.val() + '%';
-    refresh_disp = refresh_slider.val() + 's';
-
-    time_slider.on('input', function () {
-       new_val = $(this).val() / 100                // % to decimal
-       main_set_sessionvar_async('time_icand', new_val);
-        $('#time-icand').html('&nbsp;' + $(this).val() + '%');
-    });
     refresh_slider.on('input', function () {
-        new_val = $(this).val() * 1000              // s to ms
-        clearInterval(on_interval);                 // Nullify current interval
-        on_interval = setAsynchInterval(new_val);   // Start new setInterval
-    });
+        clearInterval(on_interval);                             // Nullify current interval
+        on_interval = setAsynchInterval($(this).val() * 1000);  // Start new interval (s to ms)
+        doCPViewUpdate();
 
-    // Get the main content and update the page
-    updateContentAsync();
+    });
+    
+    // Start asynch refresh, noting the interval so it can be cleared later.
     on_interval = setAsynchInterval(refresh_slider.val() * 1000) // s to ms
-    $('#time-icand').html('&nbsp;' + time_slider.val() + '%');
-    $('#refresh-val').html('&nbsp;' + refresh_slider.val() + 's');
+    doCPViewUpdate(); 
+});
+
+function doCPViewUpdate() {
+    $('#time-icand').html('&nbsp;' + $('#temporal-range').val() + '%');
+    $('#refresh-val').html('&nbsp;' + $('#refresh-range').val() / 1000 + 's');
 }
