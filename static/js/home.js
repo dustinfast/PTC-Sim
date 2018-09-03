@@ -21,7 +21,7 @@ var LOCO_NO_CONNLINE = {
 // Globals
 var curr_loco = null;          // Selected locos table loco. Ex: 'Loco 1001'
 var curr_polylines = [];       // A list of all visible status map polylines
-var time_icand = 1             // Simulation speed multiplier, 1 to 10,
+var time_icand = 1             // Simulation speed multiplicand
 var refresh_interval = 5000    // async refresh interval / max status resolution
 var on_interval = null;        // Ref to setInterval function, for clearing it
 var persist_infobox = null; // The map infobox to persist btween refreshes
@@ -191,7 +191,7 @@ function _update_content_async() {
                 // Note that we only ever allow one open infobox at a time
                 marker.addListener('click', function () {
                     // if this infobox is currently open, close it
-                    if (persist_infobox.is_for_device(marker.title)) { //TODO: if persist title == curr title
+                    if (persist_infobox.is_for_device(marker.title)) {
                         persist_infobox.close();
                     // else, open it, closing the open one first, if any
                     } else {
@@ -216,7 +216,7 @@ function _update_content_async() {
 }
 
 function _build_maplegend() {
-    // TODO: Do this in a cleaner way. Possibly server-side
+    // TODO: Move this to a flask template
     imgpath = '/static/img/'
     var icons = {
         greenline: {
@@ -258,27 +258,27 @@ function _async_interval (refresh_interval) {
 // Called at the end of main.html: Registers listeners then calls _async_interval()
 function home_start_async() {
     // Register slider onchange listeners and define their behavior
-    var time_slider = document.getElementById('temporal-range')  // TODO: Convert to jquery
-    var refresh_slider = document.getElementById('refresh-range');
-    time_disp = refresh_slider.value + '%';
-    refresh_disp = refresh_slider.value + 's';
+    var time_slider = $('#temporal-range')
+    var refresh_slider = $('#refresh-range');
+    time_disp = refresh_slider.val() + '%';
+    refresh_disp = refresh_slider.val() + 's';
 
-    time_slider.oninput = function () {
-       new_val = this.value / 100              // Convert percent to decimal
+    time_slider.on('input', function () {
+       new_val = $(this).val() / 100              // Convert percent to decimal
        main_set_sessionvar_async('time_icand', new_val); // from main.js
-        $('#time-icand').html('&nbsp;' + this.value + '%');
-    }
-    refresh_slider.oninput = function () {
-        new_val = this.value * 1000             // Convert to ms
+        $('#time-icand').html('&nbsp;' + $(this).val() + '%');
+    });
+    refresh_slider.on('input', function () {
+        new_val = $(this).val() * 1000             // Convert to ms
         clearInterval(on_interval);             // Stop current setInterval
         on_interval = _async_interval(new_val); // Start new setInterval
-    }
+    });
 
     _build_maplegend(); // Init the map legend
 
     // Get the main content and update the page
     _update_content_async();
-    on_interval = _async_interval(refresh_slider.value * 1000) // Converting to ms
-    $('#time-icand').html('&nbsp;' + time_slider.value + '%');
-    $('#refresh-val').html('&nbsp;' + refresh_slider.value + 's');
+    on_interval = _async_interval(refresh_slider.val() * 1000) // Converting to ms
+    $('#time-icand').html('&nbsp;' + time_slider.val() + '%');
+    $('#refresh-val').html('&nbsp;' + refresh_slider.val() + 's');
 }
