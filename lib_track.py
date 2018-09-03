@@ -15,7 +15,7 @@ from math import degrees, radians, sin, cos, atan2
 
 from lib_app import track_log
 from lib_app import REFRESH_TIME
-from lib_messaging import Connection, Queue, get_6000_msg
+from lib_messaging import Connection, get_6000_msg
 from lib_messaging import MSG_INTERVAL, LOCO_EMP_PREFIX
 
 # Import conf data
@@ -274,7 +274,7 @@ class Track(object):
         # On-Track device properties
         self.locos = {}
         self.bases = {}
-        self.last_seen = {}     # Last msg recv time, by device. Format:
+        self.last_seen = {}     # Last msg recv time, by device:
                                 # { DeviceType: { ID: DateTime } }
 
         # Track properties

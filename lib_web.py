@@ -68,10 +68,11 @@ class WebTable:
     """
     _default_head_tag = TABLE_TAG
     
-    def __init__(self, head_tag=None, col_headers=[]):
+    def __init__(self, head_tag=None, col_headers=[], title=None):
         """ num_columns: Number of table columns
             col_headers: A list of strings representing table column headings
         """
+        self.title = title
         self._head_tag = {None: self._default_head_tag}.get(head_tag, head_tag)
         self._header = ''.join(['<th>' + h + '</th>' for h in col_headers])
         self._footer = '</table>'
@@ -80,7 +81,12 @@ class WebTable:
     def html(self):
         """ Returns an html representation of the table.
         """
-        html_table = self._head_tag
+        html_table = ''
+
+        if self.title:
+            html_table += '<center>' + self.title + '</center>'
+
+        html_table += self._head_tag
 
         if self._header:
             html_table += '<thead><tr>'
@@ -276,20 +282,24 @@ def get_status_map(track, tracklines, loco=None):
     map_markers = []  # Map markers, for the Google.map.markers property.
     base_points = []  # All base station points, (p1, p2). For map centering.   
 
-    # Append markers to map_markers for --
-    # -- Loco(s).
+    # Build map markers for --
+    # -- Loco(s):
     if loco:
         locos = [loco]
     else:
         locos = track.locos.values()
 
     for l in locos:
-        status_tbl = WebTable()
-        status_tbl.add_row([cell('Device'), cell(l.name)])
-        status_tbl.add_row([cell('Status'), cell('OK')])
-        status_tbl.add_row([cell('Location'), cell(str(l.coords))])
-        status_tbl.add_row([cell('Last Seen'), cell('NA')])
+        # Infobox contents
+        tbl_title = l.name
+        tbl_headers = ['MP', 'Speed', 'Direction', 'BPP']
+        info_tbl = WebTable(col_headers=tbl_headers, title=tbl_title)
+        info_tbl.add_row([cell(str(l.coords.marker)),
+                         cell(str(l.speed)), 
+                         cell(l.direction),
+                         cell(str(l.bpp))])
 
+        # Status icon
         map_icon = MAP_LOCO_UP
         if not l.connected():
             map_icon = MAP_LOCO_DOWN
@@ -300,17 +310,17 @@ def get_status_map(track, tracklines, loco=None):
                   'icon': map_icon,
                   'lat': l.coords.lat,
                   'lng': l.coords.long,
-                  'infobox': status_tbl.html()}
+                  'infobox': info_tbl.html()}
         map_markers.append(marker)
 
     # -- Bases:
     for base in track.bases.values():
-        status_tbl = WebTable()
-        status_tbl.add_row([cell('Device'), cell(base.name)])
-        status_tbl.add_row([cell('Status'), cell('OK')])
-        status_tbl.add_row([cell('Location'), cell(str(base.coords))])
-        status_tbl.add_row([cell('Last Seen'), cell('NA')])
+        # Infobox contents
+        tbl_headers = ['Location', 'Last Seen']
+        info_tbl = WebTable(col_headers=tbl_headers, title=base.name)
+        info_tbl.add_row([cell(str(base.coords)), cell('NA')])
 
+        # Status icon
         map_icon = MAP_BASE_UP
         # TODO: Base down sim
         # if not base.connected():
@@ -322,7 +332,7 @@ def get_status_map(track, tracklines, loco=None):
                   'icon': map_icon,
                   'lat': base.coords.lat,
                   'lng': base.coords.long,
-                  'infobox': status_tbl.html()}
+                  'infobox': info_tbl.html()}
         map_markers.append(marker)
         base_points.append((base.coords.lat, base.coords.long))
 

@@ -50,6 +50,10 @@ body {
     padding: 0px;
 }
 
+.info-table {
+    margin-bottom: 0px;
+}
+
 /* Display status highlights */
 .up {
     background-color: #a0f26d !important;;
