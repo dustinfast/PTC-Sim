@@ -139,7 +139,6 @@ function _update_content_async() {
             });
 
             // Rm all existing map markers and polylines before we replace them
-            // TODO: concat arrays and do one loop
             status_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
@@ -216,7 +215,6 @@ function _update_content_async() {
 }
 
 function _build_maplegend() {
-    // TODO: Move this to a flask template
     imgpath = '/static/img/'
     var icons = {
         greenline: {
