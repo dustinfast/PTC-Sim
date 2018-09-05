@@ -43,7 +43,7 @@ class DeviceSim(object):
         self._threads = []
         self.device = device
         self.label = device.name
-        self.time_icand = 1  # (float) Time speed up/slow down
+        self.time_iplier = 1  # (float) Time speed up/slow down
         
     def start(self):
         """ Starts the simulation threads. 
@@ -395,7 +395,7 @@ class Track(object):
         elif distance < 0:
             mps = self.marker_linear_rev
 
-        # Find next mp marker, noting unconsumed distance
+        # Find next mp marker, noting any unconsumed distance for next time
         for i, marker in enumerate(mps):
             if marker == target_mp:
                 next_mp = marker
@@ -409,22 +409,20 @@ class Track(object):
                 dist_diff = abs(target_mp - next_mp)
                 break
 
-        # If we didn't find a next mp (i.e. end of track)
-        if not next_mp:
-            return
-
         # Get mp object associated with next_mp
         next_mp_obj = self.get_location_at(next_mp)
-        if not next_mp_obj:
-            debug_str = '_get_next_mp failed to find a next location from: '
-            debug_str += str(mps) + '\n'
-            debug_str += 'cur_mp: ' + str(mp) + '\n'
-            debug_str += 'moved : ' + str(distance) + '\n'
-            debug_str += 'tgt_mp: ' + str(target_mp) + '\n'
-            debug_str += 'mp_idx: ' + str(i) + '\n'
-            debug_str += 'nxt_mp: ' + str(next_mp) + '\n'
-            debug_str += 'disdif: ' + str(dist_diff) + '\n'
-            raise Exception(debug_str)
+
+        # debug
+        # if not next_mp_obj:
+        #     debug_str = '_get_next_mp failed to find a next location from: '
+        #     debug_str += str(mps) + '\n'
+        #     debug_str += 'cur_mp: ' + str(mp) + '\n'
+        #     debug_str += 'moved : ' + str(distance) + '\n'
+        #     debug_str += 'tgt_mp: ' + str(target_mp) + '\n'
+        #     debug_str += 'mp_idx: ' + str(i) + '\n'
+        #     debug_str += 'nxt_mp: ' + str(next_mp) + '\n'
+        #     debug_str += 'disdif: ' + str(dist_diff) + '\n'
+        #     raise Exception(debug_str)
 
         return next_mp_obj, dist_diff
 
@@ -496,19 +494,17 @@ class TrackSim(multiprocessing.Process):
         for l in track.locos.values():
             l.sim.start()
         
-        # Update sim time and log status at intervals of REFRESH_TIME seconds
+        # Update sim time multiplier if needed
         while True:
-            # Update the time speed,  if an update is waiting
             try:
-                time_icand = self.timeq.get(timeout=.1)
+                time_iplier = self.timeq.get(timeout=.1)
                 for l in track.locos.values():
-                    l.sim.time_icand = time_icand
-                print('*** Time Multiplier Set:' + str(time_icand))  # debug
-                track_log.info('Time Multiplier Set: ' + str(time_icand))
+                    l.sim.time_iplier = time_iplier
+                track_log.info('Time Multiplier Set: ' + str(time_iplier))
             except Queue.Empty:
                 pass
 
-            # Log status of each loco, for debug
+            # debug
             # for l in track.locos.values():
             #     status_str = 'Loco ' + l.ID + ': '
             #     status_str += str(l.speed) + ' @ ' + str(l.coords.marker)
@@ -533,21 +529,21 @@ class TrackSim(multiprocessing.Process):
             raise NotImplementedError
 
         def _set_heading(prev_mp, curr_mp):
-                """ Sets loco heading based on current and prev lat/long
-                """
-                lat1 = radians(prev_mp.lat)
-                lat2 = radians(curr_mp.lat)
+            """ Sets loco heading based on current and prev lat/long
+            """
+            lat1 = radians(prev_mp.lat)
+            lat2 = radians(curr_mp.lat)
 
-                long_diff = radians(prev_mp.long - curr_mp.long)
+            long_diff = radians(prev_mp.long - curr_mp.long)
 
-                a = cos(lat1) * sin(lat2)
-                b = (sin(lat1) * cos(lat2) * cos(long_diff))
-                x = sin(long_diff) * cos(lat2)
-                y = a - b
-                deg = degrees(atan2(x, y))
-                compass_bearing = (deg + 360) % 360
+            a = cos(lat1) * sin(lat2)
+            b = (sin(lat1) * cos(lat2) * cos(long_diff))
+            x = sin(long_diff) * cos(lat2)
+            y = a - b
+            deg = degrees(atan2(x, y))
+            compass_bearing = (deg + 360) % 360
 
-                loco.heading = compass_bearing
+            loco.heading = compass_bearing
 
         # Start
         makeup_dist = 0
@@ -562,7 +558,7 @@ class TrackSim(multiprocessing.Process):
                 # Determine dist traveled since last iteration, including
                 # makeup distance, if any.
                 hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
-                hours = loco.sim.time_icand * hours  # Apply sim time rate
+                hours = loco.sim.time_iplier * hours  # Apply sim time rate
                 dist = loco.speed * hours * 1.0  # distance = speed * time
                 dist += makeup_dist
 
@@ -572,10 +568,21 @@ class TrackSim(multiprocessing.Process):
 
                 # Get next location and any makeup distance
                 new_mp, dist = loco.track._get_next_mp(loco.coords, dist)
+
+                # If no new_mp was returned, assume end of track
                 if not new_mp:
+                    # TODO: Ensure functional
                     err_str = ' - At end of track. Reversing.'
+                    print('#### ' + err_str)
                     track_log.info(loco.name + err_str)
-                    loco.direction *= -1
+
+                    makeup_dist = 0
+                    if loco.direction == 'decreasing':
+                        loco.direction = 'increasing'
+                    else:
+                        loco.direction = 'decreasing'
+                        
+                # Else update the loco accordingly
                 else:
                     _set_heading(loco.coords, new_mp)
                     loco.coords = new_mp
@@ -589,7 +596,7 @@ class TrackSim(multiprocessing.Process):
     def loco_messaging(loco):
         """ Real-time simulation of a locomotives's messaging system. Maintains
             connections to bases in range of loco's position. 
-            # TODO: and sends/fetches msgs over them. 
+            # TODO: send/fetch msgs over them. 
             This function is intended to be run as a Thread.
         """
         while loco.sim.running:
@@ -644,11 +651,11 @@ class TrackSim(multiprocessing.Process):
                 # Process cad msg, if msg and if actually for this loco
                 if cad_msg and cad_msg.payload.get('ID') == loco.ID:
                     try:
-                        # TODO: Update track restrictions based on msg
+                        # TODO: Update track restrictions/loco locations
                         track_log.info(loco.name + ' - CAD msg processed.')
                     except:
                         track_log.error(loco.name + ' - Received invalid CAD msg.')
-                    break  # Either way, the msg was fetched # TODO: ACK w/broker?
+                    break  # Either way, the msg was fetched # TODO: ACK w/broker
             else:
                 err_str = ' - active connections exist, but msg fetch/recv failed.'
                 track_log.error(loco.name + err_str)

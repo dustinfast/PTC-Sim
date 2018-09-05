@@ -35,7 +35,7 @@ except:
     dep_install('flask_googlemaps')
 
 # List of session vars modifiable from client-side js
-PUBLIC_SESSVARS = ['time_icand']
+PUBLIC_SESSVARS = ['time_iplier']
 
 
 #######################
@@ -51,7 +51,7 @@ bos_sessions = {}  # { BOS_ID: BOS_OBJ }
 def before_request():
     """ Before each client request is processed, refresh the session.
         If the session is new, instantiate a BOS for the client.
-        Note: Each session gets its own BOS. This is for demo/sim purposes,
+        Note: Each session gets its own sandbox. I.e. it's own BOS and sims.
         so that each web client can have it's own "sandbox" BOS.
     """
     global bos_sessions
@@ -96,7 +96,13 @@ def home():
     tracklines = get_tracklines(bos.track)
     status_map = get_status_map(bos.track, tracklines)
 
-    return flask.render_template('home.html', status_map=status_map)
+    # convert time iplier from decimal to percent
+    iplier = bos.time_iplier * 100
+
+    # TODO: Update time_iplier slider value
+    return flask.render_template('home.html', 
+                                 status_map=status_map,
+                                 time_iplier=iplier)
 
 
 @bos_web.route('/_home_get_async_content', methods=['POST'])
@@ -139,17 +145,17 @@ def main_set_sessionvar_async():
             bos_log.info('Set: ' + key + '=' + str(newval))
 
             # Update time sim if that var was updated
-            if key == 'time_icand':
+            if key == 'time_iplier':
                 try:
-                    bos = bos_sessions[flask.session['bos_id']]
-                    bos.track_sim.timeq.put_nowait(newval)
+                    bos_sessions[flask.session['bos_id']].set_tplier(newval)
                 except:
                     return 'BOS association failure. Try restarting your browser.'
-
+        else:
+            return 'ERROR'
         return 'OK'
     except Exception as e:
         bos_log.error(e)
-        return 'error: + ' + str(e)
+        return 'ERROR: + ' + str(e)
 
 
 ###########
@@ -166,13 +172,20 @@ class BOS(Thread):
         Thread.__init__(self)
         self.track = Track()
         self.msg_client = Client()  # TODO: Random ports, to enable multiple sandboxes
+        self.time_iplier = 1        # Rate at which to speed up/down sim
 
         # Each BOS gets it's own Message Broker.
         self.broker_sim = MsgBroker()
 
         # Each BOS gets it's own Track Sim. Note: The track sim has a
-        # multiprocessing queue so we can send it the time multiplicand.
+        # multiprocessing queue so we can send it the time multipliplier.
         self.track_sim = TrackSim()
+
+    def set_tplier(self, time_iplier):
+        """ Sets the sim time multiplier for self and passes it to track sim.
+        """
+        self.time_iplier = time_iplier
+        self.track_sim.timeq.put_nowait(time_iplier)
 
     def run(self):
         """ Checks msg broker for new status msgs every REFRESH_TIME sec.
@@ -183,7 +196,7 @@ class BOS(Thread):
         bos_log.info('BOS Started.')
 
         while True:
-            # Fetch the next available msg, if any
+            # Fetch the next available status msg, if any
             msg = None
             try:
                 msg = self.msg_client.fetch_next_msg(BOS_EMP)

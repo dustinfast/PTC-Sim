@@ -21,7 +21,7 @@ LOCO_NO_CONNLINE = {
 // Globals
 var curr_loco = null;           // Selected loco. Ex: 'Loco 1001'
 var curr_polylines = [];        // A list of all visible map polylines
-var time_icand = 1              // Simulation speed multiplicand
+var time_iplier = 1              // Simulation speed multipliplier
 var refresh_interval = 5000     // Async refresh interval
 var on_interval = null;         // Ref to the active setInterval function
 var persist_infobox = null;     // The map infobox to persist between refreshes
@@ -64,7 +64,7 @@ persist_infobox = new PersistInfobox();
 $(document).ready(function () {
     var time_slider =
         $('#temporal-range').on('input', function () {
-            main_set_sessionvar_async('time_icand', $(this).val() / 100); // % to decimal
+            main_set_sessionvar_async('time_iplier', $(this).val() / 100); // % to decimal
             doCPViewUpdate();
         });
 
@@ -116,7 +116,7 @@ function updateContentAsync() {
         },
 
         success: function (data) {
-            if (data == 'error') {
+            if (data == 'ERROR') {
                 console.warn('Server-server content refresh error.')
                 return;
             }
@@ -191,16 +191,17 @@ function updateContentAsync() {
                     // TODO: Adjust anchor for each possible degree
                     console.log(marker_title + ': ' + rotate_deg.toString());
                     if (rotate_deg == -90) {
-                        anchor_y += 200  // seems good
+                        anchor_y += 200;  // seems good
                     } else if (rotate_deg == -45) {
-                        anchor_x -= 30;
+                        anchor_x -= 150;
                     } else if (rotate_deg == 0) {
                         anchor_x -= 200;
                     } else if (rotate_deg == 45) {
                         anchor_x += 20;
                         anchor_y += 200;
                     } else if (rotate_deg == 90) {
-                        anchor_x -= 50;  // seems good
+                        anchor_x -= 50;  
+                        anchor_y += 200;
                     } else if (rotate_deg == 135) {
                     } else if (rotate_deg == 180) {
                     } else if (rotate_deg == 225) {
@@ -280,6 +281,6 @@ function setAsynchInterval (refresh_interval) {
 
 
 function doCPViewUpdate() {
-    $('#time-icand').html('&nbsp;' + $('#temporal-range').val() + '%');
+    $('#time-iplier').html('&nbsp;' + $('#temporal-range').val() + '%');
     $('#refresh-val').html('&nbsp;' + $('#refresh-range').val() + 's');
 }

@@ -1,6 +1,6 @@
-# PTC-Sim - Positive Train Control Simulator
+# PTC-Sim - Positive Train Control Simulation
 
-This application is A Positive Train Control (PTC) Back Office Server (BOS) with web interface, track and locomotive simulators, and Edge Message Protocol (EMP) messaging subsystems. Development has begun with the intention of growing into an open-source PTC solution after experiencing first-hand the difficulties railroads are experiencing as they attempt to meet PTC implementation deadlines imposed by congress in 2008. It is a work in progress and distributable free under the MIT license. Images were obtained under the Creative Commons license.
+This application is a Positive Train Control (PTC) Back Office Server (BOS) with web interface, track/locomotive simulators, and Edge Message Protocol (EMP) messaging subsystems. Development has begun with the intention of growing into an open-source PTC solution after observing first-hand the difficulties railroads are currently experiencing as they attempt to meet PTC implementation deadlines imposed by congress. It is a work in progress and distributable free under the MIT license.
 
 PTC's mandate is to prevent:
 
@@ -11,24 +11,24 @@ PTC's mandate is to prevent:
   
 Interoperability between railroads is also required, as defined by the Federal Railroad Administration's Interoperable Train Control (ITC) standard.
 
-PTC-Sim currently implements broker-assisted EMP communication between simulated on-track devices (locomotives and 220 MHz radio base-stations) and the BOS. Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current device status and location are displayed graphically.
+PTC-Sim currently implements broker-assisted EMP communication between simulated on-track devices (locomotives and 220 MHz radio base-stations) and the BOS. Locomotive tracking and computer-aided-dispatch (CAD) is facilitated by a web interface, where current device status and location are displayed graphically. For the simulation, each web client gets its own "sanbox", consisting of an independent broker and track/locomotive simulator.
 
 ## Usage
 
-From a Linux terminal, start the application with `./PTCSim.py`, then navigate to http://localhost:5000/ptc_sim.
+From a Linux terminal, start the application with `./sim_bos.py`, then navigate to http://localhost:5000/ptc_sim.
   
 ## Application Structure
 
 ### Components
 
-Each component exists as a seperate entity. Any communication occuring between them happens via EMP messaging.
+Each component exists as a seperate entity. Communication between entities occurs via EMP messaging over TCP/IP.
 
-* **Back Office Server** : Provides CAD capabilities for communicating track restrictions to locomotives and displays real-time track device status and location via its website interface.
+* **Back Office Server** : Displaying real-time device and locomotive status via its web interface. Plans exist to also provides CAD capabilities, such as communicating track restrictions to locomotives.
 
-* **Message Broker**: An intermediate message translation system allowing bi-directional communication between track devices and the BOS.  Currently, each component transports EMP messages via TCP/IP only, but future versions may demonstrate Class C (IP based multicast protocol) and Class D (IP based point-to-point protocol) messaging.
+* **Message Broker**: An intermediate message translation system allowing bi-directional communication between track devices, locomotives, and the BOS. Currently, each component transports EMP messages via TCP/IP only. Future versions will implememnt Class C (IP based multicast protocol) and Class D (IP based point-to-point protocol) messaging.
 
-* **Track Simulator**: Simulates a railroad and it's on-track devices:  
-  * **Locomotives**:  Each locomotive travels along the track, broadcasting status messages and receiving CAD directives over its two 220 MHz radio transducers.
+* **Track Simulator**: Simulates on-track devices:  
+  * **Locomotives**:  Each locomotive travels along the track, broadcasting status messages (and eventually receiving CAD directives) over its two simulated 220 MHz radio transducers.
   * **220 MHz Radio Base Stations**: Receives locomotive status messages and transmits them to the Message Broker via LAN.
   * **Waysides**: Receives status messages from it's attached switches via LAN, then broadcasts them over 220 MHz radio to the BOS.
   * **Switches**: Each switch sends its current position (OPEN, CLOSED, or ERROR) to its parent wayside at regular intervals.
@@ -46,16 +46,16 @@ PTC-Sim
 |   Procfile - Process definition, for use by hosted environments.
 |   requirements.txt - pipenv dependencies file.
 |   README.md - This document.
-|   sim_bos.py - Starts the Back Office Server and sims, including web interface.
+|   sim_bos.py - Starts the Back Office Server and web interface.
 |
-+---docs - Contains documentation files.
++---docs - Contains documentation.
 |
 +---logs - Created on startup to hold log files for each component.
 |
 +---static - Static web content, such as images, css, and js.
 |
 +---templates - Flask web templates
-|       home.html -
+|       home.html - The main device and locomotive satus page. 
 |       layout.html - Top-level container template, including navbar.
 |
 +---track

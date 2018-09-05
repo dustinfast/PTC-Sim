@@ -281,7 +281,7 @@ def get_status_map(track, tracklines, loco=None):
     map_markers = []  # Map markers, for the Google.map.markers property.
     base_points = []  # All base station points, (p1, p2). For map centering.   
     headings = list(range(0, 360, 45))  # List of headings in 45 deg increments
-    print(headings)
+
     # Build map markers for --
     # -- Loco(s):
     if loco:

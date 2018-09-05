@@ -180,7 +180,7 @@ class Connection(object):
         # Timeout
         self._timeout = timeout
         self.timeout_watcher = Thread(target=self._timeoutwatcher)
-        # self.timeout_watcher.start()
+        # TODO: self.timeout_watcher.start()
 
     def __str__(self):
         """ Returns a string representation of the base station """
