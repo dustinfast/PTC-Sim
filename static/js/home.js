@@ -178,16 +178,45 @@ function updateContentAsync() {
                 // Note: marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
                 var marker_icon = data.status_map.markers[i].icon
-                is_draggable = true;  // Non-loco icons are not draggable
+                is_draggable = false;  // Non-loco icons are not draggable
 
-                // Loco icons use SVG and are rotated according to heading
+                // Loco icons are SVG and get rotated for heading
                 if (marker_title.includes('Loco')) {
-                    is_draggable = true;  // Loco icons are draggable
+                    is_draggable = true;
                     
+                    // Adjust anchor based on rotation so it sits on trackline
+                    rotate_deg = data.status_map.markers[i].rotation - 90;
+                    anchor_x = 250; anchor_y = 0;
+                    
+                    // TODO: Adjust anchor for each possible degree
+                    console.log(marker_title + ': ' + rotate_deg.toString());
+                    if (rotate_deg == -90) {
+                        anchor_y += 200  // seems good
+                    } else if (rotate_deg == -45) {
+                        anchor_x -= 30;
+                    } else if (rotate_deg == 0) {
+                        anchor_x -= 200;
+                    } else if (rotate_deg == 45) {
+                        anchor_x += 20;
+                        anchor_y += 200;
+                    } else if (rotate_deg == 90) {
+                        anchor_x -= 50;  // seems good
+                    } else if (rotate_deg == 135) {
+                    } else if (rotate_deg == 180) {
+                    } else if (rotate_deg == 225) {
+                        anchor_x += 100
+                        anchor_y += 200
+                    } else if (rotate_deg == 270) {
+                        anchor_y += 200 // seems good
+                    } else {
+                        console.warn('Unhandled rotation: ' + rotate_deg.toString());
+                    }
+                        
                     marker_icon = {
                         path: LOCO_SVG,
-                        anchor: new google.maps.Point(250, 500),  // from origin
-                        rotation: data.status_map.markers[i].rotation - 90,
+                        // origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(anchor_y, anchor_x),
+                        rotation: rotate_deg,
                         fillOpacity: 0.9,
                         scale: .07,
                         strokeColor: 'black',

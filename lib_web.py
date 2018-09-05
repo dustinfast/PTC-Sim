@@ -228,10 +228,10 @@ def get_loco_connlines(track, loco):
     loco_connlines = []
     for conn in [c for c in loco.conns.values() if c.connected()]:
         linepath = []
-        linepath.append({'lat': loco.coords.lat + 0.2,  # TODO: scale offset to map zoom
-                         'lng': loco.coords.long})
         linepath.append({'lat': conn.conn_to.coords.lat,
                          'lng': conn.conn_to.coords.long})
+        linepath.append({'lat': loco.coords.lat,
+                         'lng': loco.coords.long})
 
         loco_connlines.append(linepath)
 
@@ -280,7 +280,8 @@ def get_status_map(track, tracklines, loco=None):
     """
     map_markers = []  # Map markers, for the Google.map.markers property.
     base_points = []  # All base station points, (p1, p2). For map centering.   
-
+    headings = list(range(0, 360, 45))  # List of headings in 45 deg increments
+    print(headings)
     # Build map markers for --
     # -- Loco(s):
     if loco:
@@ -298,7 +299,7 @@ def get_status_map(track, tracklines, loco=None):
                          cell(l.direction.title()),
                          cell(str(l.bpp))])
 
-        # Status of client-side svg fill
+        # Denote client-side svg fill, based on loco status
         # Note: Loco icons displayed as client-side SVG for all but 1st refresh
         status = GREEN
         if not l.connected():
@@ -306,12 +307,15 @@ def get_status_map(track, tracklines, loco=None):
         elif [c for c in l.conns.values() if not c.connected()]:
             status = ORANGE
 
+        # Determine heading to nearest 45 degree angle, for marker rotation
+        rotate = min(headings, key=lambda x: abs(x - float(l.heading)))
+
         marker = {'title': l.name,
                   'icon': MAP_LOCO_DEFAULT,
                   'lat': l.coords.lat,
                   'lng': l.coords.long,
                   'status': status,
-                  'rotation': int(l.heading),
+                  'rotation': rotate,
                   'infobox': info_tbl.html()}
         
         map_markers.append(marker)
@@ -353,9 +357,9 @@ def get_status_map(track, tracklines, loco=None):
                      lat=center[0],
                      lng=center[1],
                      maptype='SATELLITE',
-                     zoom='3',
+                     zoom='6',
                      markers=list(m for m in map_markers),
                      polylines=tracklines,
                      style="height:600px;width:795px;margin:0;",
-                     fit_markers_to_bounds=True)
+                     fit_markers_to_bounds=False)
     return status_map

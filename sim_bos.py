@@ -83,7 +83,7 @@ def before_request():
         bos_log.info('New client session started: ' + str(bos_ID))
         
 
-@bos_web.route('/' + APP_NAME)
+@bos_web.route('/')
 def home():
     """ Serves home.html after instantiating the client's unique track instance.
     """
