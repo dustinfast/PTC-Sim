@@ -32,7 +32,7 @@
 				<!-- Google maps display of track and its realtime devices statuses, Populated via AJAX in home.js -->
 				<link rel="stylesheet" href=""> {{status_map.js}} {{ status_map.html }}
 
-				<!-- Control Panel Collapse Btn-->
+				<!-- Control Panel Collapse Btn (Not needed for now) -->
 				<!-- &nbsp;<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#control-panel">Control Panel</button> -->
 				
 				<!-- Control Panel -->
@@ -47,13 +47,13 @@
 					</div>
 				</div>
 			</div>
-
 		</div>
 	</div>
 </div>
 
 <script type="text/javascript">
-	// Build the map legened. This needs to be converted to a Flask template.
+	// Build the map legened
+	// TODO: Needs converted to a Flask template and served server-side
 	imgpath = '/static/img/'
 	var icons = {
 		greenline: {
@@ -78,8 +78,6 @@
 		var icon = type.icon;
 		legend.innerHTML += name + ': <img src="' + icon + '"> &nbsp;&nbsp;&nbsp;&nbsp;';
 	}
-
-	// Start async content update
 </script>
 
 {% endblock %}

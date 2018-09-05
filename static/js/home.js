@@ -62,6 +62,28 @@ class PersistInfobox {
 persist_infobox = new PersistInfobox();
 
 
+// Define listeners and start async content refresh
+$(document).ready(function () {
+    var time_slider =
+        $('#temporal-range').on('input', function () {
+            main_set_sessionvar_async('time_icand', $(this).val() / 100); // % to decimal
+            doCPViewUpdate();
+        });
+
+    var refresh_slider = $('#refresh-range');
+    refresh_slider.on('input', function () {
+        clearInterval(on_interval);                             // Nullify current interval
+        on_interval = setAsynchInterval($(this).val() * 1000);  // Start new interval (s to ms)
+        doCPViewUpdate();
+
+    });
+
+    // Start asynch refresh, noting the interval so it can be cleared later.
+    on_interval = setAsynchInterval(refresh_slider.val() * 1000) // s to ms
+    doCPViewUpdate();
+});
+
+
 // Locos table click handler -
 // Onclick currently selected loco, toggles selection off, else toggle it on.
 function locosTableOnclick(loco_name) {
@@ -127,7 +149,7 @@ function updateContentAsync() {
                 }
             });
 
-            // Remove all existing map markers & polylines. We'll replace them.
+            // Remove all existing map markers & polylines before we replace them
             status_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
@@ -138,7 +160,7 @@ function updateContentAsync() {
             });
             curr_polylines = []
 
-            // Create loco conn polylines
+            // Add loco conn polylines to map
             $.each(data.loco_connlines, function (i) {
                 var line = new google.maps.Polyline({
                     path: data.loco_connlines[i],
@@ -155,28 +177,27 @@ function updateContentAsync() {
             
             // Set map loco and base markers
             $.each(data.status_map.markers, function (i) {
-
                 // Note: marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
-
-                var marker_icon = data.status_map.markers[i].iconpath
+                var marker_icon = data.status_map.markers[i].icon
                 is_draggable = false;
 
                 // Loco icons get rotated according to heading and are draggable
                 if (marker_title.includes('Loco')) {
                     is_draggable = true;
-                    // Save this locos icon to use at during the next
-                    // refresh. Necessary to avoid late img load issues
+                    // Save this loco's icon to use during the next refresh to
+                    // avoid late img load issues.
+                    // TODO: Load images once and re-use them.
                     loadImage(marker_icon)
                         .then((img) => {
-                            var canvas = document.createElement("canvas");
+                            canvas = document.createElement('canvas');
                             canvas.width = img.width;
                             canvas.height = img.height;
 
                             center_x = img.width / 2;
                             center_y = img.height / 2;
                             
-                            context = canvas.getContext("2d");
+                            context = canvas.getContext('2d');
                             context.clearRect(0, 0, img.width, img.height);
                             context.save();          // Push context state
                             context.translate(center_x, center_y);
@@ -185,18 +206,19 @@ function updateContentAsync() {
                             context.drawImage(img, 0, 0);
                             context.restore();       // Pop context state
 
-                            rotated_url = canvas.toDataURL("image/png");
+                            rotated_url = canvas.toDataURL();
                             rotated_icon = {
                                 url: rotated_url,
                                 origin: new google.maps.Point(0, 0),  // image origin
-                                anchor: new google.maps.Point(32, 0)  // from origin
+                                // anchor: new google.maps.Point(22, 44)  // from origin
                             }
                             prev_marker_icons[marker_title] = rotated_icon;
                         })
                         .catch(error => console.error('ERROR: ' + error));
-
+                            
                     // Populated the current loco icon by consuming it's prev icon
                     if (prev_marker_icons.hasOwnProperty(marker_title)) {
+                        // Attempt to close previous icon
                         marker_icon = prev_marker_icons[marker_title];
                         delete prev_marker_icons[marker_title];
                     }
@@ -231,7 +253,7 @@ function updateContentAsync() {
                     }
                 });
 
-                status_map_markers.push(marker); // Attach new marker to the map
+                // status_map_markers.push(marker); // Attach new marker to the map
             });
 
             // Reopen current persisting infobox, if any
@@ -255,28 +277,8 @@ function setAsynchInterval (refresh_interval) {
     return setinterval;
 }
 
-$(document).ready(function () {
-    // Define listeners and their behavior
-    var time_slider = 
-        $('#temporal-range').on('input', function () {
-        main_set_sessionvar_async('time_icand', $(this).val() / 100 ); // % to decimal
-        doCPViewUpdate();
-    });
-
-    var refresh_slider = $('#refresh-range');
-    refresh_slider.on('input', function () {
-        clearInterval(on_interval);                             // Nullify current interval
-        on_interval = setAsynchInterval($(this).val() * 1000);  // Start new interval (s to ms)
-        doCPViewUpdate();
-
-    });
-    
-    // Start asynch refresh, noting the interval so it can be cleared later.
-    on_interval = setAsynchInterval(refresh_slider.val() * 1000) // s to ms
-    doCPViewUpdate(); 
-});
 
 function doCPViewUpdate() {
     $('#time-icand').html('&nbsp;' + $('#temporal-range').val() + '%');
-    $('#refresh-val').html('&nbsp;' + $('#refresh-range').val() / 1000 + 's');
+    $('#refresh-val').html('&nbsp;' + $('#refresh-range').val() + 's');
 }

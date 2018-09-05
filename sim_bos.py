@@ -95,7 +95,7 @@ def home():
     # Get a fresh status map
     tracklines = get_tracklines(bos.track)
     status_map = get_status_map(bos.track, tracklines)
-    
+
     return flask.render_template('home.html', status_map=status_map)
 
 
@@ -239,16 +239,14 @@ class Web(Process):
         bos_web.run(debug=True, use_reloader=False)  # Blocks
 
 
+# Starts web interface. BOS "sandboxes" are started on each client connection.
 if __name__ == '__main__':
-    # Start the BOS web interface - the BOS itself is started on client connect.
     print("-- " + APP_NAME + ": Back Office Server - CTRL + C quits --\n")
-    sleep(.2)  # Ensure welcome statment outputs before flask output
-    # bos_web.run(debug=True, use_reloader=False)  # Blocks until CTRL + C
+    sleep(.2)  # Ensure welcome statment before flask output
 
     # Start the web interface as a subprocess.
     web_thread = Web() 
     web_thread.start()
-    # bos_web.run(debug=True, use_reloader=False)  # Blocks
 
     while True:
         uinput = raw_input('')

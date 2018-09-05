@@ -307,7 +307,7 @@ def get_status_map(track, tracklines, loco=None):
 
         # TODO: Move to track lib as a class
         marker = {'title': l.name,
-                  'iconpath': map_icon,
+                  'icon': map_icon,
                   'lat': l.coords.lat,
                   'lng': l.coords.long,
                   'rotation': int(l.heading),
@@ -331,7 +331,7 @@ def get_status_map(track, tracklines, loco=None):
         #     map_icon = MAP_BASE_WARN
 
         marker = {'title': base.name,
-                  'iconpath': map_icon,
+                  'icon': map_icon,
                   'lat': base.coords.lat,
                   'lng': base.coords.long,
                   'rotation': 0,
@@ -352,9 +352,9 @@ def get_status_map(track, tracklines, loco=None):
                      lat=center[0],
                      lng=center[1],
                      maptype='SATELLITE',
-                     zoom='6.5',
+                     zoom='3',
                      markers=list(m for m in map_markers),
-                     style="height:600px;width:795px;margin:0;",
                      polylines=tracklines,
+                     style="height:600px;width:795px;margin:0;",
                      fit_markers_to_bounds=True)
     return status_map
