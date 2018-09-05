@@ -138,11 +138,11 @@ def main_set_sessionvar_async():
             flask.session[key] = newval
             bos_log.info('Set: ' + key + '=' + str(newval))
 
-            # Update time sim
+            # Update time sim if that var was updated
             if key == 'time_icand':
                 try:
-                    bos_sessions[flask.session['bos_id']].time_icand = newval
-                    print('#####' + str(newval))
+                    bos = bos_sessions[flask.session['bos_id']]
+                    bos.track_sim.timeq.put_nowait(newval)
                 except:
                     return 'BOS association failure. Try restarting your browser.'
 
@@ -164,15 +164,14 @@ class BOS(Thread):
     """
     def __init__(self):
         Thread.__init__(self)
-        self.time_icand = 1  # Initial simulation time multiplier
         self.track = Track()
         self.msg_client = Client()  # TODO: Random ports, to enable multiple sandboxes
 
-        # For demo purposes, each BOS gets it's own Message Broker.
+        # Each BOS gets it's own Message Broker.
         self.broker_sim = MsgBroker()
 
-        # For demo purposes, each BOS gets it's own Track Sim. The track sim
-        # gets a multiprocessing queue so we can cheat and send it "time"
+        # Each BOS gets it's own Track Sim. Note: The track sim has a
+        # multiprocessing queue so we can send it the time multiplicand.
         self.track_sim = TrackSim()
 
     def run(self):
@@ -184,9 +183,6 @@ class BOS(Thread):
         bos_log.info('BOS Started.')
 
         while True:
-            # Update the time multiplier for each sim
-            self.track_sim.timeq.put_nowait(self.time_icand)
-
             # Fetch the next available msg, if any
             msg = None
             try:

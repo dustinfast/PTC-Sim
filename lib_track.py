@@ -43,6 +43,7 @@ class DeviceSim(object):
         self._threads = []
         self.device = device
         self.label = device.name
+        self.time_icand = 1  # (float) Time speed up/slow down
         
     def start(self):
         """ Starts the simulation threads. 
@@ -487,7 +488,6 @@ class TrackSim(multiprocessing.Process):
     def run(self):
         track_log.info('Track Sim Starting...')
         track = Track()  # The track contains all it's devices and locos.
-        time_icand = 1  # "time speed" multiplier. Updated via self.timeq 
 
         # Start each track componenet-device's simulation thread
         # These devices exists "on" the track and simulate their own 
@@ -498,23 +498,26 @@ class TrackSim(multiprocessing.Process):
         
         # Update sim time and log status at intervals of REFRESH_TIME seconds
         while True:
-            for l in track.locos.values():
-                try:
-                    # Update the "time speed" if an update is waiting
-                    time_icand = self.timeq.get_nowait()
-                    print('*** Time Multiplier Set:' + str(time_icand))  # debug
-                    track_log.info('Time Multiplier Set: ' + str(time_icand))
-                except Queue.Empty:
-                    pass
+            # Update the time speed,  if an update is waiting
+            try:
+                time_icand = self.timeq.get(timeout=.1)
+                for l in track.locos.values():
+                    l.sim.time_icand = time_icand
+                print('*** Time Multiplier Set:' + str(time_icand))  # debug
+                track_log.info('Time Multiplier Set: ' + str(time_icand))
+            except Queue.Empty:
+                pass
 
-                status_str = 'Loco ' + l.ID + ': '
-                status_str += str(l.speed) + ' @ ' + str(l.coords.marker)
-                status_str += ' (' + str(l.coords.long) + ',' + str(l.coords.lat) + ')'
-                status_str += '. Bases in range: '
-                status_str += ', '.join([b.ID for b in l.bases_inrange])
-                status_str += ' Conns: '
-                status_str += ', '.join([c.conn_to.ID for c in l.conns.values() if c.conn_to])
-                track_log.info(status_str)
+            # Log status of each loco, for debug
+            # for l in track.locos.values():
+            #     status_str = 'Loco ' + l.ID + ': '
+            #     status_str += str(l.speed) + ' @ ' + str(l.coords.marker)
+            #     status_str += ' (' + str(l.coords.long) + ',' + str(l.coords.lat) + ')'
+            #     status_str += '. Bases in range: '
+            #     status_str += ', '.join([b.ID for b in l.bases_inrange])
+            #     status_str += ' Conns: '
+            #     status_str += ', '.join([c.conn_to.ID for c in l.conns.values() if c.conn_to])
+            #     track_log.info(status_str)
 
             sleep(REFRESH_TIME)
 
@@ -559,6 +562,7 @@ class TrackSim(multiprocessing.Process):
                 # Determine dist traveled since last iteration, including
                 # makeup distance, if any.
                 hours = REFRESH_TIME / 3600.0  # Seconds to hours, for mph
+                hours = loco.sim.time_icand * hours  # Apply sim time rate
                 dist = loco.speed * hours * 1.0  # distance = speed * time
                 dist += makeup_dist
 

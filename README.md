@@ -55,7 +55,7 @@ PTC-Sim
 +---static - Static web content, such as images, css, and js.
 |
 +---templates - Flask web templates
-|       home.html - 
+|       home.html -
 |       layout.html - Top-level container template, including navbar.
 |
 +---track
@@ -74,12 +74,11 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 
 ## # TODO
 
-* Move js map ops to server-side
 * Broker queue msg expire time
-* Web Output: logs and broker queue monitor
+* Web Output: logs and broker queue monitor, to demonstrate msging system
+* Base coverage overlays
   
 * Allow other track models to be easily loaded via Google Earth
-* Move JSON data to SQL
 * Ensure PEP8 for file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members
 * Readme screenshots and high-level PTC images

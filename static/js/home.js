@@ -222,7 +222,6 @@ function updateContentAsync() {
                         strokeColor: 'black',
                         fillColor: data.status_map.markers[i].status,
                         strokeWeight: 1,
-                        // size: new google.maps.Size(71, 71),
                     }
                 }
                 
