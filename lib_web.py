@@ -25,12 +25,12 @@ YELLOW = '#dfd005'
 ORANGE =  '#fe9e60'
 GRAY = '#7a7a52'
 
-MAP_LOCO_UP = IMAGE_PATH + 'loco_ico_up.png'
-MAP_LOCO_DOWN = IMAGE_PATH + 'loco_ico_down.png'
-MAP_LOCO_WARN = IMAGE_PATH + 'loco_ico_warn.png'
+
 MAP_BASE_UP = IMAGE_PATH + 'base_ico_up.png'
 MAP_BASE_DOWN = IMAGE_PATH + 'base_ico_down.png'
 MAP_BASE_WARN = IMAGE_PATH + 'base_ico_warn.png'
+MAP_LOCO_DEFAULT = IMAGE_PATH + 'loco_default.png'
+
 MAP_TRACKLINE_OK = GREEN
 MAP_TRACKLINE_DOWN = RED
 MAP_TRACKLINE_WARN = ORANGE
@@ -298,18 +298,19 @@ def get_status_map(track, tracklines, loco=None):
                          cell(l.direction.title()),
                          cell(str(l.bpp))])
 
-        # Status icon
-        map_icon = MAP_LOCO_UP
+        # Status of client-side svg fill
+        # Note: Loco icons displayed as client-side SVG for all but 1st refresh
+        status = GREEN
         if not l.connected():
-            map_icon = MAP_LOCO_DOWN
+            status = RED
         elif [c for c in l.conns.values() if not c.connected()]:
-            map_icon = MAP_LOCO_WARN
+            status = ORANGE
 
-        # TODO: Move to track lib as a class
         marker = {'title': l.name,
-                  'icon': map_icon,
+                  'icon': MAP_LOCO_DEFAULT,
                   'lat': l.coords.lat,
                   'lng': l.coords.long,
+                  'status': status,
                   'rotation': int(l.heading),
                   'infobox': info_tbl.html()}
         

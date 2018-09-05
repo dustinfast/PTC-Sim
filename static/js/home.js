@@ -4,14 +4,14 @@
 */
 
 // Consts
-var IMG_PATH = '/static/img/'
-var LOCO_CONNLINE = {
+LOCO_SVG = 'M 450.288 356.851 l -47.455 -34.558 c 24.679 -16.312 40.427 -44.298 40.427 -74.996 c 0 -45.823 -34.494 -83.743 -78.881 -89.157 V 78.077 h 3.982 c 3.036 0 6.199 -2.463 6.199 -5.5 v -12 c 0 -3.037 -3.163 -5.5 -6.199 -5.5 h -71.667 c -3.036 0 -5.5 2.463 -5.5 5.5 v 12 c 0 3.037 2.464 5.5 5.5 5.5 h 4.688 v 79.401 h -108.44 V 83.704 c 0 -8.284 -6.716 -15 -15 -15 H 15.001 c -5.873 0 -11.205 3.427 -13.645 8.769 c -2.44 5.342 -1.537 11.616 2.309 16.055 l 34.426 39.73 v 188.86 c 0 7.484 5.488 13.671 12.656 14.799 c 1.255 35.758 30.717 64.465 66.773 64.465 c 31.693 0 58.285 -22.184 65.114 -51.833 h 47.324 c 6.829 29.649 33.421 51.833 65.113 51.833 c 17.285 0 33.06 -6.598 44.937 -17.404 h 101.448 c 6.495 0 12.254 -4.182 14.265 -10.357 C 457.731 367.442 455.539 360.674 450.288 356.851 Z M 117.521 349.548 h 25.471 c -5.15 8.713 -14.637 14.573 -25.471 14.573 c -16.307 0 -29.574 -13.269 -29.574 -29.574 s 13.268 -29.571 29.574 -29.571 c 10.834 0 20.321 5.859 25.472 14.572 h -25.472 c -8.284 0 -15 6.717 -15 15 C 102.521 342.832 109.237 349.548 117.521 349.548 Z M 152.744 199.595 H 78.449 v -90 h 74.295 V 199.595 Z M 295.073 364.122 c -10.834 0 -20.319 -5.859 -25.471 -14.573 h 25.469 c 8.284 0 15 -6.716 15 -15 s -6.716 -15 -15 -15 h -25.47 c 5.15 -8.713 14.638 -14.573 25.472 -14.573 c 16.307 0 29.571 13.268 29.571 29.572 C 324.645 350.854 311.379 364.122 295.073 364.122 Z';
+LOCO_CONNLINE = {
     path: 'M 0, -2 1, 1',
     strokeOpacity: .8,
     strokeColor: '#ffff00', // Yellow
     scale: 2
 };
-var LOCO_NO_CONNLINE = {
+LOCO_NO_CONNLINE = {
     path: 'M 0,-1 0,1',
     strokeOpacity: .6,
     strokeColor: '#ff0000', // Red
@@ -25,8 +25,6 @@ var time_icand = 1              // Simulation speed multiplicand
 var refresh_interval = 5000     // Async refresh interval
 var on_interval = null;         // Ref to the active setInterval function
 var persist_infobox = null;     // The map infobox to persist between refreshes
-var prev_marker_icons = {}      // i'th refresh's icons, to use at refresh i + 1
-
 
 // A Maps infobox & associated marker that persists across async updates.
 class PersistInfobox {
@@ -149,7 +147,7 @@ function updateContentAsync() {
                 }
             });
 
-            // Remove all existing map markers & polylines before we replace them
+            //Remove all existing map markers & polylines before we replace them
             status_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });
@@ -180,47 +178,22 @@ function updateContentAsync() {
                 // Note: marker_title matches curr_loco's table ID.
                 var marker_title = data.status_map.markers[i].title
                 var marker_icon = data.status_map.markers[i].icon
-                is_draggable = false;
+                is_draggable = true;  // Non-loco icons are not draggable
 
-                // Loco icons get rotated according to heading and are draggable
+                // Loco icons use SVG and are rotated according to heading
                 if (marker_title.includes('Loco')) {
-                    is_draggable = true;
-                    // Save this loco's icon to use during the next refresh to
-                    // avoid late img load issues.
-                    // TODO: Load images once and re-use them.
-                    loadImage(marker_icon)
-                        .then((img) => {
-                            canvas = document.createElement('canvas');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-
-                            center_x = img.width / 2;
-                            center_y = img.height / 2;
-                            
-                            context = canvas.getContext('2d');
-                            context.clearRect(0, 0, img.width, img.height);
-                            context.save();          // Push context state
-                            context.translate(center_x, center_y);
-                            context.rotate(data.status_map.markers[i].rotation);
-                            context.translate(-center_x, -center_y);
-                            context.drawImage(img, 0, 0);
-                            context.restore();       // Pop context state
-
-                            rotated_url = canvas.toDataURL();
-                            rotated_icon = {
-                                url: rotated_url,
-                                origin: new google.maps.Point(0, 0),  // image origin
-                                // anchor: new google.maps.Point(22, 44)  // from origin
-                            }
-                            prev_marker_icons[marker_title] = rotated_icon;
-                        })
-                        .catch(error => console.error('ERROR: ' + error));
-                            
-                    // Populated the current loco icon by consuming it's prev icon
-                    if (prev_marker_icons.hasOwnProperty(marker_title)) {
-                        // Attempt to close previous icon
-                        marker_icon = prev_marker_icons[marker_title];
-                        delete prev_marker_icons[marker_title];
+                    is_draggable = true;  // Loco icons are draggable
+                    
+                    marker_icon = {
+                        path: LOCO_SVG,
+                        anchor: new google.maps.Point(250, 500),  // from origin
+                        rotation: data.status_map.markers[i].rotation - 90,
+                        fillOpacity: 0.9,
+                        scale: .07,
+                        strokeColor: 'black',
+                        fillColor: data.status_map.markers[i].status,
+                        strokeWeight: 1,
+                        // size: new google.maps.Size(71, 71),
                     }
                 }
                 
@@ -253,7 +226,7 @@ function updateContentAsync() {
                     }
                 });
 
-                // status_map_markers.push(marker); // Attach new marker to the map
+                status_map_markers.push(marker); // Attach new marker to the map
             });
 
             // Reopen current persisting infobox, if any
