@@ -487,7 +487,7 @@ class TrackSim(multiprocessing.Process):
         track_log.info('Track Sim Starting...')
         track = Track()  # The track contains all it's devices and locos.
 
-        # Start each track componenet-device's simulation thread
+        # Start each track component-device's simulation thread
         # These devices exists "on" the track and simulate their own 
         # operation.
         # TODO: Bases, Waysides, etc
@@ -571,9 +571,7 @@ class TrackSim(multiprocessing.Process):
 
                 # If no new_mp was returned, assume end of track
                 if not new_mp:
-                    # TODO: Ensure functional
                     err_str = ' - At end of track. Reversing.'
-                    print('#### ' + err_str)
                     track_log.info(loco.name + err_str)
 
                     makeup_dist = 0

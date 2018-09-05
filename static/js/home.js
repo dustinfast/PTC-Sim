@@ -104,6 +104,7 @@ function locosTableOnclick(loco_name) {
 // If curr_loco, only that loco is shown. Else, all locos shown
 // Note: Don't use JQuery shorthand here, it trashes the JSON.
 function updateContentAsync() {
+    // Post curr loco selection and get back dynamic content
     $.ajax({
         url: $SCRIPT_ROOT + '/_home_get_async_content',
         type: 'POST',
@@ -147,7 +148,7 @@ function updateContentAsync() {
                 }
             });
 
-            //Remove all existing map markers & polylines before we replace them
+            //Remove all existing map markers & polylines before replacing
             status_map_markers.forEach(function (marker) {
                     marker.setMap(null);
                 });

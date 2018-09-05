@@ -1,6 +1,6 @@
 # PTC-Sim - Positive Train Control Simulation
 
-This application is a Positive Train Control (PTC) Back Office Server (BOS) with web interface, track/locomotive simulators, and Edge Message Protocol (EMP) messaging subsystems. Development has begun with the intention of growing into an open-source PTC solution after observing first-hand the difficulties railroads are currently experiencing as they attempt to meet PTC implementation deadlines imposed by congress. It is a work in progress and distributable free under the MIT license.
+This application is a Positive Train Control (PTC) Back Office Server (BOS) with web interface, track/locomotive simulators, and Edge Message Protocol (EMP) messaging subsystems. Development has begun with the intention of growing into an open-source PTC solution after observing first-hand the difficulties railroads are currently experiencing as they attempt to meet PTC implementation deadlines imposed by congress. It is a work in progress and distributable free under the MIT license. All images obtained under the Creative Common License.
 
 PTC's mandate is to prevent:
 
@@ -78,7 +78,6 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 * Web Output: logs and broker queue monitor, to demonstrate msging system
 * Base coverage overlays
   
-* Allow other track models to be easily loaded via Google Earth
 * Ensure PEP8 for file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members
 * Readme screenshots and high-level PTC images
