@@ -77,6 +77,9 @@ Requires Python 2.7. All other dependencies are managed by the application, incl
 * Broker queue msg expire time
 * Web Output: logs and broker queue monitor, to demonstrate msging system
 * Base coverage overlays
+* segregated logs
+* log output to web - use tail and rm extras
+
   
 * Ensure PEP8 for file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members
