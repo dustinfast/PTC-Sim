@@ -41,10 +41,10 @@ PTC-Sim
 |   lib_app.py - Shared application-level library.
 |   lib_messaging.py - Messaging subsytem library.  
 |   lib_track.py - Track simulation class library.
-|   lib_web.py - Web specific library.
+|   lib_web.py - Web interface-specific library.
 |   LICENSE - MIT License.
 |   Procfile - Process definition, for use by hosted environments.
-|   requirements.txt - pipenv dependencies file.
+|   requirements.txt - Pipenv dependencies file.
 |   README.md - This document.
 |   sim_bos.py - Starts the Back Office Server and web interface.
 |
@@ -64,23 +64,19 @@ PTC-Sim
 |       track_rail.json - JSON representation of the track's main branch.
 ```
 
+### Dependencies / Technologies
+
+Requires Python 2.7. 
+Other dependencies managed by the application include: Flask, Jinja, JQuery, and the GoogleMaps API.
+
 ### Unimplemented
 
-At this point in development, some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, persistent data, and connection session management are left unimplemented for the sake of demonstration simplicity. In addition, the track simulation is currently restricted to a single branch.
-
-### Dependencies
-
-Requires Python 2.7. All other dependencies are managed by the application, including Flask, Jinja, JavaScript, AJAX, jQuery, and the Google Maps API.
-
-## # TODO
+At this point in development, some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, and persistent data have not been implemented. The track simulation is also currently restricted to a single branch, and locomotives are not currently aware of each other on the track. Additionally, the following TODO items are in progress:
 
 * Broker queue msg expire time
 * Web Output: logs and broker queue monitor, to demonstrate msging system
-* Base coverage overlays
-* segregated logs
-* log output to web - use tail and rm extras
-
-  
+* Base coverage overlays in website map display
+* Segregated logs
 * Ensure PEP8 for file headers, imports, and docstrings (model after Tack and connection, but move public members to class level-doc)  
 * Privatize necessary members and do validation on public members
 * Readme screenshots and high-level PTC images
