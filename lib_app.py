@@ -38,6 +38,8 @@ class Logger(logging.Logger):
                  max_filesize=LOG_SIZE):
         """
         """
+        # Try setting up the logger - 
+        # If it fails, disable logging (necessary in hosted envs with no fs)
         try:
             logging.Logger.__init__(self, name, level)
 
@@ -47,9 +49,8 @@ class Logger(logging.Logger):
 
             # Init log file rotation
             fname = 'logs/' + name + '.log'
-            rotate_handler = logging.handlers.RotatingFileHandler(fname,
-                                                                max_filesize,
-                                                                num_files)
+            rotate_handler = logging.handlers.RotatingFileHandler(
+                fname, max_filesize, num_files)
             rotate_handler.setLevel(level)
             rotate_handler.setFormatter(log_fmt)
             self.addHandler(rotate_handler)
