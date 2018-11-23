@@ -349,9 +349,13 @@ class Receiver(Thread):
 
     def run(self):
         # Init TCP/IP listener
-        sock = socket.socket()
-        sock.bind((BROKER, SEND_PORT))
-        sock.listen(1)
+        try:
+            sock = socket.socket()
+            sock.bind((BROKER, SEND_PORT))
+            sock.listen(1)
+        except:
+            print('ERROR 2: !!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            exit()
 
         while True:
             # Block until timeout or a send request is received
