@@ -21,7 +21,8 @@ from lib_messaging import BOS_EMP
 from lib_app import bos_log, dep_install
 from lib_app import APP_NAME, REFRESH_TIME, WEB_EXPIRE
 from lib_track import Track, TrackSim, Loco, Location
-from lib_web import get_locos_table, get_status_map, get_tracklines, get_loco_connlines
+from lib_web import get_locos_table, get_loco_connlines
+from lib_web import get_status_map, get_tracklines
 
 
 # Attempt to import 3rd party modules, prompting for install on fail.
