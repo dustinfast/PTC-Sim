@@ -1,1 +1,1 @@
-web: gunicorn test:bos_web
+web: python sim_bos.py
