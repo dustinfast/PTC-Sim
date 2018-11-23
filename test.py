@@ -1,8 +1,4 @@
+from sim_bos import bos_web
 
-import flask
-
-app = flask.Flask(__name__)
-
-@app.route('/')
-def index():
-    return 'Test'
+if __name__ == '__main__':
+    bos_web.run(debug=True, use_reloader=False)
