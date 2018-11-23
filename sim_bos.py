@@ -171,8 +171,8 @@ class BOS(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.track = Track()
-        self.msg_client = Client()  # TODO: Random ports, to enable multiple sandboxes
-        self.time_iplier = 1        # Rate at which to speed up/down sim
+        self.msg_client = Client()  # TODO: Random ports to allow multi sandboxes
+        self.time_iplier = 1        # Rate at which to speed the sime up/down
 
         # Each BOS gets it's own Message Broker.
         self.broker_sim = MsgBroker()
@@ -242,6 +242,7 @@ class BOS(Thread):
 
 class Web(Process):
     def __init__(self):
+        print('STARTED WEB PROCESS')
         Process.__init__(self)
 
     def run(self):
