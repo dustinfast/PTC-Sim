@@ -354,7 +354,7 @@ class Receiver(Thread):
             sock.bind((BROKER, SEND_PORT))
             sock.listen(1)
         except:
-            print('ERROR 2: !!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            print('!!ERROR 1!!')
             exit()
 
         while True:
@@ -412,7 +412,7 @@ class MsgServer(Thread):
             sock.bind((BROKER, FETCH_PORT))
             sock.listen(1)
         except:
-            print('ERROR 1: !!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            print('!!ERROR 2!!')
             exit()
 
         while True:
