@@ -1,1 +1,1 @@
-web: gunicorn test:app
+web: gunicorn sim_bos:bos_web
