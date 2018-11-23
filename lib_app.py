@@ -40,6 +40,7 @@ class Logger(logging.Logger):
         """
         self.level = 0
         self.parent = None
+        self.name = ''
         # logging.Logger.__init__(self, name, level)
 
         # # Define output formats
