@@ -38,35 +38,39 @@ class Logger(logging.Logger):
                  max_filesize=LOG_SIZE):
         """
         """
-        # self.level = 0
-        # self.parent = None
-        # self.name = ''
-        # self.disabled = True
-        logging.Logger.__init__(self, name, level)
+        try:
+            logging.Logger.__init__(self, name, level)
 
-        # Define output formats
-        log_fmt = '%(asctime)s - %(levelname)s @ %(module)s: %(message)s'
-        log_fmt = logging.Formatter(log_fmt + '')
+            # Define output formats
+            log_fmt = '%(asctime)s - %(levelname)s @ %(module)s: %(message)s'
+            log_fmt = logging.Formatter(log_fmt + '')
 
-        # Init log file rotation
-        fname = 'logs/' + name + '.log'
-        rotate_handler = logging.handlers.RotatingFileHandler(fname,
-                                                              max_filesize,
-                                                              num_files)
-        rotate_handler.setLevel(level)
-        rotate_handler.setFormatter(log_fmt)
-        self.addHandler(rotate_handler)
+            # Init log file rotation
+            fname = 'logs/' + name + '.log'
+            rotate_handler = logging.handlers.RotatingFileHandler(fname,
+                                                                max_filesize,
+                                                                num_files)
+            rotate_handler.setLevel(level)
+            rotate_handler.setFormatter(log_fmt)
+            self.addHandler(rotate_handler)
 
-        if console_output:
-            console_fmt = '%(asctime)s - %(levelname)s @ %(module)s:'
-            console_fmt += '\n%(message)s'
-            console_fmt = logging.Formatter(console_fmt)
-            console_handler = logging.StreamHandler()
-            console_handler.setLevel(level + 10)
-            console_handler.setFormatter(console_fmt)
-            self.addHandler(console_handler)
-    def log(s):
-        pass
+            if console_output:
+                console_fmt = '%(asctime)s - %(levelname)s @ %(module)s:'
+                console_fmt += '\n%(message)s'
+                console_fmt = logging.Formatter(console_fmt)
+                console_handler = logging.StreamHandler()
+                console_handler.setLevel(level + 10)
+                console_handler.setFormatter(console_fmt)
+                self.addHandler(console_handler)
+        except:
+            self.level = 0
+            self.parent = None
+            self.name = ''
+            self.disabled = True
+
+    def log(self, s):
+        if not self.disabled:
+            self.log(s)
 
 def dep_install(module_name):
     """ Prompts user to install the given module. Application quits on deny.
