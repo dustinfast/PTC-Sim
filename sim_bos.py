@@ -248,6 +248,34 @@ class Web(Process):
         bos_web.run(debug=True, use_reloader=False)  # Blocks
 
 
+def validate_single_instance(name):
+    """ 
+    Given a script name (a string) exits the calling script if another
+    instance of the script is already running
+    """
+    # Get tty ID, so caller doesn't see itself.
+    pts = subprocess.Popen("tty | cut -d '/' -f4",
+                           shell=True, stdout=subprocess.PIPE)
+    ttyID = pts.stdout.read()[:-1]
+    pts.stdout.close()
+    pts.terminate()
+
+    # Build grep string
+    gstr = "ps -ef | grep " + name + " | grep -v -e grep -e 'pts/" + ttyID + "'"
+
+    # Check for other instances
+    ps = subprocess.Popen(gstr, shell=True, stdout=subprocess.PIPE)
+    output = ps.stdout.read()
+    ps.stdout.close()
+    ps.terminate()
+
+    # Close this instance if another exists
+    if name in str(output):
+        # print(gstr)
+        print('ERROR: An instance of this application is already running:')
+        print(output)
+        sys.exit()
+
 # Starts web interface. BOS "sandboxes" are started on each client connection.
 if __name__ == '__main__':
     print("-- " + APP_NAME + ": Back Office Server - CTRL + C quits --\n")
