@@ -242,7 +242,6 @@ class BOS(Thread):
 
 class Web(Process):
     def __init__(self):
-        print('STARTED WEB PROCESS')
         Process.__init__(self)
 
     def run(self):
@@ -250,25 +249,25 @@ class Web(Process):
 
 
 # Starts web interface. BOS "sandboxes" are started on each client connection.
-# if __name__ == '__main__':
-#     print("-- " + APP_NAME + ": Back Office Server - CTRL + C quits --\n")
-#     sleep(.2)  # Ensure welcome statment before flask output
+if __name__ == '__main__':
+    print("-- " + APP_NAME + ": Back Office Server - CTRL + C quits --\n")
+    sleep(.2)  # Ensure welcome statment before flask output
 
-#     # Start the web interface as a subprocess.
-#     web_thread = Web() 
-#     web_thread.start()
+    # Start the web interface as a subprocess.
+    web_thread = Web() 
+    web_thread.start()
 
-#     while True:
-#         uinput = raw_input('')
+    while True:
+        uinput = raw_input('')
 
-#         if uinput == 'exit':
-#             print('Stopping...')
-#             web_thread.terminate()
+        if uinput == 'exit':
+            print('Stopping...')
+            web_thread.terminate()
 
-#             try:
-#                 web_thread.join(timeout=5)
-#             except:
-#                 raise Exception('Timed out wating for web process to close.')
-#             break
-#         else:
-#             print("Invalid input. Type 'exit' to quit.")
+            try:
+                web_thread.join(timeout=5)
+            except:
+                raise Exception('Timed out wating for web process to close.')
+            break
+        else:
+            print("Invalid input. Type 'exit' to quit.")
