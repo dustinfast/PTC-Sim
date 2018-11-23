@@ -72,6 +72,8 @@ class Logger(logging.Logger):
     def log(self, s):
         if not self.disabled:
             self.log(s)
+        else:
+            print(s)
 
 def dep_install(module_name):
     """ Prompts user to install the given module. Application quits on deny.
