@@ -80,7 +80,7 @@ To preview PTC-Sim, navigate to https://ptc-sim.herokuapp.com/
 
 ### Unimplemented
 
-At this point in development, some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, and persistent data have not been implemented. The track simulation is also currently restricted to a single branch, and locomotives are not currently aware of each other on the track. Additionally, the following TODO items are in progress:
+At this point in development, some features typical in a PTC deployment, such as authentication, encryption, high availability, redundancy, and persistent data have not been implemented. Track simulation is also currently restricted to a single branch, however locomotives are not currently aware of each other on that branch. Additionally, the following TODO items are in progress:
 
 * Broker queue msg expire time
 * Web Output: logs and broker queue monitor, to demonstrate msging system
