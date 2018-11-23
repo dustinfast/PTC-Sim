@@ -39,6 +39,7 @@ class Logger(logging.Logger):
         """
         """
         self.level = 0
+        self.parent = None
         # logging.Logger.__init__(self, name, level)
 
         # # Define output formats
