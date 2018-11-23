@@ -6,5 +6,21 @@
         "lastheading": 1,
         "lastdirection": "increasing",
         "lastbpp": 90
+    },
+    {
+        "id": "1002",
+        "lastmilepost": 405.095,
+        "lastspeed": 60,
+        "lastheading": 180,
+        "lastdirection": "decreasing",
+        "lastbpp": 91
+    },
+    {
+        "id": "1003",
+        "lastmilepost": 230.11,
+        "lastspeed": 55,
+        "lastheading": 0,
+        "lastdirection": "increasing",
+        "lastbpp": 88
     }
 ]
