@@ -1,6 +1,6 @@
 # PTC-Sim - Positive Train Control Simulation
 
-[![Heroku](https://heroku-badge.herokuapp.com/?app=heroku-badge)
+![Heroku](https://heroku-badge.herokuapp.com/?app=heroku-badge)
 
 This application is a Positive Train Control (PTC) Back Office Server (BOS) with web interface, track/locomotive simulators, and Edge Message Protocol (EMP) messaging subsystems. Development has begun with the intention of growing into an open-source PTC solution after observing first-hand the difficulties railroads are currently experiencing as they attempt to meet PTC implementation deadlines imposed by congress. It is a work in progress and distributable free under the MIT license. All images obtained under the Creative Common License.
 
@@ -73,6 +73,8 @@ Requires Python 2.7.
 Other dependencies managed by the application include: Flask, Jinja, JQuery, and the GoogleMaps API.
 
 ### Preview
+
+To preview PTC-Sim, navigate to https://ptc-sim.herokuapp.com/
 
 ![PTC-Sim Screenshot](https://github.com/dustinfast/PTC-Sim/raw/master/docs/scrnshot.png "PTC-Sim Screenshot")
 
