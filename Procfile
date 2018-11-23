@@ -1,1 +1,1 @@
-web: python sim_bos.py
+web: python test:app
