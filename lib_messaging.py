@@ -403,9 +403,13 @@ class MsgServer(Thread):
 
     def run(self):
         # Init listener
-        sock = socket.socket()
-        sock.bind((BROKER, FETCH_PORT))
-        sock.listen(1)
+        try:
+            sock = socket.socket()
+            sock.bind((BROKER, FETCH_PORT))
+            sock.listen(1)
+        except:
+            print('ERROR 1: !!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            exit()
 
         while True:
             # Block until timeout or a send request is received
