@@ -1,5 +1,7 @@
 # PTC-Sim - Positive Train Control Simulation
 
+[![Heroku](https://heroku-badge.herokuapp.com/?app=heroku-badge)]
+
 This application is a Positive Train Control (PTC) Back Office Server (BOS) with web interface, track/locomotive simulators, and Edge Message Protocol (EMP) messaging subsystems. Development has begun with the intention of growing into an open-source PTC solution after observing first-hand the difficulties railroads are currently experiencing as they attempt to meet PTC implementation deadlines imposed by congress. It is a work in progress and distributable free under the MIT license. All images obtained under the Creative Common License.
 
 PTC's mandate is to prevent:
@@ -39,14 +41,15 @@ Each component exists as a seperate entity. Communication between entities occur
 PTC-Sim
 |   app_config.dat - Application configuration information.
 |   lib_app.py - Shared application-level library.
-|   lib_messaging.py - Messaging subsytem library.  
+|   lib_messaging.py - Messaging subsystem library.  
 |   lib_track.py - Track simulation class library.
-|   lib_web.py - Web interface-specific library.
+|   lib_web.py - Web interface library.
 |   LICENSE - MIT License.
-|   Procfile - Process definition, for use by hosted environments.
-|   requirements.txt - Pipenv dependencies file.
+|   Procfile - Process definition, for use in virtual environments.
+|   requirements.txt - Dependencies, for use in virtual environments.
+|   runtime.txt - Python version def, for use in virtual environments.
 |   README.md - This document.
-|   sim_bos.py - Starts the Back Office Server and web interface.
+|   sim_bos.py - The Back Office Server / web interface.
 |
 +---docs - Contains documentation.
 |
@@ -68,6 +71,10 @@ PTC-Sim
 
 Requires Python 2.7.
 Other dependencies managed by the application include: Flask, Jinja, JQuery, and the GoogleMaps API.
+
+### Preview
+
+![PTC-Sim Screenshot](https://github.com/dustinfast/PTC-Sim/raw/master/docs/scrnshot.png "PTC-Sim Screenshot")
 
 ### Unimplemented
 
