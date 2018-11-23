@@ -1,6 +1,6 @@
 # PTC-Sim - Positive Train Control Simulation
 
-[![Heroku](http://heroku-badge.herokuapp.com/?app=angularjs-crypto&style=flat&svg=1))](https://ptc-sim.herokuapp.com/)
+[![Heroku](http://heroku-badge.herokuapp.com/?app=angularjs-crypto&style=flat&svg=1)](https://ptc-sim.herokuapp.com/)
 
 This application is a Positive Train Control (PTC) Back Office Server (BOS) with web interface, track/locomotive simulators, and Edge Message Protocol (EMP) messaging subsystems. Development has begun with the intention of growing into an open-source PTC solution after observing first-hand the difficulties railroads are currently experiencing as they attempt to meet PTC implementation deadlines imposed by congress. It is a work in progress and distributable free under the MIT license. All images obtained under the Creative Common License.
 
