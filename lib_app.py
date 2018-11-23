@@ -38,6 +38,7 @@ class Logger(logging.Logger):
                  max_filesize=LOG_SIZE):
         """
         """
+        self.level = 0
         # logging.Logger.__init__(self, name, level)
 
         # # Define output formats
