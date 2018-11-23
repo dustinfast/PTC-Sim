@@ -37,7 +37,7 @@ Each component exists as a seperate entity. Communication between entities occur
 
 ```
 PTC-Sim
-|   config.dat - Application configuration information.
+|   app_config.dat - Application configuration information.
 |   lib_app.py - Shared application-level library.
 |   lib_messaging.py - Messaging subsytem library.  
 |   lib_track.py - Track simulation class library.

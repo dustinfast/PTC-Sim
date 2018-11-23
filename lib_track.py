@@ -20,7 +20,7 @@ from lib_messaging import MSG_INTERVAL, LOCO_EMP_PREFIX
 
 # Import conf data
 config = RawConfigParser()
-config.read('config.dat')
+config.read('app_config.dat')
 TRACK_RAILS = config.get('track', 'track_rails')
 TRACK_LOCOS = config.get('track', 'track_locos')
 TRACK_BASES = config.get('track', 'track_bases')

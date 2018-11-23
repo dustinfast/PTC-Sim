@@ -10,7 +10,7 @@ from ConfigParser import RawConfigParser
 
 # Import conf data
 config = RawConfigParser()
-config.read('config.dat')
+config.read('app_config.dat')
 
 APP_NAME = config.get('application', 'app_name')
 REFRESH_TIME = int(config.get('application', 'refresh_time'))

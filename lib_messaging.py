@@ -24,7 +24,7 @@ from lib_app import REFRESH_TIME
 
 # Import conf data
 config = RawConfigParser()
-config.read('config.dat')
+config.read('app_config.dat')
 BROKER = config.get('messaging', 'broker')
 BOS_EMP = config.get('messaging', 'bos_emp_addr')
 SEND_PORT = int(config.get('messaging', 'send_port'))
