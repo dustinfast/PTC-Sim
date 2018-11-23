@@ -248,6 +248,8 @@ class Web(Process):
         bos_web.run(debug=True, use_reloader=False)  # Blocks
 
 
+import subprocess
+
 def validate_single_instance(name):
     """ 
     Given a script name (a string) exits the calling script if another
