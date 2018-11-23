@@ -279,11 +279,12 @@ def validate_single_instance(name):
         print(output)
         sys.exit()
 
+    validate_single_instance('sim_bos.py')
 
 # Starts web interface. BOS "sandboxes" are started on each client connection.
 if __name__ == '__main__':
     validate_single_instance('sim_bos.py')
-    
+
     print("-- " + APP_NAME + ": Back Office Server - CTRL + C quits --\n")
     sleep(.2)  # Ensure welcome statment before flask output
 
