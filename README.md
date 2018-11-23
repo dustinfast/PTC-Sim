@@ -66,7 +66,7 @@ PTC-Sim
 
 ### Dependencies / Technologies
 
-Requires Python 2.7. 
+Requires Python 2.7.
 Other dependencies managed by the application include: Flask, Jinja, JQuery, and the GoogleMaps API.
 
 ### Unimplemented
