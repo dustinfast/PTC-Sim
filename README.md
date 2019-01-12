@@ -17,7 +17,7 @@ PTC-Sim currently implements broker-assisted EMP communication between simulated
 
 ## Usage
 
-From a Linux terminal, start the application with `./sim_bos.py`, then navigate to 
+From a Linux terminal, start the application with `./sim_bos.py`, then navigate to `http://localhost:5000'
   
 ## Application Structure
 
